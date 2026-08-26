@@ -11,6 +11,7 @@ O MVP está implementado e inclui busca, resultados, seleção de assento, formu
 - `docs/concepts/`: conceitos visuais usados para orientar a implementação.
 - `docs/scope/`: escopo original do MVP.
 - `docs/guides/`: guias técnicos e de continuidade.
+- `scripts/`: geradores reproduzíveis dos artefatos do projeto.
 - `output/`: documentos gerados durante a análise do projeto.
 - `docs/audit/`: evidências e capturas dos sites analisados.
 
