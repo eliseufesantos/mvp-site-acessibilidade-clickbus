@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { VLibrasWidget } from '../components/accessibility/VLibrasWidget';
 import { Header } from '../components/layout/Header';
 import { CheckoutPage } from '../features/checkout/CheckoutPage';
 import { ConfirmationPage } from '../features/confirmation/ConfirmationPage';
@@ -19,7 +20,7 @@ const titles: Record<JourneyStep, string> = {
   results: 'Escolher viagem',
   seats: 'Escolher assento',
   checkout: 'Dados do passageiro',
-  confirmation: 'Simulação concluída',
+  confirmation: 'Compra confirmada',
 };
 
 export function App() {
@@ -112,9 +113,10 @@ export function App() {
       <footer className="site-footer">
         <div className="container">
           <strong>ClickBus Acessível</strong>
-          <span>MVP acadêmico · dados e horários fictícios · sem vínculo comercial</span>
+          <span>Protótipo de demonstração</span>
         </div>
       </footer>
+      <VLibrasWidget enabled={preferences.librasWidget} />
     </div>
   );
 }

@@ -6,7 +6,7 @@ Este é o ponto de entrada recomendado para retomar o trabalho em outra sessão 
 
 - A aplicação fica em `app/` e está funcional.
 - O fluxo principal vai da busca até uma confirmação simulada.
-- Alto contraste, modo idoso e redução de movimento são preferências globais persistentes.
+- Alto contraste, modo idoso, tradução em Libras (VLibras) e redução de movimento são preferências globais persistentes.
 - O projeto não possui backend nem pagamento real.
 - O build de produção e a jornada em desktop/mobile foram validados em 26/08/2026.
 
@@ -42,4 +42,4 @@ Acesse `http://127.0.0.1:4173/`.
 - criar página de comparação “antes e depois” para a apresentação;
 - executar auditoria Lighthouse/axe e documentar os resultados.
 
-Mantenha o caráter acadêmico visível: dados, horários, preços e passageiros são fictícios.
+Dados, horários, preços e passageiros são fictícios. A interface, porém, usa a linguagem de um produto real: evite reintroduzir avisos de "simulação" nas telas.

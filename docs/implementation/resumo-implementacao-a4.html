@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>MVP ClickBus Acessível — Resumo da implementação</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary:   #A528FF;
+    --deep:      #6B15AB;
+    --yellow:    #FFC800;
+    --ink:       #1A1A1A;
+    --body:      #333333;
+    --muted:     #767676;
+    --border:    #E4E4E4;
+    --surface:   #FAF8FC;
+    --display:   'Rubik', 'Segoe UI', sans-serif;
+    --mono:      'Roboto Mono', 'Consolas', monospace;
+  }
+
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; background: #fff; }
+
+  .page {
+    width: 210mm; height: 297mm;
+    padding: 14mm 15mm 11mm;
+    background: #fff; color: var(--body);
+    font-family: var(--display); font-size: 10pt; line-height: 1.5;
+    display: flex; flex-direction: column;
+    position: relative; overflow: hidden;
+    page-break-after: always;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  /* ---------- chrome ---------- */
+  .head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 4mm; border-bottom: 1px solid var(--border); }
+  .head svg { height: 9mm; width: auto; display: block; }
+  .head .meta { font-family: var(--mono); font-size: 7.5pt; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); text-align: right; }
+  .head .meta b { color: var(--primary); font-weight: 500; }
+
+  .foot { margin-top: auto; padding-top: 4mm; border-top: 1px solid var(--border);
+          display: flex; justify-content: space-between; align-items: baseline;
+          font-family: var(--mono); font-size: 7pt; letter-spacing: 1.1px; text-transform: uppercase; color: var(--muted); }
+
+  h2.section { font-size: 19pt; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); margin: 6mm 0 1.5mm; line-height: 1.1; }
+  p.section-sub { margin: 0 0 5mm; font-size: 9.5pt; color: var(--muted); max-width: 155mm; }
+  .eyebrow { font-family: var(--mono); font-size: 8pt; letter-spacing: 2.2px; text-transform: uppercase; color: var(--primary); margin: 0 0 3mm; }
+
+  /* ---------- capa ---------- */
+  .cover-hero { padding: 8mm 0 0; }
+  .cover-band { margin-top: auto; padding-top: 8mm; }
+  .cover-band img { width: 100%; height: 58mm; object-fit: cover; object-position: center 36%; display: block; border: 1px solid var(--border); border-radius: 3mm; }
+  .cover-hero h1 { font-size: 40pt; line-height: 1.02; font-weight: 800; letter-spacing: -0.035em; color: var(--ink); margin: 0 0 6mm; }
+  .cover-hero h1 em { font-style: normal; color: var(--primary); }
+  .cover-hero .lead { font-size: 12pt; line-height: 1.55; color: var(--body); max-width: 150mm; margin: 0; }
+  .rule { height: 2.2mm; width: 38mm; background: var(--yellow); border-radius: 2mm; margin: 7mm 0; }
+
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin: 8mm 0 0; }
+  .metric { border: 1px solid var(--border); border-radius: 3mm; padding: 5mm 4mm; background: var(--surface); }
+  .metric .v { font-size: 22pt; font-weight: 800; color: var(--ink); letter-spacing: -0.03em; line-height: 1; }
+  .metric .l { font-size: 8pt; color: var(--muted); line-height: 1.35; margin-top: 2.5mm; }
+
+  .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; margin-top: 8mm; }
+  .pillar { border-top: 3px solid var(--primary); padding-top: 4mm; }
+  .pillar h3 { font-size: 11pt; font-weight: 700; color: var(--ink); margin: 0 0 2mm; }
+  .pillar p { margin: 0; font-size: 9pt; color: var(--muted); line-height: 1.5; }
+  .pillar:nth-child(2) { border-color: var(--yellow); }
+  .pillar:nth-child(3) { border-color: var(--deep); }
+
+  /* ---------- cards de feature ---------- */
+  .features { display: grid; grid-template-columns: 1fr 1fr; gap: 3.5mm; }
+  .feature { border: 1px solid var(--border); border-radius: 3mm; padding: 4.5mm 5mm; background: #fff; }
+  .feature.hl { background: var(--surface); border-color: #DDC5F2; }
+  .feature h3 { font-size: 10.5pt; font-weight: 700; color: var(--deep); margin: 0 0 2mm; display: flex; align-items: center; gap: 2mm; }
+  .feature h3 .tag { font-family: var(--mono); font-size: 6.5pt; letter-spacing: 1px; background: var(--yellow); color: var(--ink); padding: 0.8mm 2mm; border-radius: 1.5mm; text-transform: uppercase; font-weight: 700; }
+  .feature p { margin: 0; font-size: 9pt; line-height: 1.45; }
+  .feature .why { margin-top: 2.5mm; font-size: 8pt; color: var(--muted); line-height: 1.45; }
+  .feature .why b { color: var(--body); font-weight: 600; }
+
+  /* ---------- tabelas ---------- */
+  table { width: 100%; border-collapse: collapse; font-size: 8.8pt; }
+  th { background: var(--ink); color: #fff; font-weight: 600; text-align: left; padding: 2.6mm 3mm; font-size: 8.2pt; letter-spacing: 0.3px; }
+  td { border: 1px solid var(--border); padding: 2.6mm 3mm; vertical-align: top; }
+  tr:nth-child(even) td { background: #FCFCFD; }
+  td.k { font-weight: 600; color: var(--ink); width: 34mm; }
+  .ok { color: #147A3D; font-weight: 600; }
+
+  table.versus th:first-child { background: var(--ink); }
+  table.versus th.rb { background: #5A5A5A; }
+  table.versus th.vl { background: var(--primary); }
+  table.versus td.vl { background: #F8F1FE; font-weight: 500; color: var(--ink); }
+  table.versus tr:nth-child(even) td.vl { background: #F4E9FD; }
+
+  /* ---------- passos ---------- */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3.5mm; margin: 5mm 0; }
+  .step { border: 1px solid var(--border); border-radius: 3mm; padding: 4mm 4.5mm; }
+  .step .n { font-family: var(--mono); font-size: 8pt; font-weight: 700; color: var(--primary); letter-spacing: 1.5px; }
+  .step h4 { margin: 1.5mm 0 1.5mm; font-size: 9.5pt; font-weight: 700; color: var(--ink); }
+  .step p { margin: 0; font-size: 8.3pt; color: var(--muted); line-height: 1.45; }
+
+  /* ---------- figuras ---------- */
+  figure { margin: 0; }
+  figure img { width: 100%; display: block; border: 1px solid var(--border); border-radius: 2.5mm; }
+  figure.crop img { height: 76mm; object-fit: cover; object-position: center center; }
+  figcaption { font-size: 7.6pt; color: var(--muted); margin-top: 2mm; line-height: 1.4; }
+  .figs { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+
+  .callout { border-left: 3px solid var(--yellow); background: #FFFBEC; padding: 3.5mm 4.5mm; border-radius: 0 2.5mm 2.5mm 0; font-size: 8.8pt; line-height: 1.5; }
+  .callout b { color: var(--ink); }
+  .note { font-size: 8pt; color: var(--muted); line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- ============ PÁGINA 1 — CAPA ============ -->
+<div class="page">
+  <div class="head">
+    <svg  viewBox="0 0 162 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M111.737 35.1508V32.2379H117.735C118.758 32.2379 119.311 32.7374 119.311 33.6528C119.311 34.596 118.758 35.1508 117.735 35.1508H111.737ZM107.093 38.7019H118.591C121.881 38.7019 124.094 36.7322 124.094 33.9025C124.094 31.9329 122.684 30.518 120.555 30.0741C122.38 29.658 123.43 28.2986 123.43 26.3846C123.43 24.0542 121.522 22.3896 118.039 22.3896H107.093V38.7019ZM111.737 28.798V25.8852H117.293C118.233 25.8852 118.842 26.44 118.842 27.3555C118.842 28.2986 118.233 28.798 117.293 28.798H111.737ZM134.819 39.0624C140.32 39.0624 143.196 36.3438 143.196 31.6831V22.3896H138.441V31.6276C138.441 33.5418 137.031 34.7626 134.819 34.7626C132.525 34.7626 131.225 33.5418 131.225 31.6276V22.3896H126.471V31.6831C126.471 36.3438 129.706 39.0624 134.819 39.0624ZM32.9285 39.0624C37.6833 39.0624 40.9453 36.5379 41.2493 32.1825H36.467C36.2734 33.5973 35.1125 34.7626 32.7904 34.7626C29.9707 34.7626 28.5056 33.0425 28.5056 30.5458C28.5056 27.9658 29.8601 26.3012 32.7351 26.3012C35.0572 26.3012 36.2734 27.4942 36.467 28.9645H41.2493C41.0558 25.0807 38.2361 22.0291 32.6246 22.0291C27.1788 22.0291 23.751 25.2748 23.751 30.629C23.751 35.9277 27.3999 39.0624 32.9285 39.0624ZM154.169 39.0624C159.422 39.0624 161.992 37.0373 161.992 33.7639C161.992 30.9064 160.169 29.2141 156.382 28.7148L154.529 28.4652C151.709 28.0767 150.742 27.8549 150.742 26.9948C150.742 26.2457 151.599 25.7464 153.672 25.7464C156.215 25.7464 158.841 26.2457 160.777 26.8562V23.0833C159.422 22.5284 156.988 22.0291 154.114 22.0291C148.834 22.0291 146.098 24.0265 146.098 27.2999C146.098 30.2962 148.253 31.7665 151.959 32.349L153.921 32.6541C156.436 33.0425 157.293 33.3477 157.293 34.0689C157.293 34.7626 156.603 35.3451 154.474 35.3451C151.847 35.3451 148.917 34.6515 146.456 33.625V37.5921C148.309 38.3689 150.991 39.0624 154.169 39.0624ZM48.0496 38.7019H57.1997V34.7348H49.6807C48.8513 34.7348 48.4919 34.3741 48.4919 33.5418V22.3896H43.7373V34.3741C43.7373 36.9264 45.5064 38.7019 48.0496 38.7019ZM60.4617 38.7019H65.216V22.3896H60.4617V38.7019ZM77.048 39.0624C81.8031 39.0624 85.0637 36.5379 85.3678 32.1825H80.5865C80.392 33.5973 79.231 34.7626 76.9091 34.7626C74.09 34.7626 72.6249 33.0425 72.6249 30.5458C72.6249 27.9658 73.9788 26.3012 76.855 26.3012C79.177 26.3012 80.392 27.4942 80.5865 28.9645H85.3678C85.1748 25.0807 82.3558 22.0291 76.7439 22.0291C71.2972 22.0291 67.8698 25.2748 67.8698 30.629C67.8698 35.9277 71.5195 39.0624 77.048 39.0624ZM88.0773 38.7019H92.7212V33.625C93.7725 33.2645 94.8223 32.8206 95.7903 32.2658C97.6152 34.4296 98.6094 36.2606 99.5218 38.7019H104.718C103.808 35.6502 101.54 31.6554 99.3844 29.6857C101.595 27.7161 103.253 25.2748 104.166 22.3896H99.2733C98.4164 25.0807 95.9015 27.8549 92.7212 29.1864V22.3896H88.0773V38.7019Z" fill="#1A1A1A"/>
+        <path d="M1.80185 32.2101H17.5034C17.9181 32.2101 18.1944 31.905 18.1944 31.5166V30.8231C18.1944 21.7515 23.5297 16.6748 32.9839 16.6748H92.031C92.4447 16.6748 92.7211 16.3973 92.7211 15.9812V1.08393C92.7211 0.66778 92.4447 0.39045 92.031 0.39045H30.0259C12.721 0.39045 0.585449 10.8213 0.585449 25.6631C0.585449 27.9657 0.69614 29.8244 0.972489 31.4334C1.05539 31.905 1.30427 32.2101 1.80185 32.2101Z" fill="#A528FF"/>
+      </svg>
+    <div class="meta">Resumo da implementação<br><b>MVP acessível</b> · Agosto 2026</div>
+  </div>
+
+  <div class="cover-hero">
+    <p class="eyebrow">Jornada de compra · acessibilidade</p>
+    <h1>Acessibilidade que<br>aparece <em>na primeira tela</em></h1>
+    <div class="rule"></div>
+    <p class="lead">A jornada de compra da ClickBus reconstruída com quatro recursos de acessibilidade ligados por padrão — incluindo tradução automática para Libras — sem reescrever a plataforma e sem custo de licença.</p>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="v">5</div><div class="l">etapas da jornada, da busca à confirmação</div></div>
+    <div class="metric"><div class="v">4</div><div class="l">recursos de acessibilidade no mesmo menu</div></div>
+    <div class="metric"><div class="v">R$ 0</div><div class="l">de licença: tudo aberto ou nativo do navegador</div></div>
+    <div class="metric"><div class="v">2 KB</div><div class="l">é o custo inicial da tradução em Libras</div></div>
+  </div>
+
+  <div class="pillars">
+    <div class="pillar">
+      <h3>Ver com menos esforço</h3>
+      <p>Alto contraste e modo idoso trocam cor, tamanho e espaçamento em toda a jornada a partir de uma única camada de tokens CSS.</p>
+    </div>
+    <div class="pillar">
+      <h3>Entender em Libras</h3>
+      <p>O widget do VLibras traduz o conteúdo da página com um avatar 3D. É a solução oficial do gov.br, aberta e gratuita.</p>
+    </div>
+    <div class="pillar">
+      <h3>Concluir sem travar</h3>
+      <p>Teclado em todo o fluxo, foco sempre visível e erros de formulário agrupados, associados ao campo e removidos ao corrigir.</p>
+    </div>
+  </div>
+
+  <div class="cover-band">
+    <img src="./vlibras-home.png" alt="Home do MVP com o widget de Libras aberto" />
+  </div>
+
+  <div class="foot"><span>ClickBus · MVP acessível</span><span>Protótipo funcional · dados de viagem fictícios</span><span>01</span></div>
+</div>
+
+<!-- ============ PÁGINA 2 — O QUE FOI IMPLEMENTADO ============ -->
+<div class="page">
+  <div class="head">
+    <svg  viewBox="0 0 162 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M111.737 35.1508V32.2379H117.735C118.758 32.2379 119.311 32.7374 119.311 33.6528C119.311 34.596 118.758 35.1508 117.735 35.1508H111.737ZM107.093 38.7019H118.591C121.881 38.7019 124.094 36.7322 124.094 33.9025C124.094 31.9329 122.684 30.518 120.555 30.0741C122.38 29.658 123.43 28.2986 123.43 26.3846C123.43 24.0542 121.522 22.3896 118.039 22.3896H107.093V38.7019ZM111.737 28.798V25.8852H117.293C118.233 25.8852 118.842 26.44 118.842 27.3555C118.842 28.2986 118.233 28.798 117.293 28.798H111.737ZM134.819 39.0624C140.32 39.0624 143.196 36.3438 143.196 31.6831V22.3896H138.441V31.6276C138.441 33.5418 137.031 34.7626 134.819 34.7626C132.525 34.7626 131.225 33.5418 131.225 31.6276V22.3896H126.471V31.6831C126.471 36.3438 129.706 39.0624 134.819 39.0624ZM32.9285 39.0624C37.6833 39.0624 40.9453 36.5379 41.2493 32.1825H36.467C36.2734 33.5973 35.1125 34.7626 32.7904 34.7626C29.9707 34.7626 28.5056 33.0425 28.5056 30.5458C28.5056 27.9658 29.8601 26.3012 32.7351 26.3012C35.0572 26.3012 36.2734 27.4942 36.467 28.9645H41.2493C41.0558 25.0807 38.2361 22.0291 32.6246 22.0291C27.1788 22.0291 23.751 25.2748 23.751 30.629C23.751 35.9277 27.3999 39.0624 32.9285 39.0624ZM154.169 39.0624C159.422 39.0624 161.992 37.0373 161.992 33.7639C161.992 30.9064 160.169 29.2141 156.382 28.7148L154.529 28.4652C151.709 28.0767 150.742 27.8549 150.742 26.9948C150.742 26.2457 151.599 25.7464 153.672 25.7464C156.215 25.7464 158.841 26.2457 160.777 26.8562V23.0833C159.422 22.5284 156.988 22.0291 154.114 22.0291C148.834 22.0291 146.098 24.0265 146.098 27.2999C146.098 30.2962 148.253 31.7665 151.959 32.349L153.921 32.6541C156.436 33.0425 157.293 33.3477 157.293 34.0689C157.293 34.7626 156.603 35.3451 154.474 35.3451C151.847 35.3451 148.917 34.6515 146.456 33.625V37.5921C148.309 38.3689 150.991 39.0624 154.169 39.0624ZM48.0496 38.7019H57.1997V34.7348H49.6807C48.8513 34.7348 48.4919 34.3741 48.4919 33.5418V22.3896H43.7373V34.3741C43.7373 36.9264 45.5064 38.7019 48.0496 38.7019ZM60.4617 38.7019H65.216V22.3896H60.4617V38.7019ZM77.048 39.0624C81.8031 39.0624 85.0637 36.5379 85.3678 32.1825H80.5865C80.392 33.5973 79.231 34.7626 76.9091 34.7626C74.09 34.7626 72.6249 33.0425 72.6249 30.5458C72.6249 27.9658 73.9788 26.3012 76.855 26.3012C79.177 26.3012 80.392 27.4942 80.5865 28.9645H85.3678C85.1748 25.0807 82.3558 22.0291 76.7439 22.0291C71.2972 22.0291 67.8698 25.2748 67.8698 30.629C67.8698 35.9277 71.5195 39.0624 77.048 39.0624ZM88.0773 38.7019H92.7212V33.625C93.7725 33.2645 94.8223 32.8206 95.7903 32.2658C97.6152 34.4296 98.6094 36.2606 99.5218 38.7019H104.718C103.808 35.6502 101.54 31.6554 99.3844 29.6857C101.595 27.7161 103.253 25.2748 104.166 22.3896H99.2733C98.4164 25.0807 95.9015 27.8549 92.7212 29.1864V22.3896H88.0773V38.7019Z" fill="#1A1A1A"/>
+        <path d="M1.80185 32.2101H17.5034C17.9181 32.2101 18.1944 31.905 18.1944 31.5166V30.8231C18.1944 21.7515 23.5297 16.6748 32.9839 16.6748H92.031C92.4447 16.6748 92.7211 16.3973 92.7211 15.9812V1.08393C92.7211 0.66778 92.4447 0.39045 92.031 0.39045H30.0259C12.721 0.39045 0.585449 10.8213 0.585449 25.6631C0.585449 27.9657 0.69614 29.8244 0.972489 31.4334C1.05539 31.905 1.30427 32.2101 1.80185 32.2101Z" fill="#A528FF"/>
+      </svg>
+    <div class="meta">Resumo da implementação<br><b>MVP acessível</b> · Agosto 2026</div>
+  </div>
+
+  <h2 class="section">O que foi implementado, e por quê</h2>
+  <p class="section-sub">Cada recurso foi escolhido pela relação entre esforço de implementação e ganho perceptível na jornada.</p>
+
+  <div class="features">
+    <div class="feature hl">
+      <h3>Tradução em Libras <span class="tag">novo</span></h3>
+      <p>Widget do VLibras com avatar 3D, disponível em todas as telas e ligado por padrão.</p>
+      <p class="why"><b>Por quê:</b> Libras é a primeira língua de grande parte das pessoas surdas. Texto em português nem sempre resolve.</p>
+    </div>
+    <div class="feature">
+      <h3>Alto contraste</h3>
+      <p>Tokens globais em preto, branco e amarelo, com bordas e foco reforçados.</p>
+      <p class="why"><b>Por quê:</b> uma camada CSS única muda a jornada inteira e ajuda quem tem baixa visão.</p>
+    </div>
+    <div class="feature">
+      <h3>Modo idoso</h3>
+      <p>Tipografia, controles e espaçamentos ampliados, com retirada de conteúdo secundário.</p>
+      <p class="why"><b>Por quê:</b> reduz esforço visual e motor sem criar uma jornada separada nem pedir a idade.</p>
+    </div>
+    <div class="feature">
+      <h3>Busca e resultados</h3>
+      <p>Origem, destino e data com sugestões navegáveis por teclado, e filtros imediatos na lista.</p>
+      <p class="why"><b>Por quê:</b> mantém a tarefa central reconhecível para quem já conhece a ClickBus.</p>
+    </div>
+    <div class="feature">
+      <h3>Seleção de assento</h3>
+      <p>Mapa simplificado com estados livre, ocupado e selecionado, operável por Tab e setas.</p>
+      <p class="why"><b>Por quê:</b> remove ambiguidade e cria alvos grandes para teclado, mouse e toque.</p>
+    </div>
+    <div class="feature">
+      <h3>Validação acessível</h3>
+      <p>Resumo de erros focável, mensagens ligadas ao campo por <span style="font-family:var(--mono);font-size:7.6pt">aria-describedby</span> e limpeza ao corrigir.</p>
+      <p class="why"><b>Por quê:</b> o usuário entende o que falta sem precisar caçar o campo com problema.</p>
+    </div>
+  </div>
+
+  <h2 class="section" style="font-size:14pt;margin-bottom:3mm">Decisões que mantiveram o custo baixo</h2>
+  <table>
+    <tr><th style="width:44mm">Decisão</th><th>Retorno</th></tr>
+    <tr><td class="k" style="width:44mm">VLibras no lugar de solução licenciada</td><td>Mesma função, sem contrato e sem chave de API. Um script público resolve.</td></tr>
+    <tr><td class="k">Tokens CSS para os modos visuais</td><td>Uma alteração controla todas as telas e facilita evoluir a paleta depois.</td></tr>
+    <tr><td class="k">React sem roteador</td><td>O fluxo é linear: menos dependências, menos superfície de manutenção.</td></tr>
+    <tr><td class="k">Preferências no navegador</td><td>Ajustes sobrevivem ao recarregamento sem exigir cadastro nem coletar dado pessoal.</td></tr>
+  </table>
+
+  <div class="foot"><span>ClickBus · MVP acessível</span><span>Protótipo funcional · dados de viagem fictícios</span><span>02</span></div>
+</div>
+
+<!-- ============ PÁGINA 3 — LIBRAS ============ -->
+<div class="page">
+  <div class="head">
+    <svg  viewBox="0 0 162 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M111.737 35.1508V32.2379H117.735C118.758 32.2379 119.311 32.7374 119.311 33.6528C119.311 34.596 118.758 35.1508 117.735 35.1508H111.737ZM107.093 38.7019H118.591C121.881 38.7019 124.094 36.7322 124.094 33.9025C124.094 31.9329 122.684 30.518 120.555 30.0741C122.38 29.658 123.43 28.2986 123.43 26.3846C123.43 24.0542 121.522 22.3896 118.039 22.3896H107.093V38.7019ZM111.737 28.798V25.8852H117.293C118.233 25.8852 118.842 26.44 118.842 27.3555C118.842 28.2986 118.233 28.798 117.293 28.798H111.737ZM134.819 39.0624C140.32 39.0624 143.196 36.3438 143.196 31.6831V22.3896H138.441V31.6276C138.441 33.5418 137.031 34.7626 134.819 34.7626C132.525 34.7626 131.225 33.5418 131.225 31.6276V22.3896H126.471V31.6831C126.471 36.3438 129.706 39.0624 134.819 39.0624ZM32.9285 39.0624C37.6833 39.0624 40.9453 36.5379 41.2493 32.1825H36.467C36.2734 33.5973 35.1125 34.7626 32.7904 34.7626C29.9707 34.7626 28.5056 33.0425 28.5056 30.5458C28.5056 27.9658 29.8601 26.3012 32.7351 26.3012C35.0572 26.3012 36.2734 27.4942 36.467 28.9645H41.2493C41.0558 25.0807 38.2361 22.0291 32.6246 22.0291C27.1788 22.0291 23.751 25.2748 23.751 30.629C23.751 35.9277 27.3999 39.0624 32.9285 39.0624ZM154.169 39.0624C159.422 39.0624 161.992 37.0373 161.992 33.7639C161.992 30.9064 160.169 29.2141 156.382 28.7148L154.529 28.4652C151.709 28.0767 150.742 27.8549 150.742 26.9948C150.742 26.2457 151.599 25.7464 153.672 25.7464C156.215 25.7464 158.841 26.2457 160.777 26.8562V23.0833C159.422 22.5284 156.988 22.0291 154.114 22.0291C148.834 22.0291 146.098 24.0265 146.098 27.2999C146.098 30.2962 148.253 31.7665 151.959 32.349L153.921 32.6541C156.436 33.0425 157.293 33.3477 157.293 34.0689C157.293 34.7626 156.603 35.3451 154.474 35.3451C151.847 35.3451 148.917 34.6515 146.456 33.625V37.5921C148.309 38.3689 150.991 39.0624 154.169 39.0624ZM48.0496 38.7019H57.1997V34.7348H49.6807C48.8513 34.7348 48.4919 34.3741 48.4919 33.5418V22.3896H43.7373V34.3741C43.7373 36.9264 45.5064 38.7019 48.0496 38.7019ZM60.4617 38.7019H65.216V22.3896H60.4617V38.7019ZM77.048 39.0624C81.8031 39.0624 85.0637 36.5379 85.3678 32.1825H80.5865C80.392 33.5973 79.231 34.7626 76.9091 34.7626C74.09 34.7626 72.6249 33.0425 72.6249 30.5458C72.6249 27.9658 73.9788 26.3012 76.855 26.3012C79.177 26.3012 80.392 27.4942 80.5865 28.9645H85.3678C85.1748 25.0807 82.3558 22.0291 76.7439 22.0291C71.2972 22.0291 67.8698 25.2748 67.8698 30.629C67.8698 35.9277 71.5195 39.0624 77.048 39.0624ZM88.0773 38.7019H92.7212V33.625C93.7725 33.2645 94.8223 32.8206 95.7903 32.2658C97.6152 34.4296 98.6094 36.2606 99.5218 38.7019H104.718C103.808 35.6502 101.54 31.6554 99.3844 29.6857C101.595 27.7161 103.253 25.2748 104.166 22.3896H99.2733C98.4164 25.0807 95.9015 27.8549 92.7212 29.1864V22.3896H88.0773V38.7019Z" fill="#1A1A1A"/>
+        <path d="M1.80185 32.2101H17.5034C17.9181 32.2101 18.1944 31.905 18.1944 31.5166V30.8231C18.1944 21.7515 23.5297 16.6748 32.9839 16.6748H92.031C92.4447 16.6748 92.7211 16.3973 92.7211 15.9812V1.08393C92.7211 0.66778 92.4447 0.39045 92.031 0.39045H30.0259C12.721 0.39045 0.585449 10.8213 0.585449 25.6631C0.585449 27.9657 0.69614 29.8244 0.972489 31.4334C1.05539 31.905 1.30427 32.2101 1.80185 32.2101Z" fill="#A528FF"/>
+      </svg>
+    <div class="meta">Resumo da implementação<br><b>MVP acessível</b> · Agosto 2026</div>
+  </div>
+
+  <p class="eyebrow" style="margin-top:6mm">Destaque</p>
+  <h2 class="section" style="margin-top:0">Tradução em Libras sem custo de licença</h2>
+  <p class="section-sub">A referência de mercado avaliada foi o Rybená, licenciado por plano comercial. O VLibras entrega a mesma função — tradução automática de português para Libras com avatar 3D — de graça e em código aberto.</p>
+
+  <table class="versus">
+    <tr><th style="width:38mm">&nbsp;</th><th class="rb" style="width:52mm">Rybená</th><th class="vl">VLibras <span style="font-weight:400">— escolhido</span></th></tr>
+    <tr><td class="k">Licença</td><td>Plano comercial</td><td class="vl">Gratuita e aberta (LGPL-3.0)</td></tr>
+    <tr><td class="k">Mantenedor</td><td>Empresa privada</td><td class="vl">Governo brasileiro (gov.br)</td></tr>
+    <tr><td class="k">Integração</td><td>Contrato e credencial</td><td class="vl">Um script público, sem chave</td></tr>
+    <tr><td class="k">Custo no MVP</td><td>Sob orçamento</td><td class="vl">R$ 0</td></tr>
+  </table>
+
+  <div class="steps">
+    <div class="step">
+      <div class="n">01</div>
+      <h4>Carrega leve</h4>
+      <p>Na primeira ativação, um script de cerca de 2 KB entra na página e desenha só o botão flutuante.</p>
+    </div>
+    <div class="step">
+      <div class="n">02</div>
+      <h4>Só baixa se usar</h4>
+      <p>O player 3D, que é a parte pesada, só é baixado quando alguém abre a tradução. Quem não usa não paga o custo.</p>
+    </div>
+    <div class="step">
+      <div class="n">03</div>
+      <h4>Traduz a página</h4>
+      <p>O avatar interpreta o texto selecionado ou o conteúdo da tela, em qualquer etapa da jornada.</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <b>Ligado por padrão.</b> Quem depende de Libras não deveria precisar descobrir um menu de configurações primeiro. O botão fica visível desde a home, e o menu de acessibilidade permite desligá-lo — não o contrário.
+  </div>
+
+  <figure class="crop" style="margin-top:6mm">
+    <img src="./vlibras-home.png" alt="Home do MVP com o widget do VLibras aberto, mostrando o avatar 3D" />
+    <figcaption>Home do MVP com o VLibras aberto. O avatar acompanha o usuário por todas as etapas, da busca à confirmação.</figcaption>
+  </figure>
+
+  <div class="foot"><span>ClickBus · MVP acessível</span><span>Protótipo funcional · dados de viagem fictícios</span><span>03</span></div>
+</div>
+
+<!-- ============ PÁGINA 4 — EVIDÊNCIA E VALIDAÇÃO ============ -->
+<div class="page">
+  <div class="head">
+    <svg  viewBox="0 0 162 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M111.737 35.1508V32.2379H117.735C118.758 32.2379 119.311 32.7374 119.311 33.6528C119.311 34.596 118.758 35.1508 117.735 35.1508H111.737ZM107.093 38.7019H118.591C121.881 38.7019 124.094 36.7322 124.094 33.9025C124.094 31.9329 122.684 30.518 120.555 30.0741C122.38 29.658 123.43 28.2986 123.43 26.3846C123.43 24.0542 121.522 22.3896 118.039 22.3896H107.093V38.7019ZM111.737 28.798V25.8852H117.293C118.233 25.8852 118.842 26.44 118.842 27.3555C118.842 28.2986 118.233 28.798 117.293 28.798H111.737ZM134.819 39.0624C140.32 39.0624 143.196 36.3438 143.196 31.6831V22.3896H138.441V31.6276C138.441 33.5418 137.031 34.7626 134.819 34.7626C132.525 34.7626 131.225 33.5418 131.225 31.6276V22.3896H126.471V31.6831C126.471 36.3438 129.706 39.0624 134.819 39.0624ZM32.9285 39.0624C37.6833 39.0624 40.9453 36.5379 41.2493 32.1825H36.467C36.2734 33.5973 35.1125 34.7626 32.7904 34.7626C29.9707 34.7626 28.5056 33.0425 28.5056 30.5458C28.5056 27.9658 29.8601 26.3012 32.7351 26.3012C35.0572 26.3012 36.2734 27.4942 36.467 28.9645H41.2493C41.0558 25.0807 38.2361 22.0291 32.6246 22.0291C27.1788 22.0291 23.751 25.2748 23.751 30.629C23.751 35.9277 27.3999 39.0624 32.9285 39.0624ZM154.169 39.0624C159.422 39.0624 161.992 37.0373 161.992 33.7639C161.992 30.9064 160.169 29.2141 156.382 28.7148L154.529 28.4652C151.709 28.0767 150.742 27.8549 150.742 26.9948C150.742 26.2457 151.599 25.7464 153.672 25.7464C156.215 25.7464 158.841 26.2457 160.777 26.8562V23.0833C159.422 22.5284 156.988 22.0291 154.114 22.0291C148.834 22.0291 146.098 24.0265 146.098 27.2999C146.098 30.2962 148.253 31.7665 151.959 32.349L153.921 32.6541C156.436 33.0425 157.293 33.3477 157.293 34.0689C157.293 34.7626 156.603 35.3451 154.474 35.3451C151.847 35.3451 148.917 34.6515 146.456 33.625V37.5921C148.309 38.3689 150.991 39.0624 154.169 39.0624ZM48.0496 38.7019H57.1997V34.7348H49.6807C48.8513 34.7348 48.4919 34.3741 48.4919 33.5418V22.3896H43.7373V34.3741C43.7373 36.9264 45.5064 38.7019 48.0496 38.7019ZM60.4617 38.7019H65.216V22.3896H60.4617V38.7019ZM77.048 39.0624C81.8031 39.0624 85.0637 36.5379 85.3678 32.1825H80.5865C80.392 33.5973 79.231 34.7626 76.9091 34.7626C74.09 34.7626 72.6249 33.0425 72.6249 30.5458C72.6249 27.9658 73.9788 26.3012 76.855 26.3012C79.177 26.3012 80.392 27.4942 80.5865 28.9645H85.3678C85.1748 25.0807 82.3558 22.0291 76.7439 22.0291C71.2972 22.0291 67.8698 25.2748 67.8698 30.629C67.8698 35.9277 71.5195 39.0624 77.048 39.0624ZM88.0773 38.7019H92.7212V33.625C93.7725 33.2645 94.8223 32.8206 95.7903 32.2658C97.6152 34.4296 98.6094 36.2606 99.5218 38.7019H104.718C103.808 35.6502 101.54 31.6554 99.3844 29.6857C101.595 27.7161 103.253 25.2748 104.166 22.3896H99.2733C98.4164 25.0807 95.9015 27.8549 92.7212 29.1864V22.3896H88.0773V38.7019Z" fill="#1A1A1A"/>
+        <path d="M1.80185 32.2101H17.5034C17.9181 32.2101 18.1944 31.905 18.1944 31.5166V30.8231C18.1944 21.7515 23.5297 16.6748 32.9839 16.6748H92.031C92.4447 16.6748 92.7211 16.3973 92.7211 15.9812V1.08393C92.7211 0.66778 92.4447 0.39045 92.031 0.39045H30.0259C12.721 0.39045 0.585449 10.8213 0.585449 25.6631C0.585449 27.9657 0.69614 29.8244 0.972489 31.4334C1.05539 31.905 1.30427 32.2101 1.80185 32.2101Z" fill="#A528FF"/>
+      </svg>
+    <div class="meta">Resumo da implementação<br><b>MVP acessível</b> · Agosto 2026</div>
+  </div>
+
+  <h2 class="section">Evidência e validação</h2>
+  <p class="section-sub">Os recursos funcionam combinados: contraste, ampliação e Libras podem ficar ativos ao mesmo tempo, na mesma tela.</p>
+
+  <div class="figs">
+    <figure>
+      <img src="./vlibras-alto-contraste.png" alt="Home em alto contraste e modo idoso com o VLibras aberto" />
+      <figcaption>Alto contraste + modo idoso + Libras ativos simultaneamente.</figcaption>
+    </figure>
+    <figure>
+      <img src="./painel-preferencias.png" alt="Menu de acessibilidade aberto com os quatro controles" />
+      <figcaption>Um único menu reúne os quatro controles, com efeito imediato.</figcaption>
+    </figure>
+  </div>
+
+  <h2 class="section" style="font-size:14pt;margin-top:7mm;margin-bottom:3mm">Verificações executadas</h2>
+  <table>
+    <tr><th style="width:88mm">Verificação</th><th>Resultado</th></tr>
+    <tr><td class="k" style="width:88mm">Typecheck e build de produção</td><td class="ok">Aprovado</td></tr>
+    <tr><td class="k">Jornada completa, da busca à confirmação</td><td class="ok">Aprovada</td></tr>
+    <tr><td class="k">Console do navegador</td><td class="ok">Sem erros</td></tr>
+    <tr><td class="k">Widget de Libras: carrega e abre o avatar 3D</td><td class="ok">Aprovado</td></tr>
+    <tr><td class="k">Preferência de Libras: liga, desliga e persiste</td><td class="ok">Aprovado</td></tr>
+    <tr><td class="k">Botão do VLibras alcançável por teclado</td><td class="ok">Aprovado</td></tr>
+    <tr><td class="k">Desktop 1440 × 900</td><td class="ok">Aprovado</td></tr>
+    <tr><td class="k">Mobile 390 × 844</td><td class="ok">Sem rolagem horizontal</td></tr>
+    <tr><td class="k">Jornada com o servidor do VLibras indisponível</td><td class="ok">Segue funcionando</td></tr>
+    <tr><td class="k">Ícones proporcionais de 390 px a 1440 px, nos dois modos</td><td class="ok">Aprovado</td></tr>
+  </table>
+
+  <p class="note" style="margin-top:5mm"><b style="color:var(--ink)">Próximos passos.</b> Validar com leitor de tela real (NVDA e VoiceOver), rodar auditoria automatizada com axe e Lighthouse e criar testes de regressão do fluxo. O widget de Libras é servido pelo gov.br: com o servidor indisponível, o botão não aparece e nada mais muda — comportamento verificado bloqueando o domínio.</p>
+
+  <div class="foot"><span>ClickBus · MVP acessível</span><span>Protótipo funcional · dados de viagem fictícios</span><span>04</span></div>
+</div>
+
+</body>
+</html>

@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarDays, Repeat2, Search, ShieldCheck, Sparkles, WalletCards } from 'lucide-react';
+import { ArrowRight, CalendarDays, Hand, Repeat2, Search, ShieldCheck, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import type { SearchValues } from '../../types';
 import { Button } from '../../components/ui/Button';
@@ -41,10 +41,10 @@ export function SearchPage({ initialValues, onSearch }: SearchPageProps) {
         </div>
         <div className="container search-hero__content">
           <div className="eyebrow eyebrow--inverse">
-            <Sparkles aria-hidden="true" size={18} /> Protótipo acadêmico acessível
+            <Sparkles aria-hidden="true" size={18} /> Acessível de ponta a ponta
           </div>
           <h1>Compre sua passagem de ônibus</h1>
-          <p>Uma simulação simples, clara e ajustável para diferentes necessidades visuais.</p>
+          <p>Uma jornada simples, clara e ajustável para diferentes necessidades.</p>
 
           <form className="search-card" onSubmit={submitSearch}>
             <div className="search-card__locations">
@@ -108,9 +108,9 @@ export function SearchPage({ initialValues, onSearch }: SearchPageProps) {
             <p>Contraste, tamanho e movimento continuam ativos durante toda a jornada.</p>
           </article>
           <article className="benefit-card">
-            <WalletCards aria-hidden="true" />
-            <h3>Simulação segura</h3>
-            <p>Nenhum dado é enviado e nenhum pagamento é processado neste protótipo.</p>
+            <Hand aria-hidden="true" />
+            <h3>Tradução em Libras</h3>
+            <p>O VLibras acompanha você em todas as etapas, com avatar em tempo real.</p>
           </article>
           <article className="benefit-card hide-in-elderly">
             <Sparkles aria-hidden="true" />

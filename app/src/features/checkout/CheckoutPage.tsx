@@ -6,10 +6,10 @@ import {
   CalendarDays,
   Check,
   Clock3,
-  GraduationCap,
   IdCard,
   Info,
   MapPin,
+  ShieldCheck,
   UserRound,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
@@ -63,11 +63,11 @@ export function CheckoutPage({ onBack, onComplete, preferences, search, seat, tr
   const validate = () => {
     const nextErrors: FormErrors = {};
     if (values.name.trim().length < 3) nextErrors.name = 'Informe o nome completo do passageiro.';
-    if (!/^\d{11}$/.test(values.cpf.replace(/\D/g, ''))) nextErrors.cpf = 'Informe um CPF fictício com 11 números.';
+    if (!/^\d{11}$/.test(values.cpf.replace(/\D/g, ''))) nextErrors.cpf = 'Informe um CPF com 11 números.';
     if (!/^\d{2}\/\d{2}\/\d{4}$/.test(values.birthDate)) {
       nextErrors.birthDate = 'Informe a data no formato DD/MM/AAAA.';
     }
-    if (!values.consent) nextErrors.consent = 'Confirme que você entendeu que esta é uma simulação.';
+    if (!values.consent) nextErrors.consent = 'Aceite os termos de compra para continuar.';
     return nextErrors;
   };
 
@@ -91,19 +91,11 @@ export function CheckoutPage({ onBack, onComplete, preferences, search, seat, tr
           <ArrowLeft aria-hidden="true" size={19} /> Voltar aos assentos
         </button>
 
-        <div className="simulation-notice" role="note">
-          <GraduationCap aria-hidden="true" />
-          <div>
-            <strong>Simulação: nenhum pagamento será processado.</strong>
-            <span>Use somente informações fictícias. Nenhum dado sai deste navegador.</span>
-          </div>
-        </div>
-
         <form className="checkout-layout" onSubmit={submit} noValidate>
           <section className="passenger-card" aria-labelledby="passenger-title">
             <span className="eyebrow">Passo 3 de 3</span>
             <h1 id="passenger-title">Dados do passageiro</h1>
-            <p>Todos os campos são obrigatórios. Preencha com dados fictícios para concluir o teste.</p>
+            <p>Todos os campos são obrigatórios e aparecem impressos no bilhete.</p>
 
             {Object.keys(errors).length > 0 ? (
               <div className="error-summary" role="alert" tabIndex={-1} ref={errorSummaryRef}>
@@ -133,7 +125,7 @@ export function CheckoutPage({ onBack, onComplete, preferences, search, seat, tr
             </div>
 
             <div className={`field${errors.cpf ? ' field--error' : ''}`}>
-              <label htmlFor="passenger-cpf">CPF fictício</label>
+              <label htmlFor="passenger-cpf">CPF</label>
               <div className="field__control">
                 <IdCard aria-hidden="true" />
                 <input
@@ -170,7 +162,7 @@ export function CheckoutPage({ onBack, onComplete, preferences, search, seat, tr
               {errors.birthDate ? <span id="passenger-birth-error" className="field__error"><AlertCircle aria-hidden="true" />{errors.birthDate}</span> : null}
             </div>
 
-            <p className="field-note"><Info aria-hidden="true" /> As informações são mantidas apenas na memória desta página.</p>
+            <p className="field-note"><Info aria-hidden="true" /> Confira os dados antes de continuar: eles vão impressos no bilhete.</p>
 
             <label className={`consent-row${errors.consent ? ' consent-row--error' : ''}`}>
               <input
@@ -179,7 +171,7 @@ export function CheckoutPage({ onBack, onComplete, preferences, search, seat, tr
                 aria-invalid={Boolean(errors.consent)}
                 onChange={(event) => updateField('consent', event.target.checked)}
               />
-              <span>Entendi que este fluxo é acadêmico e não gera uma passagem real.</span>
+              <span>Li e aceito os termos de compra e a política de privacidade.</span>
             </label>
             {errors.consent ? <span className="field__error"><AlertCircle aria-hidden="true" />{errors.consent}</span> : null}
           </section>
@@ -199,11 +191,11 @@ export function CheckoutPage({ onBack, onComplete, preferences, search, seat, tr
               <div><dt><Check aria-hidden="true" /> Assento</dt><dd>{seat}</dd></div>
             </dl>
             <div className="checkout-summary__total">
-              <span>Total da simulação</span>
+              <span>Total</span>
               <strong>{formatCurrency(trip.price)}</strong>
             </div>
             <Button className="checkout-submit" variant="yellow" type="submit" fullWidth>
-              <GraduationCap aria-hidden="true" /> Concluir simulação <ArrowRight aria-hidden="true" />
+              <ShieldCheck aria-hidden="true" /> Concluir compra <ArrowRight aria-hidden="true" />
             </Button>
           </aside>
         </form>

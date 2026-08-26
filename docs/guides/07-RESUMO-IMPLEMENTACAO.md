@@ -12,6 +12,7 @@ O projeto recria a jornada principal de compra da ClickBus em um protótipo acad
 - formulário de passageiro com validação acessível;
 - confirmação acadêmica sem pagamento;
 - alto contraste, modo idoso e redução de movimento;
+- tradução em Libras pelo widget gratuito do VLibras (gov.br);
 - navegação por teclado, foco visível e estrutura semântica;
 - persistência local das preferências visuais;
 - layout responsivo para desktop e mobile.
@@ -25,6 +26,10 @@ Troca os tokens da interface por preto, branco e amarelo. É uma alteração de 
 ### Modo idoso
 
 Amplia tipografia, controles e espaçamentos e remove conteúdo secundário. A solução reduz esforço visual e motor sem criar uma jornada separada ou exigir identificação de idade.
+
+### Tradução em Libras
+
+O Rybená, citado como referência de mercado, é licenciado por plano comercial. O VLibras entrega a mesma função — tradução automática de Português para Libras com avatar 3D — de graça e em código aberto (LGPL-3.0), mantido pelo governo brasileiro. A integração custa um script de 2 KB, e o player pesado só é baixado quando alguém abre a tradução.
 
 ### Fluxo linear
 

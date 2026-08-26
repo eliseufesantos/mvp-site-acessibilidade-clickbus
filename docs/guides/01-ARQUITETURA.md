@@ -15,7 +15,7 @@
 app/src/
 ├── app/App.tsx                         # estado e navegação da jornada
 ├── components/
-│   ├── accessibility/                  # painel e status dos modos
+│   ├── accessibility/                  # painel, status dos modos e VLibras
 │   ├── brand/                          # logo oficial vetorizado
 │   ├── layout/                         # cabeçalho global
 │   └── ui/                             # botão, switch e progresso
@@ -25,7 +25,7 @@ app/src/
 │   ├── results/                        # filtros e cards de viagem
 │   ├── seats/                          # mapa e seleção de assento
 │   ├── checkout/                       # dados e validação
-│   └── confirmation/                   # sucesso acadêmico
+│   └── confirmation/                   # confirmação da compra
 ├── hooks/useAccessibilityPreferences.ts
 ├── styles/
 │   ├── tokens.css                      # cores, espaços e modos

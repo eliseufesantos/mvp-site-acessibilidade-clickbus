@@ -27,9 +27,9 @@ As viagens ficam em `app/src/data/trips.ts`. O cenário principal usa:
 - assentos ocupados são desabilitados;
 - o botão “Continuar” só habilita depois da escolha;
 - nome deve ter pelo menos três caracteres;
-- CPF fictício deve conter 11 números;
+- CPF deve conter 11 números;
 - nascimento deve usar `DD/MM/AAAA`;
-- o aviso acadêmico deve ser confirmado.
+- os termos de compra devem ser aceitos.
 
 O formulário não envia dados. O clique final apenas muda o estado local para a tela de confirmação.
 
