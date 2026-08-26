@@ -53,6 +53,12 @@ svg {
   display: block;
 }
 
+/* Icones ficam em containers flex por toda a interface. Sem isto o flex
+   espreme o SVG e o desenho sai distorcido. */
+svg {
+  flex-shrink: 0;
+}
+
 h1,
 h2,
 h3,

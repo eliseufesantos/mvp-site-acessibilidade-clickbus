@@ -6,6 +6,9 @@ const STORAGE_KEY = 'clickbus-a11y-v1';
 const defaultPreferences: AccessibilityPreferences = {
   highContrast: false,
   elderlyMode: false,
+  // A tradução em Libras nasce ligada: quem depende dela não deveria precisar
+  // abrir um menu para encontrá-la.
+  librasWidget: true,
   reducedMotion: false,
 };
 
@@ -18,6 +21,7 @@ const readStoredPreferences = (): AccessibilityPreferences => {
     return {
       highContrast: Boolean(parsed.highContrast),
       elderlyMode: Boolean(parsed.elderlyMode),
+      librasWidget: parsed.librasWidget ?? defaultPreferences.librasWidget,
       reducedMotion: Boolean(parsed.reducedMotion),
     };
   } catch {
@@ -32,6 +36,7 @@ export const useAccessibilityPreferences = () => {
     const root = document.documentElement;
     root.dataset.contrast = String(preferences.highContrast);
     root.dataset.elderly = String(preferences.elderlyMode);
+    root.dataset.libras = String(preferences.librasWidget);
     root.dataset.reducedMotion = String(preferences.reducedMotion);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
   }, [preferences]);
@@ -44,4 +49,3 @@ export const useAccessibilityPreferences = () => {
 
   return { preferences, togglePreference, resetPreferences };
 };
-

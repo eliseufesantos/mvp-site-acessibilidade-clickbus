@@ -1,5 +1,6 @@
 import { ChevronDown, MapPin } from 'lucide-react';
-import { useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
+import { signLibras } from '../../components/accessibility/signLibras';
 
 const cities = [
   'São Paulo (SP)',
@@ -28,6 +29,18 @@ export function LocationCombobox({ label, name, onChange, value }: LocationCombo
     if (!query || cities.includes(value)) return cities;
     return cities.filter((city) => city.toLocaleLowerCase('pt-BR').includes(query));
   }, [value]);
+
+  // O VLibras traduz texto selecionado com o mouse, e ninguém consegue
+  // selecionar dentro de uma lista que fecha ao primeiro clique. Então a opção
+  // em foco é enviada direto ao avatar, com uma pausa curta para não disparar
+  // uma tradução a cada tecla digitada.
+  const activeCity = isOpen ? filteredCities[activeIndex] : undefined;
+
+  useEffect(() => {
+    if (!activeCity) return undefined;
+    const timer = window.setTimeout(() => signLibras(activeCity), 250);
+    return () => window.clearTimeout(timer);
+  }, [activeCity]);
 
   const selectCity = (city: string) => {
     onChange(city);
@@ -91,6 +104,7 @@ export function LocationCombobox({ label, name, onChange, value }: LocationCombo
                 role="option"
                 aria-selected={city === value}
                 onMouseDown={() => selectCity(city)}
+                onMouseEnter={() => setActiveIndex(index)}
               >
                 <MapPin aria-hidden="true" size={18} />
                 {city}

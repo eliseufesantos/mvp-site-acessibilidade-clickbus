@@ -6,7 +6,7 @@
 - `brand/design-system.html`: tokens e componentes visuais extraídos da ClickBus.
 - `scope/Escopo Clickbus_MVP_260826.pdf`: escopo acadêmico original.
 - `audit/`: capturas do site analisado que apoiaram o diagnóstico.
-- `implementation/`: evidências visuais da aplicação implementada.
+- `implementation/`: evidências visuais da aplicação e o HTML A4 que gera o resumo executivo em PDF.
 
 ## Conceitos visuais
 
@@ -28,4 +28,4 @@ Essas imagens são referências de direção visual. A aplicação final prioriz
 - `guides/04-FLUXO-E-DADOS.md`: jornada, estados e dados fictícios.
 - `guides/05-DESENVOLVIMENTO.md`: instalação, comandos e convenções.
 - `guides/06-QA.md`: validações executadas e riscos restantes.
-- `guides/07-RESUMO-IMPLEMENTACAO.md`: conteúdo-fonte do resumo executivo em PDF.
+- `guides/07-RESUMO-IMPLEMENTACAO.md`: resumo técnico das escolhas de implementação.

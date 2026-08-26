@@ -33,6 +33,12 @@ export function AccessibilityPanel({ preferences, onReset, onToggle }: Accessibi
         onChange={() => onToggle('elderlyMode')}
       />
       <Switch
+        checked={preferences.librasWidget}
+        label="Tradução em Libras"
+        description="Mostra o VLibras (gov.br) para traduzir os textos em Libras."
+        onChange={() => onToggle('librasWidget')}
+      />
+      <Switch
         checked={preferences.reducedMotion}
         label="Reduzir animações"
         description="Evita movimentos que podem causar desconforto."
@@ -40,7 +46,8 @@ export function AccessibilityPanel({ preferences, onReset, onToggle }: Accessibi
       />
 
       <p className="accessibility-panel__privacy">
-        Preferências salvas somente neste dispositivo. Não inferimos idade nem diagnóstico.
+        Preferências salvas somente neste dispositivo. Não inferimos idade nem diagnóstico. O
+        VLibras é carregado do servidor público do gov.br.
       </p>
       <Button variant="quiet" onClick={onReset}>
         <RotateCcw aria-hidden="true" size={18} />

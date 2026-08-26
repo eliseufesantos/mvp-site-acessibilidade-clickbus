@@ -57,7 +57,7 @@ export function ResultsPage({ onBack, onSelectTrip, preferences, search }: Resul
           <div>
             <span className="eyebrow">Passo 1 de 3</span>
             <h1>Escolha sua viagem</h1>
-            <p>{visibleTrips.length} opções fictícias encontradas para esta simulação.</p>
+            <p>{visibleTrips.length} opções encontradas para 30 de agosto.</p>
           </div>
           <span className="results-heading__assurance">
             <UsersRound aria-hidden="true" /> Botões e informações essenciais priorizados

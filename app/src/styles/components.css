@@ -691,6 +691,7 @@ html[data-contrast='true'] .clickbus-logo__mark {
 }
 
 .trip-card {
+  position: relative;
   display: grid;
   grid-template-columns: 200px minmax(280px, 1fr) 170px;
   gap: 20px;
@@ -709,7 +710,6 @@ html[data-contrast='true'] .clickbus-logo__mark {
 }
 
 .trip-card__company {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 11px;
@@ -718,6 +718,7 @@ html[data-contrast='true'] .clickbus-logo__mark {
 .trip-card__company-icon {
   display: grid;
   place-items: center;
+  flex-shrink: 0;
   width: 42px;
   height: 42px;
   border-radius: 50%;
@@ -742,10 +743,10 @@ html[data-contrast='true'] .clickbus-logo__mark {
 
 .status-badge {
   position: absolute;
-  top: -36px;
-  left: -22px;
-  padding: 5px 10px;
-  border-radius: 0 0 var(--radius-sm) 0;
+  top: 0;
+  left: 0;
+  padding: 5px 12px;
+  border-radius: var(--radius-md) 0 var(--radius-sm) 0;
   background: var(--cb-yellow);
   color: #111111;
   font-size: 0.7rem !important;
@@ -1052,34 +1053,6 @@ html[data-contrast='true'] .seat--occupied {
 }
 
 /* Checkout */
-.simulation-notice {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  margin: 18px 0;
-  padding: 16px 20px;
-  border: 2px solid var(--cb-warning-border);
-  border-radius: var(--radius-sm);
-  background: var(--cb-warning-surface);
-  color: var(--cb-text);
-}
-
-.simulation-notice > svg {
-  flex: 0 0 auto;
-  color: #bf8b00;
-}
-
-.simulation-notice strong,
-.simulation-notice span {
-  display: block;
-}
-
-.simulation-notice span {
-  margin-top: 3px;
-  color: var(--cb-muted);
-  font-size: 0.9rem;
-}
-
 .checkout-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.8fr);
@@ -1307,6 +1280,13 @@ html[data-contrast='true'] .seat--occupied {
 .site-footer span {
   color: var(--cb-muted);
   font-size: 0.82rem;
+}
+
+/* O VLibras injeta o botão flutuante no fim do body, fora do React e em shadow DOM.
+   Por isso a preferência só controla a exibição dos elementos criados por ele. */
+html[data-libras='false'] #vlibras-access-wrapper,
+html[data-libras='false'] #vlibras-app-root {
+  display: none !important;
 }
 
 /* Elderly mode amplifies the main task and removes secondary navigation. */

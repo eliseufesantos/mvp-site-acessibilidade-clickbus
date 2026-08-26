@@ -2,7 +2,7 @@
 
 Projeto acadêmico que simula a jornada principal da ClickBus com melhorias de acessibilidade de baixo custo e alto impacto visual.
 
-O MVP está implementado e inclui busca, resultados, seleção de assento, formulário de passageiro, confirmação simulada, alto contraste, modo idoso e redução de movimento.
+O MVP está implementado e inclui busca, resultados, seleção de assento, formulário de passageiro, confirmação simulada, alto contraste, modo idoso, tradução em Libras pelo VLibras e redução de movimento.
 
 ## Estrutura
 

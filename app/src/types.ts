@@ -21,6 +21,6 @@ export interface Trip {
 export interface AccessibilityPreferences {
   highContrast: boolean;
   elderlyMode: boolean;
+  librasWidget: boolean;
   reducedMotion: boolean;
 }
-

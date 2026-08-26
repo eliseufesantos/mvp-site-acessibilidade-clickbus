@@ -6,7 +6,7 @@ const steps = ['Viagem', 'Assento', 'Passageiro'];
 
 export function StepProgress({ activeStep }: StepProgressProps) {
   return (
-    <nav className="step-progress" aria-label="Etapas da simulação">
+    <nav className="step-progress" aria-label="Etapas da compra">
       <ol>
         {steps.map((label, index) => {
           const number = index + 1;

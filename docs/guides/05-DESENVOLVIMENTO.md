@@ -32,10 +32,12 @@ pnpm build
 Para regenerar o resumo executivo em PDF a partir da raiz do projeto:
 
 ```bash
-python scripts/build_implementation_summary.py
+node scripts/build-implementation-summary.mjs
 ```
 
-O resultado é salvo em `output/pdf/Resumo_Implementacao_MVP_ClickBus_Acessivel.pdf`.
+O conteúdo vive em `docs/implementation/resumo-implementacao-a4.html`, um documento A4 que pode ser aberto direto no navegador. O script imprime esse HTML com o Chrome ou o Edge do sistema em modo headless, sem dependências de npm, e salva em `output/pdf/Resumo_Implementacao_MVP_ClickBus_Acessivel.pdf`.
+
+As capturas usadas no PDF ficam na mesma pasta do HTML e são referenciadas por caminho relativo. Se mover o HTML, mova as imagens junto.
 
 ## Convenções
 
@@ -45,7 +47,7 @@ O resultado é salvo em `output/pdf/Resumo_Implementacao_MVP_ClickBus_Acessivel.
 - regras de negócio dentro da feature correspondente;
 - tokens visuais em `styles/tokens.css`;
 - ícones de interface via Lucide;
-- sem dados reais ou chamadas externas no MVP.
+- sem dados reais nem chamadas de negócio externas; a única dependência de rede é o widget do VLibras.
 
 ## Alterações comuns
 
@@ -53,4 +55,4 @@ O resultado é salvo em `output/pdf/Resumo_Implementacao_MVP_ClickBus_Acessivel.
 - nova preferência: ampliar `AccessibilityPreferences`, o hook e o painel;
 - nova cor ou dimensão global: editar `styles/tokens.css`;
 - nova etapa: editar `JourneyStep` e `App.tsx`;
-- novo texto acadêmico: manter explícito que não há compra real.
+- nova evidência para o PDF: gerar a captura, salvar em `docs/implementation/` e referenciar no HTML A4.
