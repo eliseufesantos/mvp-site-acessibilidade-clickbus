@@ -1,0 +1,9 @@
+app/node_modules/
+app/dist/
+app/.vite/
+app/*.tsbuildinfo
+app/vite.config.js
+app/vite.config.d.ts
+.pnpm-store/
+tmp/
+*.log

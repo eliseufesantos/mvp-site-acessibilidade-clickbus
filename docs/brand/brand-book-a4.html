@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>ClickBus — Brand Book</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;800&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary:    #A528FF;
+    --secondary:  #FFC800;
+    --tertiary:   #8629CC;
+    --bg:         #ffffff;
+    --surface:    #FAFAFA;
+    --border:     #EBEBEB;
+    --text:       #222222;
+    --muted:      #767676;
+    --display-font: 'Rubik', sans-serif;
+    --mono-font:    'Roboto Mono', monospace;
+  }
+
+  @page { size: A4; margin: 0; }
+  html, body { margin: 0; padding: 0; background: var(--bg); }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .page {
+    width: 210mm; height: 297mm;
+    background: var(--bg); color: var(--text);
+    font-family: var(--display-font);
+    padding: 18mm 16mm 14mm;
+    display: flex; flex-direction: column; gap: 8mm;
+    position: relative; overflow: hidden;
+  }
+
+  .head { display: flex; align-items: center; justify-content: space-between; gap: 12mm; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+  .brand .sub { margin: 0; font-size: 10px; color: var(--muted); font-family: var(--mono-font); letter-spacing: 1.5px; text-transform: uppercase; }
+  .brand-meta { text-align: right; font-family: var(--mono-font); font-size: 9px; color: var(--muted); letter-spacing: 1.2px; text-transform: uppercase; }
+  .brand-meta .tag { color: var(--primary); }
+
+  .section-label { font-family: var(--mono-font); font-size: 10px; letter-spacing: 2px; color: var(--primary); text-transform: uppercase; margin-bottom: 6px; }
+
+  .colors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6mm; }
+  .swatch { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .swatch .fill { height: 26mm; }
+  .swatch .meta { padding: 8px 10px; background: var(--surface); }
+  .swatch .tier { font-size: 11px; font-weight: 700; display: block; }
+  .swatch .hex { font-family: var(--mono-font); font-size: 10px; color: var(--muted); display: block; margin-top: 2px; }
+  .swatch .use { font-size: 9.5px; color: var(--muted); line-height: 1.35; margin-top: 4px; display: block; }
+
+  .twocol { display: grid; grid-template-columns: 1fr; gap: 8mm; }
+  .card { border: 1px solid var(--border); border-radius: 8px; padding: 6mm; background: var(--surface); }
+
+  .type-display { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; color: var(--text); line-height: 1; margin: 0; }
+  .type-body { font-size: 11px; color: var(--muted); line-height: 1.5; margin: 3mm 0 0; }
+  .type-mono { font-family: var(--mono-font); font-size: 9.5px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 3mm; display: block; }
+
+  .wordmarks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6mm; }
+  .wm { border: 1px solid var(--border); border-radius: 8px; padding: 6mm; background: var(--surface); display: flex; flex-direction: column; gap: 6px; min-height: 30mm; justify-content: center; }
+  .wm .lockup { display: flex; align-items: center; gap: 10px; }
+  .wm .name { font-weight: 800; font-size: 18px; letter-spacing: 4px; color: var(--text); text-transform: uppercase; }
+  .wm .name .lo { font-weight: 300; color: var(--muted); }
+  .wm .tag { font-size: 10px; color: var(--muted); line-height: 1.4; }
+  .wm .mono { font-family: var(--mono-font); font-size: 8.5px; color: var(--muted); letter-spacing: 1.2px; text-transform: uppercase; margin-top: auto; display: block; }
+
+  .foot { display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto; padding-top: 4mm; border-top: 1px solid var(--border); font-family: var(--mono-font); font-size: 8.5px; color: var(--muted); letter-spacing: 1.2px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEAD -->
+  <div class="head">
+    <div class="brand">
+      <svg style="height:36px;width:auto;" viewBox="0 0 162 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M111.737 35.1508V32.2379H117.735C118.758 32.2379 119.311 32.7374 119.311 33.6528C119.311 34.596 118.758 35.1508 117.735 35.1508H111.737ZM107.093 38.7019H118.591C121.881 38.7019 124.094 36.7322 124.094 33.9025C124.094 31.9329 122.684 30.518 120.555 30.0741C122.38 29.658 123.43 28.2986 123.43 26.3846C123.43 24.0542 121.522 22.3896 118.039 22.3896H107.093V38.7019ZM111.737 28.798V25.8852H117.293C118.233 25.8852 118.842 26.44 118.842 27.3555C118.842 28.2986 118.233 28.798 117.293 28.798H111.737ZM134.819 39.0624C140.32 39.0624 143.196 36.3438 143.196 31.6831V22.3896H138.441V31.6276C138.441 33.5418 137.031 34.7626 134.819 34.7626C132.525 34.7626 131.225 33.5418 131.225 31.6276V22.3896H126.471V31.6831C126.471 36.3438 129.706 39.0624 134.819 39.0624ZM32.9285 39.0624C37.6833 39.0624 40.9453 36.5379 41.2493 32.1825H36.467C36.2734 33.5973 35.1125 34.7626 32.7904 34.7626C29.9707 34.7626 28.5056 33.0425 28.5056 30.5458C28.5056 27.9658 29.8601 26.3012 32.7351 26.3012C35.0572 26.3012 36.2734 27.4942 36.467 28.9645H41.2493C41.0558 25.0807 38.2361 22.0291 32.6246 22.0291C27.1788 22.0291 23.751 25.2748 23.751 30.629C23.751 35.9277 27.3999 39.0624 32.9285 39.0624ZM154.169 39.0624C159.422 39.0624 161.992 37.0373 161.992 33.7639C161.992 30.9064 160.169 29.2141 156.382 28.7148L154.529 28.4652C151.709 28.0767 150.742 27.8549 150.742 26.9948C150.742 26.2457 151.599 25.7464 153.672 25.7464C156.215 25.7464 158.841 26.2457 160.777 26.8562V23.0833C159.422 22.5284 156.988 22.0291 154.114 22.0291C148.834 22.0291 146.098 24.0265 146.098 27.2999C146.098 30.2962 148.253 31.7665 151.959 32.349L153.921 32.6541C156.436 33.0425 157.293 33.3477 157.293 34.0689C157.293 34.7626 156.603 35.3451 154.474 35.3451C151.847 35.3451 148.917 34.6515 146.456 33.625V37.5921C148.309 38.3689 150.991 39.0624 154.169 39.0624ZM48.0496 38.7019H57.1997V34.7348H49.6807C48.8513 34.7348 48.4919 34.3741 48.4919 33.5418V22.3896H43.7373V34.3741C43.7373 36.9264 45.5064 38.7019 48.0496 38.7019ZM60.4617 38.7019H65.216V22.3896H60.4617V38.7019ZM77.048 39.0624C81.8031 39.0624 85.0637 36.5379 85.3678 32.1825H80.5865C80.392 33.5973 79.231 34.7626 76.9091 34.7626C74.09 34.7626 72.6249 33.0425 72.6249 30.5458C72.6249 27.9658 73.9788 26.3012 76.855 26.3012C79.177 26.3012 80.392 27.4942 80.5865 28.9645H85.3678C85.1748 25.0807 82.3558 22.0291 76.7439 22.0291C71.2972 22.0291 67.8698 25.2748 67.8698 30.629C67.8698 35.9277 71.5195 39.0624 77.048 39.0624ZM88.0773 38.7019H92.7212V33.625C93.7725 33.2645 94.8223 32.8206 95.7903 32.2658C97.6152 34.4296 98.6094 36.2606 99.5218 38.7019H104.718C103.808 35.6502 101.54 31.6554 99.3844 29.6857C101.595 27.7161 103.253 25.2748 104.166 22.3896H99.2733C98.4164 25.0807 95.9015 27.8549 92.7212 29.1864V22.3896H88.0773V38.7019Z" fill="#1A1A1A"/>
+        <path d="M1.80185 32.2101H17.5034C17.9181 32.2101 18.1944 31.905 18.1944 31.5166V30.8231C18.1944 21.7515 23.5297 16.6748 32.9839 16.6748H92.031C92.4447 16.6748 92.7211 16.3973 92.7211 15.9812V1.08393C92.7211 0.66778 92.4447 0.39045 92.031 0.39045H30.0259C12.721 0.39045 0.585449 10.8213 0.585449 25.6631C0.585449 27.9657 0.69614 29.8244 0.972489 31.4334C1.05539 31.905 1.30427 32.2101 1.80185 32.2101Z" fill="#A528FF"/>
+      </svg>
+      <div>
+        <h1>ClickBus Brand Book</h1>
+        <p class="sub">Passagens de Ônibus Online</p>
+      </div>
+    </div>
+    <div class="brand-meta">
+      v1 · 2026-08-26<br/>
+      <span class="tag">Compre passagens de forma segura.</span>
+    </div>
+  </div>
+
+  <!-- COLOR HIERARCHY -->
+  <div>
+    <div class="section-label">Color Hierarchy</div>
+    <div class="colors">
+      <div class="swatch"><div class="fill" style="background:var(--primary)"></div><div class="meta"><span class="tier" style="color:var(--primary)">Primary</span><span class="hex">#A528FF</span><span class="use">Buttons, accents, main UI elements.</span></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--secondary)"></div><div class="meta"><span class="tier" style="color:var(--secondary)">Secondary</span><span class="hex">#FFC800</span><span class="use">Highlights, price tags, alerts.</span></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--tertiary)"></div><div class="meta"><span class="tier" style="color:var(--tertiary)">Tertiary</span><span class="hex">#8629CC</span><span class="use">Hover states, darker accents.</span></div></div>
+    </div>
+  </div>
+
+  <!-- TYPOGRAPHY -->
+  <div class="twocol">
+    <div>
+      <div class="section-label">Typography</div>
+      <div class="card">
+        <p class="type-display">Viajar pelo Brasil<br/>Ficou mais fácil.</p>
+        <p class="type-body">ClickBus relies on Rubik for its friendly, rounded geometry which conveys safety, approachability, and ease of use—essential traits for a travel platform.</p>
+        <span class="type-mono">Roboto Mono · Labels · Codes</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORDMARKS -->
+  <div>
+    <div class="section-label">Wordmarks · Lockups</div>
+    <div class="wordmarks">
+      <div class="wm">
+        <div class="lockup">
+          <svg style="height:24px;width:auto;" viewBox="0 0 162 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M111.737 35.1508V32.2379H117.735C118.758 32.2379 119.311 32.7374 119.311 33.6528C119.311 34.596 118.758 35.1508 117.735 35.1508H111.737ZM107.093 38.7019H118.591C121.881 38.7019 124.094 36.7322 124.094 33.9025C124.094 31.9329 122.684 30.518 120.555 30.0741C122.38 29.658 123.43 28.2986 123.43 26.3846C123.43 24.0542 121.522 22.3896 118.039 22.3896H107.093V38.7019ZM111.737 28.798V25.8852H117.293C118.233 25.8852 118.842 26.44 118.842 27.3555C118.842 28.2986 118.233 28.798 117.293 28.798H111.737ZM134.819 39.0624C140.32 39.0624 143.196 36.3438 143.196 31.6831V22.3896H138.441V31.6276C138.441 33.5418 137.031 34.7626 134.819 34.7626C132.525 34.7626 131.225 33.5418 131.225 31.6276V22.3896H126.471V31.6831C126.471 36.3438 129.706 39.0624 134.819 39.0624ZM32.9285 39.0624C37.6833 39.0624 40.9453 36.5379 41.2493 32.1825H36.467C36.2734 33.5973 35.1125 34.7626 32.7904 34.7626C29.9707 34.7626 28.5056 33.0425 28.5056 30.5458C28.5056 27.9658 29.8601 26.3012 32.7351 26.3012C35.0572 26.3012 36.2734 27.4942 36.467 28.9645H41.2493C41.0558 25.0807 38.2361 22.0291 32.6246 22.0291C27.1788 22.0291 23.751 25.2748 23.751 30.629C23.751 35.9277 27.3999 39.0624 32.9285 39.0624ZM154.169 39.0624C159.422 39.0624 161.992 37.0373 161.992 33.7639C161.992 30.9064 160.169 29.2141 156.382 28.7148L154.529 28.4652C151.709 28.0767 150.742 27.8549 150.742 26.9948C150.742 26.2457 151.599 25.7464 153.672 25.7464C156.215 25.7464 158.841 26.2457 160.777 26.8562V23.0833C159.422 22.5284 156.988 22.0291 154.114 22.0291C148.834 22.0291 146.098 24.0265 146.098 27.2999C146.098 30.2962 148.253 31.7665 151.959 32.349L153.921 32.6541C156.436 33.0425 157.293 33.3477 157.293 34.0689C157.293 34.7626 156.603 35.3451 154.474 35.3451C151.847 35.3451 148.917 34.6515 146.456 33.625V37.5921C148.309 38.3689 150.991 39.0624 154.169 39.0624ZM48.0496 38.7019H57.1997V34.7348H49.6807C48.8513 34.7348 48.4919 34.3741 48.4919 33.5418V22.3896H43.7373V34.3741C43.7373 36.9264 45.5064 38.7019 48.0496 38.7019ZM60.4617 38.7019H65.216V22.3896H60.4617V38.7019ZM77.048 39.0624C81.8031 39.0624 85.0637 36.5379 85.3678 32.1825H80.5865C80.392 33.5973 79.231 34.7626 76.9091 34.7626C74.09 34.7626 72.6249 33.0425 72.6249 30.5458C72.6249 27.9658 73.9788 26.3012 76.855 26.3012C79.177 26.3012 80.392 27.4942 80.5865 28.9645H85.3678C85.1748 25.0807 82.3558 22.0291 76.7439 22.0291C71.2972 22.0291 67.8698 25.2748 67.8698 30.629C67.8698 35.9277 71.5195 39.0624 77.048 39.0624ZM88.0773 38.7019H92.7212V33.625C93.7725 33.2645 94.8223 32.8206 95.7903 32.2658C97.6152 34.4296 98.6094 36.2606 99.5218 38.7019H104.718C103.808 35.6502 101.54 31.6554 99.3844 29.6857C101.595 27.7161 103.253 25.2748 104.166 22.3896H99.2733C98.4164 25.0807 95.9015 27.8549 92.7212 29.1864V22.3896H88.0773V38.7019Z" fill="#1A1A1A"/>
+            <path d="M1.80185 32.2101H17.5034C17.9181 32.2101 18.1944 31.905 18.1944 31.5166V30.8231C18.1944 21.7515 23.5297 16.6748 32.9839 16.6748H92.031C92.4447 16.6748 92.7211 16.3973 92.7211 15.9812V1.08393C92.7211 0.66778 92.4447 0.39045 92.031 0.39045H30.0259C12.721 0.39045 0.585449 10.8213 0.585449 25.6631C0.585449 27.9657 0.69614 29.8244 0.972489 31.4334C1.05539 31.905 1.30427 32.2101 1.80185 32.2101Z" fill="#A528FF"/>
+          </svg>
+        </div>
+        <p class="tag">Standard brand logo.</p>
+        <span class="mono">Mark + wordmark</span>
+      </div>
+      <div class="wm">
+        <div class="lockup"><span class="name">CLICK<span class="lo">BUS</span></span></div>
+        <p class="tag">For simple text references.</p>
+        <span class="mono">Split weight lockup</span>
+      </div>
+      <div class="wm">
+        <div class="lockup"><span class="name" style="color:var(--primary)">CLICK<span class="lo" style="color:var(--text);font-weight:800">BUS</span></span></div>
+        <p class="tag">Text accent reference.</p>
+        <span class="mono">Accent lockup</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="foot">
+    <span>ClickBus Design System</span>
+    <span>design/brand-book-a4.html</span>
+  </div>
+</div>
+</body>
+</html>

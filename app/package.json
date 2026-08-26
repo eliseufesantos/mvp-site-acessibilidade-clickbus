@@ -1,0 +1,27 @@
+{
+  "name": "clickbus-accessibility-mvp",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit -p tsconfig.app.json && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json --pretty false"
+  },
+  "dependencies": {
+    "@fontsource/roboto-mono": "^5.2.6",
+    "@fontsource/rubik": "^5.2.6",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "esbuild": "0.25.12",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.5"
+  }
+}
