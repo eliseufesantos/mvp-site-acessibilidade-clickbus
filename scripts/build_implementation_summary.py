@@ -52,13 +52,13 @@ def page_chrome(canvas, doc):
     canvas.rect(0, height - 7 * mm, width, 7 * mm, stroke=0, fill=1)
     canvas.setFillColor(INK)
     canvas.setFont(BOLD, 10)
-    canvas.drawString(18 * mm, height - 15 * mm, "CLICKBUS | MVP ACESSIVEL")
+    canvas.drawString(18 * mm, height - 15 * mm, "CLICKBUS | MVP ACESSÍVEL")
     canvas.setStrokeColor(BORDER)
     canvas.line(18 * mm, 14 * mm, width - 18 * mm, 14 * mm)
     canvas.setFillColor(MUTED)
     canvas.setFont(REGULAR, 8)
-    canvas.drawString(18 * mm, 9 * mm, "Projeto academico - nenhum pagamento e processado")
-    canvas.drawRightString(width - 18 * mm, 9 * mm, f"Pagina {doc.page}")
+    canvas.drawString(18 * mm, 9 * mm, "Projeto acadêmico - nenhum pagamento é processado")
+    canvas.drawRightString(width - 18 * mm, 9 * mm, f"Página {doc.page}")
     canvas.restoreState()
 
 
@@ -162,23 +162,23 @@ def build_pdf():
         leftMargin=18 * mm,
         topMargin=23 * mm,
         bottomMargin=20 * mm,
-        title="Resumo da Implementacao do MVP ClickBus Acessivel",
-        author="Projeto academico ClickBus",
-        subject="Implementacoes e justificativas do MVP de acessibilidade",
+        title="Resumo da Implementação do MVP ClickBus Acessível",
+        author="Projeto acadêmico ClickBus",
+        subject="Implementações e justificativas do MVP de acessibilidade",
     )
 
     story = []
     story.append(Spacer(1, 13 * mm))
-    story.append(Paragraph("MVP ClickBus<br/><font color='#A528FF'>acessivel</font>", title))
+    story.append(Paragraph("MVP ClickBus<br/><font color='#A528FF'>acessível</font>", title))
     story.append(
         Paragraph(
-            "Resumo breve das funcionalidades implementadas, das decisoes de escopo e dos ganhos esperados para a jornada de compra.",
+            "Resumo breve das funcionalidades implementadas, das decisões de escopo e dos ganhos esperados para a jornada de compra.",
             subtitle,
         )
     )
 
     notice = Table(
-        [[Paragraph("ESCOPO ACADEMICO", card_title), Paragraph("Frontend funcional com dados locais e ficticios. Sem backend, emissao de passagem ou pagamento.", body)]],
+        [[Paragraph("ESCOPO ACADÊMICO", card_title), Paragraph("Frontend funcional com dados locais e fictícios. Sem backend, emissão de passagem ou pagamento.", body)]],
         colWidths=[42 * mm, 118 * mm],
     )
     notice.setStyle(
@@ -199,14 +199,14 @@ def build_pdf():
     story.append(Paragraph("Objetivo", heading))
     story.append(
         Paragraph(
-            "Recriar a jornada principal da ClickBus com quick wins de acessibilidade que sejam baratos de implementar, visualmente evidentes e reutilizaveis em todo o fluxo.",
+            "Recriar a jornada principal da ClickBus com quick wins de acessibilidade que sejam baratos de implementar, visualmente evidentes e reutilizáveis em todo o fluxo.",
             body,
         )
     )
     story.append(Spacer(1, 5 * mm))
 
     metrics = Table(
-        [[metric_box("5", "etapas de tela"), metric_box("3", "modos visuais"), metric_box("2", "viewports testados"), metric_box("0", "pagamentos reais")]],
+        [[metric_box("5", "etapas de tela"), metric_box("3", "modos visuais"), metric_box("2", "tamanhos de tela testados"), metric_box("0", "pagamentos reais")]],
         colWidths=[40 * mm] * 4,
     )
     metrics.setStyle(
@@ -225,49 +225,49 @@ def build_pdf():
     story.append(Paragraph("Resultado esperado", heading))
     story.append(
         Paragraph(
-            "O MVP demonstra que ajustes concentrados em tokens visuais, semantica, foco, tamanho de controles e simplificacao de conteudo podem melhorar a experiencia sem reconstruir toda a plataforma.",
+            "O MVP demonstra que ajustes concentrados em tokens visuais, semântica, foco, tamanho de controles e simplificação de conteúdo podem melhorar a experiência sem reconstruir toda a plataforma.",
             body,
         )
     )
     story.append(PageBreak())
 
     story.append(Spacer(1, 8 * mm))
-    story.append(Paragraph("O que foi implementado e por que", page_title))
+    story.append(Paragraph("O que foi implementado e por quê", page_title))
     feature_rows = [
         [
             feature_cell(
                 "Busca e resultados",
-                "Origem, destino, data, viagens ficticias e filtros imediatos.",
-                "Mantem a tarefa central reconhecivel e permite demonstrar o ganho sem depender de API.",
+                "Origem, destino, data, viagens fictícias e filtros imediatos.",
+                "Mantém a tarefa central reconhecível e permite demonstrar o ganho sem depender de API.",
             ),
             feature_cell(
-                "Selecao de assento",
-                "Mapa simplificado, estados livre/ocupado/selecionado e navegacao por setas.",
-                "Reduz ambiguidade e cria alvos maiores para teclado, mouse e toque.",
+                "Seleção de assento",
+                "Mapa simplificado, estados livre/ocupado/selecionado e navegação por setas.",
+                "Reduz a ambiguidade e cria alvos maiores para teclado, mouse e toque.",
             ),
         ],
         [
             feature_cell(
                 "Alto contraste",
                 "Tokens globais em preto, branco e amarelo, com bordas e foco reforcados.",
-                "Uma unica camada CSS gera retorno visual imediato em toda a jornada.",
+                "Uma única camada CSS gera retorno visual imediato em toda a jornada.",
             ),
             feature_cell(
                 "Modo idoso",
-                "Fonte, controles e espacamentos maiores, com retirada de conteudo secundario.",
-                "Diminui esforco visual e motor sem criar uma experiencia separada.",
+                "Fonte, controles e espaçamentos maiores, com retirada de conteúdo secundário.",
+                "Diminui o esforço visual e motor sem criar uma experiência separada.",
             ),
         ],
         [
             feature_cell(
-                "Validacao acessivel",
-                "Resumo de erros focavel, mensagens associadas aos campos e remocao ao corrigir.",
-                "Ajuda o usuario a entender e resolver cada problema com menos retrabalho.",
+                "Validação acessível",
+                "Resumo de erros focável, mensagens associadas aos campos e remoção ao corrigir.",
+                "Ajuda o usuário a entender e resolver cada problema com menos retrabalho.",
             ),
             feature_cell(
-                "Preferencias persistentes",
+                "Preferências persistentes",
                 "Contraste, modo idoso e movimento reduzido ficam salvos no navegador.",
-                "Evita repetir configuracoes durante o fluxo e nao exige cadastro.",
+                "Evita repetir configurações durante o fluxo e não exige cadastro.",
             ),
         ],
     ]
@@ -288,13 +288,13 @@ def build_pdf():
     )
     story.append(features)
     story.append(Spacer(1, 7 * mm))
-    story.append(Paragraph("Decisoes de baixo custo", heading))
+    story.append(Paragraph("Decisões de baixo custo", heading))
     decisions = [
-        ["Decisao", "Justificativa e retorno"],
-        ["React sem roteador", "O fluxo e linear; menos dependencia e menor custo de manutencao."],
-        ["Dados locais", "Demonstracao previsivel, segura e independente de servicos externos."],
-        ["Tokens CSS", "Uma alteracao controla todas as telas e facilita futuras evolucoes."],
-        ["Sem pagamento", "Evita risco, dados sensiveis e trabalho fora do escopo academico."],
+        ["Decisão", "Justificativa e retorno"],
+        ["React sem roteador", "O fluxo é linear; menos dependência e menor custo de manutenção."],
+        ["Dados locais", "Demonstração previsível, segura e independente de serviços externos."],
+        ["Tokens CSS", "Uma alteração controla todas as telas e facilita futuras evoluções."],
+        ["Sem pagamento", "Evita riscos, dados sensíveis e trabalho fora do escopo acadêmico."],
     ]
     decision_table = Table(decisions, colWidths=[48 * mm, 108 * mm], repeatRows=1)
     decision_table.setStyle(
@@ -318,10 +318,10 @@ def build_pdf():
     story.append(PageBreak())
 
     story.append(Spacer(1, 8 * mm))
-    story.append(Paragraph("Evidencia e validacao", page_title))
+    story.append(Paragraph("Evidência e validação", page_title))
     story.append(
         Paragraph(
-            "Tela real do MVP com alto contraste e modo idoso ativos. O estado combina tipografia ampliada, controles grandes, preto, branco e amarelo e um aviso explicito de simulacao.",
+            "Tela real do MVP com alto contraste e modo idoso ativos. O estado combina tipografia ampliada, controles grandes, preto, branco e amarelo e um aviso explícito de simulação.",
             body,
         )
     )
@@ -330,13 +330,13 @@ def build_pdf():
         screenshot.hAlign = "CENTER"
         story.append(screenshot)
         story.append(Spacer(1, 3 * mm))
-        story.append(Paragraph("Checkout simulado - captura da implementacao em 1440 px.", small))
+        story.append(Paragraph("Checkout simulado - captura da implementação em 1440 px.", small))
     else:
-        story.append(Paragraph("Captura indisponivel neste ambiente; a validacao funcional permanece registrada no guia de QA.", small))
+        story.append(Paragraph("Captura indisponível neste ambiente; a validação funcional permanece registrada no guia de QA.", small))
 
     story.append(Spacer(1, 5 * mm))
     qa_data = [
-        ["Verificacao", "Resultado"],
+        ["Verificação", "Resultado"],
         ["Typecheck e build Vite", "Aprovados"],
         ["Jornada completa", "Aprovada"],
         ["Console do navegador", "Sem erros"],
@@ -364,7 +364,7 @@ def build_pdf():
     story.append(Spacer(1, 4 * mm))
     story.append(
         Paragraph(
-            "<b>Limite assumido:</b> o MVP nao substitui uma auditoria completa com leitores de tela reais. Integracao com API, autenticacao, compra, pagamento e emissao permanecem fora do escopo.",
+            "<b>Limite assumido:</b> o MVP não substitui uma auditoria completa com leitores de tela reais. Integração com API, autenticação, compra, pagamento e emissão permanecem fora do escopo.",
             small,
         )
     )

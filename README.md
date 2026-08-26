@@ -30,6 +30,12 @@ pnpm build
 pnpm preview
 ```
 
+## Deploy na Vercel
+
+O arquivo `vercel.json` da raiz executa o build da aplicação em `app/` e publica `app/dist`. Ao importar o repositório, mantenha o campo **Root Directory** vazio.
+
+O diagnóstico de `404: NOT_FOUND` e o passo a passo de configuração estão em [`docs/guides/08-DEPLOY-VERCEL.md`](docs/guides/08-DEPLOY-VERCEL.md).
+
 O protótipo é uma simulação acadêmica: não consulta horários reais, não cria pedidos e não processa pagamentos.
 
 Para continuar o projeto em outra sessão ou ferramenta, comece por [`docs/guides/00-CONTINUAR-PROJETO.md`](docs/guides/00-CONTINUAR-PROJETO.md).
