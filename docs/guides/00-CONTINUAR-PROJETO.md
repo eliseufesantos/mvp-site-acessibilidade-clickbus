@@ -31,6 +31,8 @@ Acesse `http://127.0.0.1:4173/`.
 4. `04-FLUXO-E-DADOS.md`
 5. `05-DESENVOLVIMENTO.md`
 6. `06-QA.md`
+7. `07-RESUMO-IMPLEMENTACAO.md`
+8. `08-DEPLOY-VERCEL.md`
 
 ## Próximos incrementos possíveis
 
@@ -41,4 +43,3 @@ Acesse `http://127.0.0.1:4173/`.
 - executar auditoria Lighthouse/axe e documentar os resultados.
 
 Mantenha o caráter acadêmico visível: dados, horários, preços e passageiros são fictícios.
-

@@ -29,6 +29,14 @@ pnpm typecheck
 pnpm build
 ```
 
+Para regenerar o resumo executivo em PDF a partir da raiz do projeto:
+
+```bash
+python scripts/build_implementation_summary.py
+```
+
+O resultado é salvo em `output/pdf/Resumo_Implementacao_MVP_ClickBus_Acessivel.pdf`.
+
 ## Convenções
 
 - componentes em PascalCase;
@@ -46,4 +54,3 @@ pnpm build
 - nova cor ou dimensão global: editar `styles/tokens.css`;
 - nova etapa: editar `JourneyStep` e `App.tsx`;
 - novo texto acadêmico: manter explícito que não há compra real.
-
