@@ -8,7 +8,6 @@ Os anexos recebidos foram preservados em:
 - `docs/brand/brand-book-a4.html`
 - `docs/brand/design-system.html`
 
-Os conceitos visuais usados durante a implementação ficam em `docs/concepts/`.
 
 ## Tokens principais
 
