@@ -1,8 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "installCommand": "pnpm --dir app install --frozen-lockfile",
-  "buildCommand": "pnpm --dir app build",
+  "installCommand": "npx --yes pnpm@10.28.0 --dir app install --frozen-lockfile",
+  "buildCommand": "npx --yes pnpm@10.28.0 --dir app build",
   "outputDirectory": "app/dist",
   "rewrites": [
     {

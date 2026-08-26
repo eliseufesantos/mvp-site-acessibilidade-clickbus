@@ -14,9 +14,11 @@ Ao importar o repositório na Vercel:
 O build configurado equivale a:
 
 ```bash
-pnpm --dir app install --frozen-lockfile
-pnpm --dir app build
+npx --yes pnpm@10.28.0 --dir app install --frozen-lockfile
+npx --yes pnpm@10.28.0 --dir app build
 ```
+
+A versão do pnpm está fixada porque comandos de instalação personalizados sem uma versão explícita podem fazer a Vercel selecionar um pnpm antigo. O lockfile deste projeto usa o formato 9, compatível com pnpm 9 e 10.
 
 A saída publicada é `app/dist`. A regra de `rewrites` direciona URLs da aplicação para `index.html`, permitindo que a SPA seja carregada ao acessar ou atualizar uma rota.
 
@@ -36,6 +38,10 @@ Se o painel tiver sido configurado anteriormente com **Root Directory = app**, h
 - alternativa: mantenha `app` como raiz e configure manualmente `Build Command = pnpm build` e `Output Directory = dist`.
 
 Não misture as duas configurações, pois os caminhos podem ser duplicados (`app/app`).
+
+## Se aparecer `Ignoring not compatible lockfile`
+
+Confirme que o deployment está usando o `vercel.json` atual, cujo `installCommand` começa com `npx --yes pnpm@10.28.0`. A versão explícita evita que a Vercel descarte `app/pnpm-lock.yaml` e falhe com `Headless installation requires a pnpm-lock.yaml file`.
 
 ## Validação local
 
