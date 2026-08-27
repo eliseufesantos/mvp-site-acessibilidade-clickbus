@@ -3,12 +3,12 @@
  *
  *   node scripts/build-implementation-summary.mjs
  *
- * Fonte:  docs/implementation/resumo-implementacao-a4.html
- * Saída:  output/pdf/Resumo_Implementacao_MVP_ClickBus_Acessivel.pdf
+ * Fonte:  docs/resumo-implementacao.html
+ * Saída:  entregas/Resumo_Implementacao_MVP_ClickBus_Acessivel.pdf
  *
  * Usa o Chrome ou o Edge já instalados no sistema em modo headless, sem
- * dependências de npm. As imagens são referenciadas por caminho relativo,
- * então o HTML precisa continuar na mesma pasta das capturas.
+ * dependências de npm. O HTML é auto-contido: as capturas estão embutidas
+ * como data URI, então ele não depende de nenhum arquivo vizinho.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
@@ -16,8 +16,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const SOURCE = resolve(ROOT, 'docs/implementation/resumo-implementacao-a4.html');
-const OUTPUT = resolve(ROOT, 'output/pdf/Resumo_Implementacao_MVP_ClickBus_Acessivel.pdf');
+const SOURCE = resolve(ROOT, 'docs/resumo-implementacao.html');
+const OUTPUT = resolve(ROOT, 'entregas/Resumo_Implementacao_MVP_ClickBus_Acessivel.pdf');
 
 const CANDIDATES = [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
