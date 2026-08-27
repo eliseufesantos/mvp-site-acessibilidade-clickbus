@@ -38,7 +38,7 @@ Os documentos finais ficam em `entregas/`, na raiz do repositório:
 | --- | --- |
 | `Resumo_Implementacao_MVP_ClickBus_Acessivel.pdf` | resumo executivo da implementação |
 | `Escopo_Tecnico_MVP_ClickBus_Web.pdf` | escopo técnico elaborado para o MVP |
-| `Escopo_Tecnico_MVP_ClickBus_Web.docx` | mesma peça em formato editável |
+| `Escopo_Tecnico_MVP_ClickBus_Web.docx` | mesma peça em formato editável, gerada por `scripts/build_mvp_scope.py` |
 | `Escopo_Original_ClickBus_MVP.pdf` | escopo recebido no início do projeto |
 
 ## Sobre as capturas de tela

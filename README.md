@@ -11,7 +11,7 @@ O MVP está implementado e inclui busca, resultados, seleção de assento, formu
 - `docs/brand/`: brandbook e design system recebidos como referência.
 - `docs/resumo-implementacao.html`: documento A4 que gera o resumo executivo.
 - `entregas/`: documentos finais em PDF e DOCX.
-- `scripts/`: geradores reproduzíveis dos entregáveis.
+- `scripts/`: geradores dos entregáveis (resumo em PDF e escopo técnico em DOCX).
 
 ## Executar
 

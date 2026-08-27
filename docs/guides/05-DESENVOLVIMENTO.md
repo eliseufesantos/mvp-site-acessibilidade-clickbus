@@ -39,6 +39,14 @@ O conteúdo vive em `docs/resumo-implementacao.html`, um documento A4 que pode s
 
 O HTML é auto-contido: as capturas estão embutidas nele como JPEG em data URI. Não existe pasta de imagens ao lado, e o arquivo pode ser movido ou enviado sozinho.
 
+O escopo técnico em DOCX tem seu próprio gerador, em Python:
+
+```bash
+python scripts/build_mvp_scope.py
+```
+
+Ele depende de `python-docx` e das capturas de auditoria, que saíram da árvore do repositório e precisam ser restauradas antes (`git checkout 5ebc728 -- docs/audit`). O cabeçalho do arquivo detalha os requisitos.
+
 ## Convenções
 
 - componentes em PascalCase;
