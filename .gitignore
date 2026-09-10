@@ -5,5 +5,6 @@ app/*.tsbuildinfo
 app/vite.config.js
 app/vite.config.d.ts
 .pnpm-store/
+.tmp-chrome-qa/
 tmp/
 *.log
