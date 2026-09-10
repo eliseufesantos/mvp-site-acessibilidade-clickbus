@@ -2,7 +2,9 @@
 
 Projeto acadêmico que simula a jornada principal da ClickBus com melhorias de acessibilidade de baixo custo e alto impacto visual.
 
-O MVP está implementado e inclui busca, resultados, seleção de assento, formulário de passageiro, confirmação simulada, alto contraste, modo idoso, tradução em Libras pelo VLibras e redução de movimento.
+O MVP inclui busca, resultados, seleção de assento, formulário de passageiro e confirmação simulada. A evolução **Acessibilidade Assistida por IA** acrescenta controles visuais e de leitura independentes, persistência/migração, desfazer, glossário, simplificação preparada, voz opcional e um planejador tipado no servidor.
+
+A IA fica desativada até a configuração explícita de provedor, modelo e chave no servidor. A autorização gratuita da Rybená está confirmada, mas a API/SDK/player ainda não foi liberada/configurada; por isso a interface mostra indisponibilidade e atribuição sem carregar script ou simular tradução.
 
 ## Estrutura
 
@@ -26,6 +28,7 @@ Para validar a versão de produção:
 ```bash
 pnpm build
 pnpm preview
+pnpm test:accessibility
 ```
 
 ## Deploy na Vercel

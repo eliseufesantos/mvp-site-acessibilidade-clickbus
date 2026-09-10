@@ -1,73 +1,67 @@
 # Acessibilidade
 
-## Preferências globais
+Estado atualizado em 9 de setembro de 2026. A especificação completa está em [`../accessibility-agent/`](../accessibility-agent/README.md).
 
-O menu “Acessibilidade” oferece:
+## Painel
 
-- alto contraste;
-- modo idoso;
-- tradução em Libras (VLibras);
-- redução de animações;
-- restauração do padrão.
+O acionador “Acessibilidade” mantém nome estável e abre três áreas:
 
-As preferências são persistidas no navegador em `clickbus-a11y-v1`. Apenas booleanos de interface são salvos; não há inferência nem armazenamento de idade ou diagnóstico.
+- **Conversa:** envia texto a um planejador servidor e mostra estado ativo, proposta, confirmação e recibo;
+- **Ajustes:** controles determinísticos que funcionam sem IA;
+- **Conteúdo:** glossário/explicação, simplificação com original preservado e estado Rybená.
 
-## Alto contraste
+No desktop o painel é não modal. Em até 820 px vira diálogo, prende o foco, bloqueia a rolagem de fundo e fecha por Escape. A troca de etapa desmonta o painel e invalida requisições.
 
-Quando ativo, o elemento `html` recebe `data-contrast="true"`. Os tokens mudam para fundo preto, texto branco, ação amarela e bordas brancas. Elementos decorativos de baixo valor são removidos, e o logo recebe uma variação legível.
+## Preferências v3
 
-## Modo idoso
+`useAccessibilityPreferences` persiste `clickbus-a11y-v3`, migra `clickbus-a11y-v1`/`v2`, mantém uma revisão monotônica e tolera armazenamento bloqueado.
 
-Quando ativo, `data-elderly="true"`:
+Ferramentas disponíveis:
 
-- aumenta a fonte raiz para 18 px;
-- aumenta controles para pelo menos 56 px;
-- amplia espaços e assentos;
-- remove links secundários do cabeçalho;
-- oculta o terceiro card promocional da home.
+- contraste padrão/alto;
+- texto em 100%, 112%, 125% ou 150%;
+- controles e cursor maiores;
+- destaque de links e títulos;
+- espaço entre letras e entrelinha independentes;
+- alinhamento original, à esquerda ou centralizado;
+- guia e máscara de leitura combináveis;
+- movimento reduzido;
+- preset Leitura confortável, restauração e desfazer.
 
-É um modo de apresentação voluntário, não um diagnóstico de usuário.
+Os efeitos usam atributos `data-*` e CSS declarativo. Guia e máscara têm `pointer-events: none`. Nenhuma ferramenta altera busca, viagem, assento, passageiro ou pagamento.
 
-## Tradução em Libras (VLibras)
+## Planejador seguro
 
-O widget do [VLibras](https://vlibras.gov.br/) traduz o texto da página para Libras com um avatar 3D. É a suíte oficial do governo brasileiro (gov.br), gratuita e de código aberto sob LGPL-3.0. Foi escolhida no lugar do Rybená, que é licenciado por plano comercial.
+O frontend envia contexto mínimo para `/api/accessibility/plan`: mensagem, preferências, revisão, página/sessão, capacidades e IDs/rótulos públicos. O modelo não recebe DOM, screenshots, campos da jornada nem ferramentas de navegador.
 
-Como funciona na aplicação:
+A resposta segue contrato 2.0 fechado. O executor verifica schema, `requestId`, revisão, página, sessão, capacidades e conteúdo antes de executar. `planId` é idempotente. Pedidos vagos usam proposta com confirmação; operações comerciais e código estão fora do contrato.
 
-- `components/accessibility/VLibrasWidget.tsx` injeta `https://vlibras.gov.br/app/vlibras-plugin.js` uma única vez, na primeira ativação;
-- esse script tem cerca de 2 KB e apenas desenha o botão flutuante; o player 3D só é baixado quando a pessoa abre a tradução;
-- o widget vive fora do React, em shadow DOM no fim do `body`, então a preferência controla apenas a exibição, por `html[data-libras]` em `components.css`;
-- desligar a preferência também fecha o player aberto.
+Sem as variáveis de servidor `ACCESSIBILITY_LLM_ENDPOINT`, `ACCESSIBILITY_LLM_MODEL` e `ACCESSIBILITY_LLM_API_KEY`, os endpoints respondem 503 e a interface mantém todos os ajustes manuais. Não há interpretação local por regex apresentada como IA.
 
-A tradução vem ligada por padrão: quem depende dela não deveria precisar abrir um menu para encontrá-la, e o custo inicial é apenas o do carregador de 2 KB.
+## Conteúdo
 
-### Leitura das opções do combobox
+O glossário local explica termos revisados como “viação”, “terminal”, “embarque”, “itinerário” e “conexão”. Termos desconhecidos e simplificação usam endpoints separados, quando configurados. Resultados não entram no executor e nunca substituem o original.
 
-O VLibras traduz o texto que a pessoa seleciona com o mouse, e isso não alcança interface efêmera: clicar numa opção da lista de cidades a fecha antes de existir qualquer seleção.
+Somente alvos registrados nas etapas de busca, resultados e assentos são aceitos. Checkout e confirmação retornam lista vazia. Seleção de página exige ancestral com `data-a11y-content-id`.
 
-`components/accessibility/signLibras.ts` contorna isso enviando o texto direto ao avatar por `window.vlibras.translateAndPlay`. O combobox chama essa função quando a opção em foco muda, com 250 ms de espera para não disparar uma tradução a cada tecla. Parênteses viram vírgula antes do envio, porque o tradutor lida melhor com `São Paulo, SP` do que com `São Paulo (SP)`.
+## Voz
 
-Essa API não está documentada pelo projeto VLibras e só existe depois que o player 3D termina de carregar. Por isso toda a chamada é opcional e protegida: se ela sumir numa versão futura, a navegação continua idêntica e apenas a leitura automática deixa de acontecer.
+O reconhecimento de voz depende do navegador, começa e termina apenas por ação explícita, mostra indicador ativo e mantém transcrição editável. “Usar transcrição” apenas copia o texto para o campo; não envia automaticamente. Fechar o painel aborta a captura. A UI avisa que o navegador pode processar áudio remotamente.
 
-Limite: o widget é servido pelo gov.br e depende de conexão com a internet. Sem rede o botão não aparece, e o restante da jornada continua funcionando.
+## Libras e Rybená
+
+A autorização gratuita da Rybená está confirmada e o crédito/link são obrigatórios. A API/SDK/player, credenciais, domínio/CORS, métodos, eventos e homologação ainda não foram fornecidos/configurados.
+
+Nesta entrega, `RybenaUnavailableAdapter` retorna `unavailable_pending_provider_configuration`. A interface mostra “Tradução em Libras por Rybená. Recurso aguardando liberação técnica para esta demonstração.” Não existe script, polling, retry, VLibras ou tradução simulada.
 
 ## Navegação e semântica
 
 - link “Pular para o conteúdo principal”;
-- cabeçalho, navegação, conteúdo principal e rodapé semânticos;
-- comboboxes com setas, Enter e Escape;
-- mapa de assentos operável por Tab e setas;
-- switches com `role="switch"` e estado anunciado;
-- progresso da jornada em lista ordenada;
-- foco enviado ao conteúdo principal ao trocar de etapa;
-- erros agrupados em resumo focável com `role="alert"`;
-- campos inválidos usam `aria-invalid` e `aria-describedby`.
+- regiões semânticas, foco visível e progresso em lista;
+- comboboxes e mapa de assentos operáveis por teclado;
+- switches e grupos segmentados com estado anunciado;
+- foco no conteúdo ao trocar de etapa;
+- erros de formulário associados aos campos;
+- feedback com `role="status"`/`role="alert"` quando aplicável.
 
-## Redução de movimento
-
-O CSS respeita `prefers-reduced-motion` do sistema e também permite ativação manual. Transições e animações passam a ter duração praticamente nula.
-
-## Limite da validação
-
-O MVP recebeu testes de teclado e inspeção semântica no navegador integrado. Ainda é recomendável testar com NVDA ou VoiceOver e executar axe/Lighthouse antes de transformar o protótipo em produto.
-
+O navegador integrado e inspeções automatizadas não substituem teste humano com NVDA/VoiceOver nem avaliação da tradução por pessoas surdas sinalizantes.

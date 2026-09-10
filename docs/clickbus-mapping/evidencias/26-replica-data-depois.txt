@@ -1,0 +1,86 @@
+- link "Pular para o conteúdo principal":
+  - /url: "#main-content"
+- banner:
+  - button "Ir para o início":
+    - img "ClickBus"
+  - button:
+- main [active]:
+  - navigation "Etapas da compra":
+    - list:
+      - generic: "1"
+      - generic: "Etapa 1:"
+      - text: Viagem
+      - generic: "2"
+      - generic: "Etapa 2:"
+      - text: Assento
+      - generic: "3"
+      - generic: "Etapa 3:"
+      - text: Passageiro
+  - button "Alterar busca":
+    - text: Alterar busca
+  - region "Busca atual":
+    - generic: Origem
+    - strong: São Paulo (SP)
+    - generic: Destino
+    - strong: Rio de Janeiro (RJ)
+    - generic: Data
+    - strong: 30 de agosto
+  - generic: Passo 1 de 3
+  - heading "Escolha sua viagem" [level=1]
+  - paragraph: 3 opções encontradas para 30 de agosto.
+  - text: Botões e informações essenciais priorizados
+  - complementary "Filtros rápidos":
+    - heading "Filtros rápidos" [level=2]
+    - checkbox "Até R$ 140"
+    - generic: Até R$ 140
+    - checkbox "Somente leito"
+    - generic: Somente leito
+    - paragraph: Os filtros atualizam a lista imediatamente.
+  - region "Viagens disponíveis":
+    - article:
+      - strong: Expresso do Sul
+      - generic: Leito-cama
+      - generic: Melhor custo-benefício
+      - generic "Saída 22:30, chegada 04:45":
+        - strong: 22:30
+        - text: São Paulo
+        - text: 6h 15min
+        - generic: Direto
+        - strong: 04:45
+        - text: Rio de Janeiro
+      - generic: 12 assentos livres
+      - strong: R$ 129,90
+      - button "Escolher":
+        - text: Escolher
+    - article:
+      - strong: Águia Branca
+      - generic: Executivo
+      - generic "Saída 23:00, chegada 05:40":
+        - strong: 23:00
+        - text: São Paulo
+        - text: 6h 40min
+        - generic: Direto
+        - strong: 05:40
+        - text: Rio de Janeiro
+      - generic: 8 assentos livres
+      - strong: R$ 139,90
+      - button "Escolher":
+        - text: Escolher
+    - article:
+      - strong: UTIL
+      - generic: Semi-leito
+      - generic "Saída 23:30, chegada 06:00":
+        - strong: 23:30
+        - text: São Paulo
+        - text: 6h 30min
+        - generic: Direto
+        - strong: 06:00
+        - text: Rio de Janeiro
+      - generic: 5 assentos livres
+      - strong: R$ 149,90
+      - button "Escolher":
+        - text: Escolher
+- contentinfo:
+  - strong: ClickBus Acessível
+  - generic: Protótipo de demonstração
+- button "Conteúdo acessível em Libras usando o VLibras Widget com opções dos Avatares Ícaro, Hosana ou Guga.":

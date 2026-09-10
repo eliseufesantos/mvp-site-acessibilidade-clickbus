@@ -1,0 +1,9 @@
+*
+!app/
+!app/**
+!vercel.json
+
+app/node_modules/
+app/dist/
+app/.vite/
+app/*.tsbuildinfo

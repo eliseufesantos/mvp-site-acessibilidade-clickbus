@@ -27,6 +27,7 @@ Antes de criar um commit:
 ```bash
 pnpm typecheck
 pnpm build
+pnpm test:accessibility
 ```
 
 Para regenerar o resumo executivo em PDF a partir da raiz do projeto:
@@ -55,7 +56,10 @@ Ele depende de `python-docx` e das capturas de auditoria, que saíram da árvore
 - regras de negócio dentro da feature correspondente;
 - tokens visuais em `styles/tokens.css`;
 - ícones de interface via Lucide;
-- sem dados reais nem chamadas de negócio externas; a única dependência de rede é o widget do VLibras.
+- sem dados reais nem chamadas de negócio externas;
+- nenhum script VLibras/Rybená no runtime atual;
+- IA somente pelo backend e somente com endpoint, modelo e chave explicitamente configurados;
+- nunca usar chave de provedor no bundle do frontend.
 
 ## Alterações comuns
 

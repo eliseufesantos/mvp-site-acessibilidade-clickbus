@@ -1,0 +1,35 @@
+- link "Pular para o conteúdo principal":
+  - /url: "#main-content"
+- banner:
+  - button "Ir para o início":
+    - img "ClickBus"
+  - button:
+- main [active]:
+  - text: Acessível de ponta a ponta
+  - heading "Compre sua passagem de ônibus" [level=1]
+  - paragraph: Uma jornada simples, clara e ajustável para diferentes necessidades.
+  - generic: Origem
+  - combobox "Origem": São Paulo (SP)
+  - button "Trocar origem e destino":
+  - generic: Destino
+  - combobox "Destino": Rio de Janeiro (RJ)
+  - generic: Data da viagem
+  - textbox "Data da viagem": 2026-08-30
+  - button "Buscar passagens":
+    - text: Buscar passagens
+  - region "Acessibilidade útil desde o primeiro clique":
+    - generic: Ganhos do MVP
+    - heading "Acessibilidade útil desde o primeiro clique" [level=2]
+    - article:
+      - heading "Preferências persistentes" [level=3]
+      - paragraph: Contraste, tamanho e movimento continuam ativos durante toda a jornada.
+    - article:
+      - heading "Tradução em Libras" [level=3]
+      - paragraph: O VLibras acompanha você em todas as etapas, com avatar em tempo real.
+    - article:
+      - heading "Menos esforço visual" [level=3]
+      - paragraph: Foco evidente, mensagens claras e controles com área confortável de toque.
+- contentinfo:
+  - strong: ClickBus Acessível
+  - generic: Protótipo de demonstração
+- button "Conteúdo acessível em Libras usando o VLibras Widget com opções dos Avatares Ícaro, Hosana ou Guga.":

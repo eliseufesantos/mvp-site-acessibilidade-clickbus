@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { VLibrasWidget } from '../components/accessibility/VLibrasWidget';
+import { ReadingAids } from '../components/accessibility/ReadingGuide';
 import { Header } from '../components/layout/Header';
 import { CheckoutPage } from '../features/checkout/CheckoutPage';
 import { ConfirmationPage } from '../features/confirmation/ConfirmationPage';
@@ -8,11 +8,12 @@ import { SearchPage } from '../features/search/SearchPage';
 import { SeatSelectionPage } from '../features/seats/SeatSelectionPage';
 import { useAccessibilityPreferences } from '../hooks/useAccessibilityPreferences';
 import type { JourneyStep, SearchValues, Trip } from '../types';
+import { getDefaultTravelDate } from '../utils/date';
 
 const initialSearch: SearchValues = {
   origin: 'São Paulo (SP)',
   destination: 'Rio de Janeiro (RJ)',
-  date: '2026-08-30',
+  date: getDefaultTravelDate(),
 };
 
 const titles: Record<JourneyStep, string> = {
@@ -20,7 +21,7 @@ const titles: Record<JourneyStep, string> = {
   results: 'Escolher viagem',
   seats: 'Escolher assento',
   checkout: 'Dados do passageiro',
-  confirmation: 'Compra confirmada',
+  confirmation: 'Simulação concluída',
 };
 
 export function App() {
@@ -28,11 +29,23 @@ export function App() {
   const [search, setSearch] = useState(initialSearch);
   const [trip, setTrip] = useState<Trip | null>(null);
   const [seat, setSeat] = useState<number | null>(null);
+  const [pageEpoch, setPageEpoch] = useState(0);
   const mainRef = useRef<HTMLElement>(null);
-  const { preferences, resetPreferences, togglePreference } = useAccessibilityPreferences();
+  const {
+    preferences,
+    stateRevision,
+    storageAvailable,
+    applyPreferences,
+    resetPreferences,
+    undoPreferences,
+    canUndo,
+    getPreferences,
+    getStateRevision,
+  } = useAccessibilityPreferences();
 
   useEffect(() => {
     document.title = `${titles[step]} | ClickBus Acessível`;
+    setPageEpoch((current) => current + 1);
     window.scrollTo({ top: 0, behavior: 'auto' });
     window.requestAnimationFrame(() => mainRef.current?.focus({ preventScroll: true }));
   }, [step]);
@@ -62,11 +75,12 @@ export function App() {
     );
   } else if (step === 'results') {
     content = (
-      <ResultsPage
-        search={search}
-        preferences={preferences}
-        onBack={() => setStep('search')}
-        onSelectTrip={selectTrip}
+        <ResultsPage
+          search={search}
+          preferences={preferences}
+          onBack={() => setStep('search')}
+          onChangeDate={(date) => setSearch((current) => ({ ...current, date }))}
+          onSelectTrip={selectTrip}
       />
     );
   } else if (step === 'seats' && trip) {
@@ -102,21 +116,29 @@ export function App() {
     <div className="app" id="inicio">
       <a className="skip-link" href="#main-content">Pular para o conteúdo principal</a>
       <Header
+        canUndo={canUndo}
+        getPreferences={getPreferences}
+        getStateRevision={getStateRevision}
         preferences={preferences}
+        stateRevision={stateRevision}
+        storageAvailable={storageAvailable}
+        page={step}
+        pageEpoch={pageEpoch}
         onHome={restart}
+        onApplyPreferences={applyPreferences}
         onResetPreferences={resetPreferences}
-        onTogglePreference={togglePreference}
+        onUndoPreferences={undoPreferences}
       />
-      <main id="main-content" tabIndex={-1} ref={mainRef}>
+      <main id="main-content" tabIndex={-1} ref={mainRef} data-page={step}>
         {content}
       </main>
       <footer className="site-footer">
         <div className="container">
           <strong>ClickBus Acessível</strong>
-          <span>Protótipo de demonstração</span>
+          <span>Protótipo acadêmico — não realiza compras</span>
         </div>
       </footer>
-      <VLibrasWidget enabled={preferences.librasWidget} />
+      {preferences.readingGuide || preferences.readingMask ? <ReadingAids guide={preferences.readingGuide} mask={preferences.readingMask} /> : null}
     </div>
   );
 }

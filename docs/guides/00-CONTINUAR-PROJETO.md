@@ -2,13 +2,21 @@
 
 Este é o ponto de entrada recomendado para retomar o trabalho em outra sessão ou ferramenta.
 
+## Evolução atual
+
+Para continuar o agente de acessibilidade, começar pelo [PRD/SDD, registro de implementação e validação](../accessibility-agent/README.md). O núcleo e a UI estão implementados. A LLM real exige configuração de servidor; a Rybená tem autorização gratuita confirmada, mas ainda aguarda integração técnica e homologação.
+
 ## Estado atual
 
 - A aplicação fica em `app/` e está funcional.
 - O fluxo principal vai da busca até uma confirmação simulada.
-- Alto contraste, modo idoso, tradução em Libras (VLibras) e redução de movimento são preferências globais persistentes.
-- O projeto não possui backend nem pagamento real.
-- O build de produção e a jornada em desktop/mobile foram validados em 26/08/2026.
+- Preferências v3 independentes incluem contraste, quatro escalas, controles/cursor, destaques, letras, entrelinha, alinhamento, guia, máscara e movimento reduzido.
+- O planejador usa contrato fechado e executor local idempotente; sem provedor configurado, responde 503 e mantém os controles manuais.
+- Glossário local funciona; explicação fora do glossário e simplificação dependem do provedor.
+- Entrada por voz é opcional e explícita; não foi concedida permissão de microfone durante a validação automatizada.
+- Nenhum VLibras ou script Rybená é carregado. O bloco Rybená informa a pendência técnica e preserva o crédito.
+- O projeto não possui pagamento real. Endpoints de acessibilidade estão preparados no servidor Vite/API.
+- TypeScript, build e 11 testes do núcleo/servidor passaram em 09/09/2026; navegador integrado validado em 1265×711 e 378×629, com reflow adicional em 320×844 CSS px via CDP.
 
 ## Primeiro diagnóstico
 
@@ -38,8 +46,10 @@ Acesse `http://127.0.0.1:4173/`.
 
 - criar testes automatizados de componentes e fluxo;
 - validar com leitor de tela real (NVDA/VoiceOver);
+- configurar e avaliar um modelo real para o planejador;
+- receber da Rybená o contrato técnico e homologar tradução/player com pessoas surdas sinalizantes;
 - ligar a busca a uma API mockada;
 - criar página de comparação “antes e depois” para a apresentação;
 - executar auditoria Lighthouse/axe e documentar os resultados.
 
-Dados, horários, preços e passageiros são fictícios. A interface, porém, usa a linguagem de um produto real: evite reintroduzir avisos de "simulação" nas telas.
+Dados, horários, preços e passageiros são fictícios. Não apresentar a IA ou a Rybená como operacionais antes das validações registradas.

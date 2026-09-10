@@ -15,7 +15,7 @@
 app/src/
 ├── app/App.tsx                         # estado e navegação da jornada
 ├── components/
-│   ├── accessibility/                  # painel, status dos modos e VLibras
+│   ├── accessibility/                  # fachadas do painel, status e ajudas de leitura
 │   ├── brand/                          # logo oficial vetorizado
 │   ├── layout/                         # cabeçalho global
 │   └── ui/                             # botão, switch e progresso
@@ -25,7 +25,12 @@ app/src/
 │   ├── results/                        # filtros e cards de viagem
 │   ├── seats/                          # mapa e seleção de assento
 │   ├── checkout/                       # dados e validação
-│   └── confirmation/                   # confirmação da compra
+│   ├── confirmation/                   # confirmação da compra
+│   └── accessibility-agent/
+│       ├── core/                       # contratos, store, planner client e executor
+│       ├── adapters/                   # conteúdo ClickBus e porta Libras/Rybená
+│       ├── ui/                         # conversa, ajustes, conteúdo e voz
+│       └── tests/                      # suíte executável do núcleo
 ├── hooks/useAccessibilityPreferences.ts
 ├── styles/
 │   ├── tokens.css                      # cores, espaços e modos
@@ -51,6 +56,8 @@ Não foi adicionado React Router porque o MVP tem uma única jornada linear e is
 - Cada pasta de `features/` recebe dados e callbacks por propriedades.
 - `data/trips.ts` concentra conteúdo fictício e formatação monetária.
 - O hook de acessibilidade é o único responsável por persistir preferências e alterar atributos no elemento `html`.
+- A LLM nunca recebe funções de DOM/navegação: responde um plano JSON fechado, validado novamente pelo executor local.
+- Conteúdo autorizado é um registro estático por etapa; checkout e confirmação não são alvos.
+- O adaptador Rybená atual é indisponível por projeto e não faz rede.
 
 Para incluir uma nova etapa, atualize `JourneyStep` em `types.ts`, o mapa de títulos e a composição em `App.tsx`.
-

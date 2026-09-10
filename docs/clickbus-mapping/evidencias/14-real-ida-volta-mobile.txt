@@ -1,0 +1,433 @@
+- banner:
+  - button "Menu":
+  - navigation:
+    - generic: Olá, viajante
+    - paragraph: Entre com sua conta para começar
+    - link "Entrar na conta":
+      - /url: /login
+    - paragraph:
+      - text: Ainda não tem uma conta?
+      - link "Criar conta":
+        - /url: /cadastro
+    - list:
+      - link "Clube ClickBus Novo!":
+        - /url: /cliente/meu-clube?utm_source=site&utm_medium=internal-button&utm_campaign=clube-header
+        - text: Clube ClickBus
+        - generic: Novo!
+      - link "Pedidos":
+        - /url: /meu-pedido
+        - generic: Pedidos
+      - link "Ajuda":
+        - /url: https://atendimento.clickbus.com.br/hc/pt-br
+        - generic: Ajuda
+    - list:
+      - link "Ofertas":
+        - /url: /onibus/passagens-promocionais
+        - generic: Ofertas
+      - link "Explorar":
+        - /url: "#"
+        - generic: Explorar
+  - link "ClickBus":
+    - /url: /
+    - img "ClickBus"
+  - link "Entrar | ativar cashback":
+    - /url: /login
+    - generic: Entrar
+    - generic: "| ativar cashback"
+- img "Ganhe R$ 100 de desconto, limitado a 10% do valor da passagem, com o código MENOS100CB. Cupom válido somente para passagens sem o selo ClickOferta."
+- heading "Compre sua passagem de ônibus" [level=1]
+- generic: Somente Ida
+- generic: Ida e Volta
+- generic: Origem
+- textbox "Origem":
+  - /placeholder: De onde você vai sair?
+- generic: Destino
+- textbox "Destino":
+  - /placeholder: Para onde você vai?
+- generic: Data de ida
+- textbox "Data de ida":
+  - /placeholder: __/__/__
+- textbox [active]
+- generic: Data de volta
+- textbox "Data de volta":
+  - /placeholder: __/__/__
+- textbox
+- button "Buscar"
+- heading "Passagens de ônibus em oferta" [level=2]
+- link "Acessar mais":
+  - /url: /onibus/passagens-promocionais
+- link "Imagem de um dia bonito e ensolarado em Campinas, SP Click Oferta Sao Paulo, SP - Aeroporto de Congonhas Campinas, SP A partir de 47 ,99":
+  - /url: /onibus/aeroporto-congonhas-sp/campinas-sp?departureDate=2026-09-08
+  - img "Imagem de um dia bonito e ensolarado em Campinas, SP"
+  - img "Click Oferta"
+  - generic: Sao Paulo, SP - Aeroporto de Congonhas
+  - generic: Campinas, SP
+  - generic: A partir de
+  - generic: "47"
+  - generic: ",99"
+- link "Imagem de um dia bonito e ensolarado em Santos, SP - Rodoviaria Click Oferta Sao Paulo, SP - Aeroporto de Congonhas Santos, SP - Rodoviaria A partir de 36 ,99":
+  - /url: /onibus/aeroporto-congonhas-sp/santos-sp?departureDate=2026-09-08
+  - img "Imagem de um dia bonito e ensolarado em Santos, SP - Rodoviaria"
+  - img "Click Oferta"
+  - generic: Sao Paulo, SP - Aeroporto de Congonhas
+  - generic: Santos, SP - Rodoviaria
+  - generic: A partir de
+  - generic: "36"
+  - generic: ",99"
+- link "Imagem de um dia bonito e ensolarado em Santos, SP - Porto de Santos Click Oferta Sao Paulo, SP - Aeroporto de Congonhas Santos, SP - Porto de Santos A partir de 36 ,99":
+  - /url: /onibus/aeroporto-congonhas-sp/santos-porto-de-santos-sp?departureDate=2026-09-21
+  - img "Imagem de um dia bonito e ensolarado em Santos, SP - Porto de Santos"
+  - img "Click Oferta"
+  - generic: Sao Paulo, SP - Aeroporto de Congonhas
+  - generic: Santos, SP - Porto de Santos
+  - generic: A partir de
+  - generic: "36"
+  - generic: ",99"
+- link "Imagem de um dia bonito e ensolarado em Umuarama, PR Click Oferta Sao Paulo, SP - Barra Funda Umuarama, PR A partir de 263 ,99":
+  - /url: /onibus/sao-paulo-barra-funda-sp/umuarama-pr?departureDate=2026-11-04
+  - img "Imagem de um dia bonito e ensolarado em Umuarama, PR"
+  - img "Click Oferta"
+  - generic: Sao Paulo, SP - Barra Funda
+  - generic: Umuarama, PR
+  - generic: A partir de
+  - generic: "263"
+  - generic: ",99"
+- link "Imagem de um dia bonito e ensolarado em Londrina, PR Click Oferta Sao Paulo, SP - Barra Funda Londrina, PR A partir de 320 ,99":
+  - /url: /onibus/sao-paulo-barra-funda-sp/londrina-pr?departureDate=2026-09-08
+  - img "Imagem de um dia bonito e ensolarado em Londrina, PR"
+  - img "Click Oferta"
+  - generic: Sao Paulo, SP - Barra Funda
+  - generic: Londrina, PR
+  - generic: A partir de
+  - generic: "320"
+  - generic: ",99"
+- link "Imagem de um dia bonito e ensolarado em Cuiaba, MT Click Oferta Sao Paulo, SP - Barra Funda Cuiaba, MT A partir de 379 ,99":
+  - /url: /onibus/sao-paulo-barra-funda-sp/cuiaba-mt?departureDate=2026-09-12
+  - img "Imagem de um dia bonito e ensolarado em Cuiaba, MT"
+  - img "Click Oferta"
+  - generic: Sao Paulo, SP - Barra Funda
+  - generic: Cuiaba, MT
+  - generic: A partir de
+  - generic: "379"
+  - generic: ",99"
+- link "Imagem de um dia bonito e ensolarado em Sinop, MT Click Oferta Sao Paulo, SP - Barra Funda Sinop, MT A partir de 469 ,99":
+  - /url: /onibus/sao-paulo-barra-funda-sp/sinop-mt?departureDate=2026-09-14
+  - img "Imagem de um dia bonito e ensolarado em Sinop, MT"
+  - img "Click Oferta"
+  - generic: Sao Paulo, SP - Barra Funda
+  - generic: Sinop, MT
+  - generic: A partir de
+  - generic: "469"
+  - generic: ",99"
+- link "Imagem de um dia bonito e ensolarado em Maringa, PR Click Oferta Sao Paulo, SP - Barra Funda Maringa, PR A partir de 339 ,99":
+  - /url: /onibus/sao-paulo-barra-funda-sp/maringa-pr?departureDate=2026-09-14
+  - img "Imagem de um dia bonito e ensolarado em Maringa, PR"
+  - img "Click Oferta"
+  - generic: Sao Paulo, SP - Barra Funda
+  - generic: Maringa, PR
+  - generic: A partir de
+  - generic: "339"
+  - generic: ",99"
+- link "Imagem de um dia bonito e ensolarado em Mineiros, GO Click Oferta Sao Paulo, SP - Barra Funda Mineiros, GO A partir de 368 ,99":
+  - /url: /onibus/sao-paulo-barra-funda-sp/mineiros-go?departureDate=2026-09-19
+  - img "Imagem de um dia bonito e ensolarado em Mineiros, GO"
+  - img "Click Oferta"
+  - generic: Sao Paulo, SP - Barra Funda
+  - generic: Mineiros, GO
+  - generic: A partir de
+  - generic: "368"
+  - generic: ",99"
+- link "Imagem de um dia bonito e ensolarado em Corumba, MS Click Oferta Sao Paulo, SP - Barra Funda Corumba, MS A partir de 235 ,99":
+  - /url: /onibus/sao-paulo-barra-funda-sp/corumba-ms?departureDate=2026-09-11
+  - img "Imagem de um dia bonito e ensolarado em Corumba, MS"
+  - img "Click Oferta"
+  - generic: Sao Paulo, SP - Barra Funda
+  - generic: Corumba, MS
+  - generic: A partir de
+  - generic: "235"
+  - generic: ",99"
+- link "Fale com a gente no WhatsApp":
+  - /url: http://wa.me/551140033030?text=Quero%20comprar%20passagens%20de%20%C3%B4nibus
+  - img "Fale com a gente no WhatsApp"
+- link "Click Bônus, pacotes de desconto":
+  - /url: https://www.instagram.com/clickbus/
+  - img "Click Bônus, pacotes de desconto"
+- img "Tetra Prêmio Reclame Aqui 2025"
+- img "Compre com login ativo e ganhe parte do seu dinheiro de volte. Confira as regras."
+- generic: No app você tem cupons e muito mais vantagens!
+- generic: Ganhe cashback sempre que viajar, acesse sua passagem direto no celular e facilite suas compras.
+- link:
+  - /url: https://clickbus.go.link/bMMFE
+- link:
+  - /url: https://clickbus.go.link/bMMFE
+- img "Smartphone com o aplicativo ClickBus aberto"
+- img "O benefício certo para quem viaja muuuito"
+- generic: O benefício certo para quem viaja muuuito
+- generic: Cupons especiais, desconto maior em passagens ClickOferta e muito mais
+- link "Conhecer Clube":
+  - /url: https://www.clickbus.com.br/clube-de-beneficios?utm_source=site&utm_medium=internal-banner&utm_campaign=clube-srp-inline
+- img "O benefício certo para quem viaja muuuito"
+- heading "Principais passagens de ônibus" [level=2]
+- link "Rio de Janeiro São Paulo Passagens de ônibus de Rio de Janeiro, RJ para São Paulo, SP A partir de R$ 89 ,99":
+  - /url: /onibus/rio-de-janeiro-rj-todos/sao-paulo-sp-todos
+  - text: Rio de Janeiro
+  - generic: São Paulo
+  - img "Passagens de ônibus de Rio de Janeiro, RJ para São Paulo, SP"
+  - text: A partir de R$
+  - generic: "89"
+  - generic: ",99"
+- link "São Paulo Rio de Janeiro Passagens de ônibus de São Paulo, SP para Rio de Janeiro, RJ A partir de R$ 89 ,99":
+  - /url: /onibus/sao-paulo-sp-todos/rio-de-janeiro-rj-todos
+  - text: São Paulo
+  - generic: Rio de Janeiro
+  - img "Passagens de ônibus de São Paulo, SP para Rio de Janeiro, RJ"
+  - text: A partir de R$
+  - generic: "89"
+  - generic: ",99"
+- link "Rio de Janeiro Belo Horizonte Passagens de ônibus de Rio de Janeiro, RJ para Belo Horizonte, MG A partir de R$ 99 ,90":
+  - /url: /onibus/rio-de-janeiro-rj-todos/belo-horizonte-mg-todos
+  - text: Rio de Janeiro
+  - generic: Belo Horizonte
+  - img "Passagens de ônibus de Rio de Janeiro, RJ para Belo Horizonte, MG"
+  - text: A partir de R$
+  - generic: "99"
+  - generic: ",90"
+- link "São Paulo Curitiba Passagens de ônibus de São Paulo, SP para Curitiba, PR A partir de R$ 69 ,90":
+  - /url: /onibus/sao-paulo-sp-todos/curitiba-pr
+  - text: São Paulo
+  - generic: Curitiba
+  - img "Passagens de ônibus de São Paulo, SP para Curitiba, PR"
+  - text: A partir de R$
+  - generic: "69"
+  - generic: ",90"
+- link "Curitiba São Paulo Passagens de ônibus de Curitiba, PR para São Paulo, SP A partir de R$ 69 ,99":
+  - /url: /onibus/curitiba-pr/sao-paulo-sp-todos
+  - text: Curitiba
+  - generic: São Paulo
+  - img "Passagens de ônibus de Curitiba, PR para São Paulo, SP"
+  - text: A partir de R$
+  - generic: "69"
+  - generic: ",99"
+- link "São Paulo Belo Horizonte Passagens de ônibus de São Paulo, SP para Belo Horizonte, MG A partir de R$ 102 ,86":
+  - /url: /onibus/sao-paulo-sp-todos/belo-horizonte-mg-todos
+  - text: São Paulo
+  - generic: Belo Horizonte
+  - img "Passagens de ônibus de São Paulo, SP para Belo Horizonte, MG"
+  - text: A partir de R$
+  - generic: "102"
+  - generic: ",86"
+- link "Belo Horizonte Rio de Janeiro Passagens de ônibus de Belo Horizonte, MG para Rio de Janeiro, RJ A partir de R$ 75 ,90":
+  - /url: /onibus/belo-horizonte-mg-todos/rio-de-janeiro-rj-todos
+  - text: Belo Horizonte
+  - generic: Rio de Janeiro
+  - img "Passagens de ônibus de Belo Horizonte, MG para Rio de Janeiro, RJ"
+  - text: A partir de R$
+  - generic: "75"
+  - generic: ",90"
+- paragraph:
+  - text: Você pode viajar com mais de 200
+  - strong: empresas de ônibus.
+- paragraph: Para descobrir o Brasil com ClickBus são mais de 4.800 destinos.
+- link "Conhecer empresas":
+  - /url: /viacao
+- heading "Principais rotas" [level=2]
+- link "Ônibus para Rio de Janeiro, RJ São Paulo, SP Rio de Janeiro, RJ":
+  - /url: /passagem/sao-paulo-sp-para-rio-de-janeiro-rj
+  - img "Ônibus para Rio de Janeiro, RJ"
+  - generic: São Paulo, SP
+  - generic: Rio de Janeiro, RJ
+- link "Ônibus para Curitiba, PR São Paulo, SP Curitiba, PR":
+  - /url: /passagem/sao-paulo-sp-para-curitiba-pr
+  - img "Ônibus para Curitiba, PR"
+  - generic: São Paulo, SP
+  - generic: Curitiba, PR
+- link "Ônibus para São Paulo, SP Belo Horizonte, MG São Paulo, SP":
+  - /url: /passagem/belo-horizonte-mg-para-sao-paulo-sp
+  - img "Ônibus para São Paulo, SP"
+  - generic: Belo Horizonte, MG
+  - generic: São Paulo, SP
+- link "Ônibus para São Paulo, SP Curitiba, PR São Paulo, SP":
+  - /url: /passagem/curitiba-pr-para-sao-paulo-sp
+  - img "Ônibus para São Paulo, SP"
+  - generic: Curitiba, PR
+  - generic: São Paulo, SP
+- link "Ônibus para São Paulo, SP Rio de Janeiro, RJ São Paulo, SP":
+  - /url: /passagem/rio-de-janeiro-rj-para-sao-paulo-sp
+  - img "Ônibus para São Paulo, SP"
+  - generic: Rio de Janeiro, RJ
+  - generic: São Paulo, SP
+- link "Ônibus para Belo Horizonte, MG São Paulo, SP Belo Horizonte, MG":
+  - /url: /passagem/sao-paulo-sp-para-belo-horizonte-mg
+  - img "Ônibus para Belo Horizonte, MG"
+  - generic: São Paulo, SP
+  - generic: Belo Horizonte, MG
+- link "Ônibus para Belo Horizonte, MG Rio de Janeiro, RJ Belo Horizonte, MG":
+  - /url: /passagem/rio-de-janeiro-rj-para-belo-horizonte-mg
+  - img "Ônibus para Belo Horizonte, MG"
+  - generic: Rio de Janeiro, RJ
+  - generic: Belo Horizonte, MG
+- link "Ônibus para Rio de Janeiro, RJ Belo Horizonte, MG Rio de Janeiro, RJ":
+  - /url: /passagem/belo-horizonte-mg-para-rio-de-janeiro-rj
+  - img "Ônibus para Rio de Janeiro, RJ"
+  - generic: Belo Horizonte, MG
+  - generic: Rio de Janeiro, RJ
+- link "Ônibus para Florianópolis, SC São Paulo, SP Florianópolis, SC":
+  - /url: /passagem/sao-paulo-sp-para-florianopolis-sc
+  - img "Ônibus para Florianópolis, SC"
+  - generic: São Paulo, SP
+  - generic: Florianópolis, SC
+- link "Ônibus para São Paulo, SP Florianópolis, SC São Paulo, SP":
+  - /url: /passagem/florianopolis-sc-para-sao-paulo-sp
+  - img "Ônibus para São Paulo, SP"
+  - generic: Florianópolis, SC
+  - generic: São Paulo, SP
+- 'heading "ClickBus: passagens de ônibus online!" [level=2]':
+  - text: "ClickBus:"
+  - strong: passagens de ônibus online!
+- paragraph: "Conhecer culturas diferentes, fazer negócios, curtir um festival, fugir das preocupações cotidianas ou reencontrar uma pessoa querida: seja qual for o seu motivo para cair na estrada, sua busca terminou e a gente vai junto com você. Na ClickBus, você pode comprar sua passagem de ônibus online em poucos cliques, sem sair de casa ou enfrentar filas, e ainda pode aproveitar o ClickOferta, nossa solução para você encontrar rotas com preços ainda melhores."
+- paragraph: Com o aplicativo e o site da ClickBus, é fácil desbravar os lugares mais apaixonantes do Brasil e da América Latina! Nosso sistema inovador de rodoviária online te conecta a mais de 4.800 destinos, incluindo os lugares em que o avião não chega.
+- paragraph: Fica mais fácil planejar a sua próxima viagem de ônibus e tirar do papel as férias dos sonhos com as passagens de ônibus online que você encontra aqui. É só escolher a sua rota no nosso buscador inteligente, clicar e viajar.
+- heading "ClickOferta, o seu jeito de viajar com desconto" [level=2]:
+  - strong: ClickOferta
+  - text: ", o seu jeito de"
+  - strong: viajar com desconto
+- paragraph: Viajar nunca foi tão simples e barato. Agora, você pode conhecer os melhores destinos do Brasil com um preço ainda melhor, viajando com as nossas passagens de ônibus em promoção.
+- paragraph: ClickOferta traz um jeito especial de comprar suas passagens de ônibus online. É uma funcionalidade que oferece passagens ClickBus com o custo-benefício mais vantajoso para você. É só encontrar o selo ClickOferta para garantir as melhores rotas, horários e serviços por preços menores do que nas rodoviárias tradicionais.
+- heading "Por que viajar com a ClickBus?" [level=3]
+- paragraph: A ClickBus é feita por nós que amamos viagens, para você que compartilha da mesma paixão. Desde 2013, nós trabalhamos para conectar pessoas aos seus destinos com o máximo de conforto e praticidade, modernizando os serviços rodoviários com tecnologia de ponta.
+- paragraph: Afinal, viajar é sempre uma experiência transformadora. Por isso, ela deve ser agradável em todos os momentos – incluindo os percursos. Na nossa plataforma você escolhe entre veículos operados por mais de 200 empresas, tendo sempre a maior variedade de opções na hora de comprar sua passagem de ônibus online.
+- paragraph: Você decide entre vários horários, preços e tipos de assentos e pode deixar que a gente cuida do resto!
+- heading "Passagem online com segurança e um jeito fácil de pagar" [level=3]:
+  - strong: Passagem online
+  - text: com segurança e um jeito fácil de pagar
+- paragraph: Na plataforma ClickBus, você compra suas passagens de ônibus online com total segurança, sem arriscar seus dados pessoais e as suas informações de pagamento.
+- paragraph: "Faça seu pedido da maneira que preferir: dá para pagar com Pix, Mercado Pago, transferência bancária ou cartão de crédito (com opção de dividir em até 12 vezes). É simples, rápido e seguro."
+- paragraph: Garanta sua próxima viagem num click com a ClickBus!
+- button "Ler mais"
+- contentinfo:
+  - link "ClickBus":
+    - /url: /
+    - img "ClickBus"
+  - heading "Central de atendimento" [level=3]:
+    - text: Central de atendimento
+  - navigation:
+    - generic: Todos os dias 07h às 22h.
+    - link "Acessar atendimento":
+      - /url: https://atendimento.clickbus.com.br/hc/pt-br
+  - heading "ClickBus" [level=3]:
+    - text: ClickBus
+  - navigation:
+    - link "Sobre a ClickBus":
+      - /url: /institucional/sobre-nos
+    - link "Imprensa":
+      - /url: /institucional/imprensa
+    - link "Baixar o aplicativo":
+      - /url: /institucional/mobile
+    - link "Trabalhe na ClickBus":
+      - /url: https://clickbus.gupy.io/
+    - link "Blog ClickBus":
+      - /url: https://www.clickbus.com.br/blog
+    - 'link "Ação social: BusTransforma"':
+      - /url: https://www.clickbus.org/
+    - link "Junte-se a nós":
+      - /url: /institucional/seja-um-parceiro
+  - heading "Links úteis" [level=3]:
+    - text: Links úteis
+  - navigation:
+    - link "Destinos":
+      - /url: /onibus
+    - link "Rodoviárias":
+      - /url: /rodoviaria
+    - link "Viações":
+      - /url: /viacao
+    - link "Passagens promocionais":
+      - /url: /onibus/passagens-promocionais
+    - link "Cupons de desconto":
+      - /url: /onibus/cupom
+    - link "Como organizar uma viagem":
+      - /url: https://todepassagem.clickbus.com.br/dicas-de-viagem/planeje-sua-viagem/como-planejar-uma-viagem/
+  - heading "Rotas Populares" [level=3]:
+    - text: Rotas Populares
+  - navigation:
+    - link "São Paulo para Rio de Janeiro":
+      - /url: /passagem/sao-paulo-sp-para-rio-de-janeiro-rj
+    - link "São Paulo para Curitiba":
+      - /url: /passagem/sao-paulo-sp-para-curitiba-pr
+    - link "Belo Horizonte para São Paulo":
+      - /url: /passagem/belo-horizonte-mg-para-sao-paulo-sp
+    - link "Curitiba para São Paulo":
+      - /url: /passagem/curitiba-pr-para-sao-paulo-sp
+    - link "Rio de Janeiro para São Paulo":
+      - /url: /passagem/rio-de-janeiro-rj-para-sao-paulo-sp
+    - link "São Paulo para Belo Horizonte":
+      - /url: /passagem/sao-paulo-sp-para-belo-horizonte-mg
+    - link "Rio de Janeiro para Belo Horizonte":
+      - /url: /passagem/rio-de-janeiro-rj-para-belo-horizonte-mg
+    - link "Belo Horizonte para Rio de Janeiro":
+      - /url: /passagem/belo-horizonte-mg-para-rio-de-janeiro-rj
+    - link "São Paulo para Florianópolis":
+      - /url: /passagem/sao-paulo-sp-para-florianopolis-sc
+    - link "Florianópolis para São Paulo":
+      - /url: /passagem/florianopolis-sc-para-sao-paulo-sp
+  - heading "Informações" [level=3]:
+    - text: Informações
+  - navigation:
+    - link "Dúvidas frequentes":
+      - /url: https://atendimento.clickbus.com.br/hc/pt-br
+    - link "Regulamento de ofertas":
+      - /url: https://static.clickbus.com/live/ClickBus/campanhas/2023/regulamento-ofertas.html
+    - link "Regulamento promoção R$0,11":
+      - /url: https://static.clickbus.com/live/ClickBus/campanhas/2024/regulamento-promocao-R011.html
+    - link "Destinos internacionais":
+      - /url: https://www.clickbus.com.br/onibus/viagens-internacionais
+    - link "Canal de transparência":
+      - /url: https://canal.ouvidordigital.com.br/clickbus
+    - link "ClickBus é confiável?":
+      - /url: https://todepassagem.clickbus.com.br/dicas-de-viagem/planeje-sua-viagem/clickbus-e-confiavel/
+  - paragraph: Baixe nosso app
+  - link "Google Play":
+    - /url: https://play.google.com/store/apps/details?id=com.clickbus.mobile&hl=pt_BR&pli=1
+    - img "Google Play"
+  - link "App Store":
+    - /url: https://apps.apple.com/br/app/clickbus-passagens-de-%C3%B4nibus/id889723827
+    - img "App Store"
+  - paragraph: Siga a gente
+  - link "Facebook":
+    - /url: https://www.facebook.com/clickbus
+    - img "Facebook"
+  - link "YouTube":
+    - /url: https://www.youtube.com/channel/UCyIH7qjfMoTu77im4SCHAqw
+    - img "YouTube"
+  - link "X":
+    - /url: https://twitter.com/clickbusbr
+    - img "X"
+  - link "Instagram":
+    - /url: https://www.instagram.com/clickbus/
+    - img "Instagram"
+  - link "TikTok":
+    - /url: https://www.tiktok.com/@clickbus
+    - img "TikTok"
+  - link "Pinterest":
+    - /url: https://br.pinterest.com/clickbus/
+    - img "Pinterest"
+  - img "Master Card"
+  - img "Visa"
+  - img "Amex"
+  - img "Elo"
+  - img "Diners"
+  - img "Hipercard"
+  - paragraph: Compra 100% Segura
+  - img "Cadastur"
+  - generic: © ClickBus 2026
+  - navigation:
+    - link "Política de Privacidade":
+      - /url: /institucional/politica-de-privacidade
+    - link "Política de Cookies":
+      - /url: /institucional/politica-de-cookies
+    - link "Termos de Uso":
+      - /url: /institucional/termos-de-uso
+  - paragraph: Viajar muda a gente.
+- link "Compre pelo WhatsApp":
+  - /url: https://apigw.clickbus.com.br/whatsapp/mkt/campaigns/ota_whatsapp_button
+  - generic: Compre pelo WhatsApp
+- alert

@@ -12,7 +12,7 @@ export function StepProgress({ activeStep }: StepProgressProps) {
           const number = index + 1;
           const state = number < activeStep ? 'complete' : number === activeStep ? 'active' : 'upcoming';
           return (
-            <li className={`step-progress__item step-progress__item--${state}`} key={label}>
+            <li className={`step-progress__item step-progress__item--${state}`} key={label} aria-current={state === 'active' ? 'step' : undefined}>
               <span className="step-progress__number" aria-hidden="true">
                 {number < activeStep ? '✓' : number}
               </span>
@@ -27,4 +27,3 @@ export function StepProgress({ activeStep }: StepProgressProps) {
     </nav>
   );
 }
-
