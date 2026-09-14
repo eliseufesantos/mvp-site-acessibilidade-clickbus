@@ -4,34 +4,44 @@ export interface PublicContentTarget {
   id: string;
   label: string;
   text: string;
+  simplifiedText?: string;
   allowSimplify: boolean;
+}
+
+export interface ApprovedPageSelection {
+  term: string;
+  contentRef: string;
 }
 
 const CONTENT_BY_PAGE: Record<JourneyStep, readonly PublicContentTarget[]> = {
   search: [{
     id: 'search-help',
     label: 'Ajuda da busca',
-    text: 'Escolha a cidade de saída, o destino e a data. Se houver mais de um terminal, confira o local antes de buscar.',
+    text: 'Escolha uma rota atendida, confira a data e use Buscar passagens.',
+    simplifiedText: 'Escolha uma rota e confira a data. Depois, selecione Buscar passagens.',
     allowSimplify: true,
   }],
   results: [
     {
       id: 'results-help',
       label: 'Como comparar viagens',
-      text: 'Compare os horários e o local de embarque. Use os filtros para reduzir a lista e a ordenação para mudar a sequência das viagens.',
+      text: 'Compare horários, embarque e comodidades antes de escolher.',
+      simplifiedText: 'Antes de escolher, veja o horário, onde será o embarque e o que cada viagem oferece.',
       allowSimplify: true,
     },
     {
       id: 'service-class-help',
       label: 'Classe de serviço',
-      text: 'A classe descreve o tipo de serviço da viagem. Consulte as comodidades informadas para essa opção.',
+      text: 'A classe descreve o tipo de serviço. Confira também as comodidades da viagem.',
+      simplifiedText: 'A classe mostra o tipo de serviço. Veja também o que a viagem oferece.',
       allowSimplify: true,
     },
   ],
   seats: [{
     id: 'seat-map-help',
     label: 'Ajuda do mapa de assentos',
-    text: 'Os lugares disponíveis mostram um número. Escolha um deles. Os lugares ocupados não podem ser selecionados. Você pode navegar com Tab ou pelas setas.',
+    text: 'Use Tab ou as setas do teclado para navegar pela posição visual dos assentos. Pressione Espaço ou Enter para escolher.',
+    simplifiedText: 'No teclado, use Tab ou as setas para navegar pelos assentos. Pressione Espaço ou Enter para escolher.',
     allowSimplify: true,
   }],
   checkout: [],
@@ -43,19 +53,64 @@ export const getPublicContentTargets = (page: JourneyStep): readonly PublicConte
 export const resolvePublicContent = (page: JourneyStep, id: string): PublicContentTarget | null =>
   CONTENT_BY_PAGE[page].find((target) => target.id === id) ?? null;
 
+export const simplifyPublicContent = (page: JourneyStep, id: string): string | null => {
+  const target = resolvePublicContent(page, id);
+  return target?.allowSimplify && target.simplifiedText ? target.simplifiedText : null;
+};
+
+type PageSelectionRead =
+  | { state: 'empty' }
+  | { state: 'invalid' }
+  | { state: 'approved'; value: ApprovedPageSelection };
+
+let rememberedSelection: (ApprovedPageSelection & { page: JourneyStep }) | null = null;
+
+const closestApprovedTarget = (node: Node): HTMLElement | null => {
+  const element = node.nodeType === 1 ? node as Element : node.parentElement;
+  return element?.closest<HTMLElement>('[data-a11y-content-id]') ?? null;
+};
+
+const readPageSelection = (page: JourneyStep, selection: Selection | null): PageSelectionRead => {
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return { state: 'empty' };
+
+  const term = selection.toString().replace(/\s+/g, ' ').trim();
+  if (term.length < 2 || term.length > 120) return { state: 'invalid' };
+
+  const range = selection.getRangeAt(0);
+  const startTarget = closestApprovedTarget(range.startContainer);
+  const endTarget = closestApprovedTarget(range.endContainer);
+  if (!startTarget || startTarget !== endTarget) return { state: 'invalid' };
+
+  const contentRef = startTarget.dataset.a11yContentId ?? '';
+  return resolvePublicContent(page, contentRef)
+    ? { state: 'approved', value: { term, contentRef } }
+    : { state: 'invalid' };
+};
+
+export const rememberApprovedPageSelection = (
+  page: JourneyStep,
+  selection: Selection | null = window.getSelection(),
+): ApprovedPageSelection | null => {
+  const result = readPageSelection(page, selection);
+  if (result.state === 'approved') {
+    rememberedSelection = { page, ...result.value };
+    return result.value;
+  }
+  if (result.state === 'invalid') rememberedSelection = null;
+  return null;
+};
+
+export const clearRememberedApprovedPageSelection = () => {
+  rememberedSelection = null;
+};
+
 export const getApprovedPageSelection = (
   page: JourneyStep,
-): { term: string; contentRef: string } | null => {
-  const selection = window.getSelection();
-  const term = selection?.toString().replace(/\s+/g, ' ').trim() ?? '';
-  if (!selection || selection.rangeCount === 0 || term.length < 2 || term.length > 120) return null;
-  const range = selection.getRangeAt(0);
-  const container = range.commonAncestorContainer;
-  const element = container.nodeType === Node.ELEMENT_NODE
-    ? container as Element
-    : container.parentElement;
-  const approved = element?.closest<HTMLElement>('[data-a11y-content-id]');
-  if (!approved) return null;
-  const contentRef = approved.dataset.a11yContentId ?? '';
-  return resolvePublicContent(page, contentRef) ? { term, contentRef } : null;
+  selection: Selection | null = window.getSelection(),
+): ApprovedPageSelection | null => {
+  const current = rememberApprovedPageSelection(page, selection);
+  if (current) return current;
+  return rememberedSelection?.page === page
+    ? { term: rememberedSelection.term, contentRef: rememberedSelection.contentRef }
+    : null;
 };

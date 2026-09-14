@@ -102,8 +102,8 @@ export function SearchPage({ initialValues, onSearch }: SearchPageProps) {
         <div className="section-heading section-heading--row">
           <div>
             <h2 id="offers-title">Passagens em destaque</h2>
-            <p id="search-help" data-a11y-content-id="search-help">
-              Escolha uma rota atendida, confira a data e use Buscar passagens. Os valores e horários são fictícios.
+            <p id="search-help">
+              <span data-a11y-content-id="search-help">Escolha uma rota atendida, confira a data e use Buscar passagens.</span> Os valores e horários são fictícios.
             </p>
           </div>
           <Tag aria-hidden="true" />

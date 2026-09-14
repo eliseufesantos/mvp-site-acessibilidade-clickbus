@@ -1,6 +1,6 @@
 # Plano de implementação — Acessibilidade Assistida por IA
 
-Versão 2.0 · 9 de setembro de 2026.
+Versão 2.1 · 14 de setembro de 2026.
 
 ## 1. Regras
 
@@ -58,9 +58,10 @@ Aceite: nenhuma requisição Rybená/VLibras no runtime; UI informa limitação 
 ### E — Explicação e simplificação
 
 - glossário determinístico para termos revisados;
-- escolha por lista/teclado e seleção restrita por mouse;
+- escolha por lista/teclado e modo explícito de seleção restrita por mouse/toque;
 - resultado separado e original preservado;
-- backend opcional para conteúdo fora do glossário e simplificação;
+- simplificações locais revisadas para os alvos iniciais;
+- backend opcional para termos fora do glossário e alvos autorizados sem versão simples local;
 - garantir que respostas nunca entrem no executor.
 
 Aceite: limites, conteúdo proibido e prompt injection não alteram interface nem inventam condições.
@@ -84,31 +85,35 @@ Aceite: navegador sem suporte não quebra; fechamento impede envio tardio.
 
 ## 3. Registro da entrega
 
-| Etapa | Estado em 09/09/2026 | Evidência inicial | Limitação |
+| Etapa | Estado em 14/09/2026 | Evidência | Limitação |
 | --- | --- | --- | --- |
 | A | Concluída | leitura e auditoria; `tsc`/Vite diretos passam | scripts `pnpm` tentam reinstalar sem TTY/rede |
 | B | Concluída | store v3, ferramentas, conteúdo e adaptador; testes | — |
 | C | Estrutura concluída | contratos, cliente, endpoint e executor testados | modelo/credencial não configurados; avaliação real `NOT RUN` |
 | D | Preparação concluída | porta genérica, estado estável, crédito e zero rede | API Rybená não liberada/configurada; operação real `BLOCKED` |
-| E | Parcial nos limites disponíveis | glossário e isolamento aprovados; 503 seguro observado | explicação fora do glossário/simplificação real dependem de provedor |
+| E | Concluída no escopo local | seleção real na página, glossário e simplificação local aprovados; original preservado | explicação fora do glossário e fallback remoto `NOT RUN`, pois o provedor não está configurado |
 | F | Implementada | detecção, captura explícita, edição e abort no fechamento | permissão/microfone real não executados |
-| G | Concluída para o escopo local | TypeScript, build, 11 testes e navegador desktop/mobile, inclusive 320×844 CSS px | NVDA, zoom 200% e pesquisa humana pendentes |
+| G | Concluída para o escopo local automatizado | TypeScript, build e 13 testes aprovados; navegador desktop/mobile exercitado | NVDA, zoom 200% e pesquisa humana pendentes |
 
 ### Baseline registrado
 
 - Node `v22.22.0`; pnpm `11.12.0`.
 - `pnpm typecheck` e `pnpm build`: falha ambiental antes do script (`ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY` e tentativa de registry).
 - `node_modules/.bin/tsc --noEmit -p tsconfig.app.json`: PASS.
-- `node_modules/.bin/vite build --configLoader runner`: PASS, 1.614 módulos.
-- `node scripts/run-accessibility-tests.mjs`: PASS, 11 testes.
-- navegador integrado: PASS em 1265×711 e 378×629; sem overflow horizontal, `scrollTop=0` na troca de aba e zero recursos Rybená/VLibras.
-- captura headless via CDP: PASS em 320×844 CSS px; `innerWidth`, `clientWidth` e `scrollWidth` iguais a 320, painel aberto com 320 px e acionador totalmente dentro do viewport.
+- `node_modules/.bin/vite build --configLoader runner`: PASS, 1.616 módulos.
+- `node scripts/run-accessibility-tests.mjs`: PASS, 13 testes.
+- navegador integrado: PASS em 1440×900 e 390×844; acionador lateral fixo preservado na busca, nos resultados e nos assentos, drawer desktop não modal, diálogo mobile e ausência de erros/warnings no console.
+- fluxo de Conteúdo no navegador: PASS para recolher o painel, selecionar termo em `search-help`, retornar com o campo preenchido/focado, explicar “viação” pelo glossário e simplificar localmente com o original preservado; no mobile 390×844, o bloqueio modal foi restaurado após a seleção.
+- reflow da nova UI: PASS em 320×844, com `scrollWidth=clientWidth=320` no documento e no painel; a escala de texto a 150% permaneceu legível e sem overflow horizontal; o alto contraste também foi exercitado em mobile sem overflow.
+- breakpoint responsivo: PASS em 820 px como diálogo com backdrop, `aria-modal="true"` e `body` bloqueado; PASS em 821 px como região não modal, sem backdrop e com `body` rolável; ambos sem overflow horizontal.
 
 ### Arquivos principais entregues
 
 - `src/features/accessibility-agent/core/`: preferências, contratos, cliente e executor;
 - `src/features/accessibility-agent/adapters/`: registro ClickBus e porta/estado Rybená;
 - `src/features/accessibility-agent/ui/`: conversa, ajustes, conteúdo e voz;
+- `src/components/accessibility/AccessibilityPlugin.tsx`: acionador fixo, superfície desktop/mobile, foco e modo de seleção;
+- `src/styles/accessibility-plugin.css`: identidade visual e responsividade isoladas do plugin;
 - `server/accessibility/` e `api/accessibility/`: limite servidor e handlers;
 - `src/features/accessibility-agent/tests/run.ts`: regressão do núcleo;
 - `docs/accessibility-agent/concepts/`: três conceitos aceitos como referência.
@@ -120,7 +125,7 @@ Aceite: navegador sem suporte não quebra; fechamento impede envio tardio.
 2. Aplicar ajustes manuais em categorias, combinar e desfazer.
 3. Enviar pedido explícito; se IA não estiver configurada, mostrar indisponibilidade e continuar manualmente.
 4. Enviar pedido vago com planejador configurado/double de teste identificado; revisar proposta antes de aplicar.
-5. Explicar um termo do glossário e simplificar trecho público, mantendo original.
+5. Na aba Conteúdo, acionar “Selecionar na página”, marcar um termo em alvo identificado, revisar o campo preenchido, explicar pelo glossário e simplificar um trecho público localmente, mantendo o original.
 6. Demonstrar voz somente após consentimento de microfone; editar antes de enviar.
 7. Abrir área Rybená e mostrar atribuição + estado aguardando liberação técnica, sem tradução simulada.
 8. Percorrer busca → resultados → assento e confirmar que preferências não mudam o estado comercial.

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { AccessibilityPlugin } from '../components/accessibility/AccessibilityPlugin';
 import { ReadingAids } from '../components/accessibility/ReadingGuide';
 import { Header } from '../components/layout/Header';
 import { CheckoutPage } from '../features/checkout/CheckoutPage';
@@ -115,7 +116,8 @@ export function App() {
   return (
     <div className="app" id="inicio">
       <a className="skip-link" href="#main-content">Pular para o conteúdo principal</a>
-      <Header
+      <Header onHome={restart} />
+      <AccessibilityPlugin
         canUndo={canUndo}
         getPreferences={getPreferences}
         getStateRevision={getStateRevision}
@@ -124,7 +126,6 @@ export function App() {
         storageAvailable={storageAvailable}
         page={step}
         pageEpoch={pageEpoch}
-        onHome={restart}
         onApplyPreferences={applyPreferences}
         onResetPreferences={resetPreferences}
         onUndoPreferences={undoPreferences}

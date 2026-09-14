@@ -144,7 +144,7 @@ export function ResultsPage({ onBack, onChangeDate, onSelectTrip, preferences, s
         <div className="results-heading">
           <div>
             <h1>Passagens disponíveis</h1>
-            <p data-a11y-content-id="results-help">{visibleTrips.length} {visibleTrips.length === 1 ? 'opção encontrada' : 'opções encontradas'} para {formatTravelDate(search.date)}. Compare horários, embarque e comodidades antes de escolher.</p>
+            <p>{visibleTrips.length} {visibleTrips.length === 1 ? 'opção encontrada' : 'opções encontradas'} para {formatTravelDate(search.date)}. <span data-a11y-content-id="results-help">Compare horários, embarque e comodidades antes de escolher.</span></p>
           </div>
           <Button className="mobile-filter-button" variant="secondary" onClick={() => setMobileFiltersOpen(true)}>
             <SlidersHorizontal aria-hidden="true" /> Filtros {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bot, BookOpenText, Check, MessageCircle, Mic, Send, ShieldCheck, SlidersHorizontal, Sparkles, Square, X } from 'lucide-react';
+import { Accessibility, Bot, BookOpenText, Check, MessageCircle, Mic, Send, SlidersHorizontal, Sparkles, Square, X } from 'lucide-react';
 import type { AccessibilityPreferences, JourneyStep } from '../../../types';
 import { Button } from '../../../components/ui/Button';
 import { getPublicContentTargets, resolvePublicContent } from '../adapters/clickbus/content';
@@ -26,6 +26,7 @@ interface AccessibilityPanelProps {
   getStateRevision(): number;
   onApply(patch: PreferencePatch): boolean;
   onClose(): void;
+  onSelectionModeChange?(active: boolean): void;
   onReset(): boolean;
   onUndo(): boolean;
   page: JourneyStep;
@@ -39,6 +40,12 @@ interface AccessibilityPanelProps {
 const visualCapabilities = ALL_ACTION_TYPES.filter((type): type is ActionType => [
   'set_preferences', 'apply_comfortable_reading', 'undo_preferences', 'reset_preferences',
 ].includes(type));
+
+const PANEL_TABS: { id: PanelTab; label: string; icon: typeof MessageCircle }[] = [
+  { id: 'conversation', label: 'Conversa', icon: MessageCircle },
+  { id: 'settings', label: 'Ajustes', icon: SlidersHorizontal },
+  { id: 'content', label: 'Conteúdo', icon: BookOpenText },
+];
 
 const describeAction = (action: PlanAction) => {
   if (action.type === 'set_preferences') return 'Alterar as preferências indicadas';
@@ -139,27 +146,39 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
     }
   };
 
-  const tabs: { id: PanelTab; label: string; icon: typeof MessageCircle }[] = [
-    { id: 'conversation', label: 'Conversa', icon: MessageCircle },
-    { id: 'settings', label: 'Ajustes', icon: SlidersHorizontal },
-    { id: 'content', label: 'Conteúdo', icon: BookOpenText },
-  ];
-
   const selectTab = (nextTab: PanelTab) => {
     setTab(nextTab);
-    window.requestAnimationFrame(() => panelRef.current?.scrollTo({ top: 0, behavior: 'auto' }));
+    window.requestAnimationFrame(() => panelRef.current?.querySelector<HTMLElement>('.a11y-tab-panel')?.scrollTo({ top: 0, behavior: 'auto' }));
+  };
+
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    let nextIndex: number | null = null;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = (index + 1) % PANEL_TABS.length;
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = (index - 1 + PANEL_TABS.length) % PANEL_TABS.length;
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = PANEL_TABS.length - 1;
+    if (nextIndex === null) return;
+    event.preventDefault();
+    const nextTab = PANEL_TABS[nextIndex];
+    selectTab(nextTab.id);
+    window.requestAnimationFrame(() => document.getElementById(`a11y-tab-${nextTab.id}`)?.focus());
   };
 
   return (
     <section className="accessibility-panel" aria-label="Acessibilidade assistida por IA" ref={panelRef}>
       <div className="accessibility-panel__heading">
-        <ShieldCheck aria-hidden="true" size={22} />
-        <div><h2>Acessibilidade</h2><p>Ajustes locais, reversíveis e sob seu controle.</p></div>
+        <Accessibility aria-hidden="true" size={22} />
+        <div><h2>Acessibilidade</h2><p>Ajustes que acompanham você.</p></div>
+        <svg className="a11y-route-mark" viewBox="0 0 96 40" aria-hidden="true" focusable="false">
+          <path d="M9 9h22c13 0 13 22 27 22h28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="8" cy="9" r="5" fill="none" stroke="currentColor" strokeWidth="2" />
+          <circle cx="87" cy="31" r="5" fill="none" stroke="currentColor" strokeWidth="2" />
+        </svg>
         <button className="panel-close" type="button" aria-label="Fechar acessibilidade" onClick={props.onClose}><X aria-hidden="true" /></button>
       </div>
 
       <div className="a11y-tabs" role="tablist" aria-label="Áreas de acessibilidade">
-        {tabs.map(({ id, label, icon: Icon }) => <button key={id} id={`a11y-tab-${id}`} type="button" role="tab" aria-selected={tab === id} aria-controls={`a11y-panel-${id}`} tabIndex={tab === id ? 0 : -1} onClick={() => selectTab(id)}><Icon aria-hidden="true" />{label}</button>)}
+        {PANEL_TABS.map(({ id, label, icon: Icon }, index) => <button key={id} id={`a11y-tab-${id}`} type="button" role="tab" aria-selected={tab === id} aria-controls={`a11y-panel-${id}`} tabIndex={tab === id ? 0 : -1} onClick={() => selectTab(id)} onKeyDown={(event) => handleTabKeyDown(event, index)}><Icon aria-hidden="true" />{label}</button>)}
       </div>
 
       {tab === 'conversation' ? (
@@ -193,7 +212,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       ) : null}
 
       {tab === 'settings' ? <div id="a11y-panel-settings" role="tabpanel" aria-labelledby="a11y-tab-settings" className="a11y-tab-panel"><PreferenceControls canUndo={props.canUndo} preferences={props.preferences} onApply={props.onApply} onReset={props.onReset} onUndo={props.onUndo} onStatus={setStatus} />{status ? <p className="assistant-message" role="status">{status}</p> : null}</div> : null}
-      {tab === 'content' ? <div id="a11y-panel-content" role="tabpanel" aria-labelledby="a11y-tab-content" className="a11y-tab-panel"><ContentTools page={props.page} /></div> : null}
+      {tab === 'content' ? <div id="a11y-panel-content" role="tabpanel" aria-labelledby="a11y-tab-content" className="a11y-tab-panel"><ContentTools page={props.page} onSelectionModeChange={props.onSelectionModeChange} /></div> : null}
     </section>
   );
 }

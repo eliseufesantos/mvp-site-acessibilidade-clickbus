@@ -1,6 +1,6 @@
 # Validação — Acessibilidade Assistida por IA
 
-Versão 2.0 · 9 de setembro de 2026.
+Versão 2.1 · 14 de setembro de 2026.
 
 ## 1. Regra de evidência
 
@@ -12,7 +12,7 @@ Estado inicial Rybená: **BLOCKED / NOT VALIDATED — provider API not yet relea
 
 | Caso | Verificação | Resultado esperado |
 | --- | --- | --- |
-| T01 | Abrir/fechar por teclado | foco inicial correto, Escape e retorno ao acionador |
+| T01 | Abrir/fechar o plugin lateral por teclado | foco inicial correto, Escape e retorno ao acionador |
 | T02 | Cada preferência | efeito real e discreto, conteúdo/estado preservado |
 | T03 | Todas as preferências | reflow, foco e controles íntegros |
 | T04 | Letras × entrelinha | ajustes independentes |
@@ -29,9 +29,9 @@ Estado inicial Rybená: **BLOCKED / NOT VALIDATED — provider API not yet relea
 | T15 | Resposta tardia após ajuste/fechamento/navegação | descartada |
 | T16 | Mesmo `planId` duas vezes | efeito único e recibo reutilizado |
 | T17 | Timeout/IA desabilitada | erro finito; controles manuais disponíveis |
-| T18 | Explicar termo do glossário | resposta revisada, contexto mínimo, original preservado |
+| T18 | Selecionar e explicar termo do glossário | painel recolhe; seleção fica no mesmo alvo público; campo/foco retornam; resposta revisada |
 | T19 | Termo/regra não disponível | reconhece limite; não inventa tarifa/política |
-| T20 | Simplificar alvo público | saída separada e identificada, sem substituir original |
+| T20 | Simplificar alvo público | versão local revisada quando disponível; saída separada, sem substituir original |
 | T21 | Simplificar conteúdo proibido/injeção | recusa; nenhuma ação visual |
 | T22 | Voz suportada | iniciar/parar, indicador, edição e confirmação |
 | T23 | Voz não suportada/fechar capturando | mensagem estável; captura abortada |
@@ -125,24 +125,26 @@ Não alegar conformidade integral apenas por esses testes.
 - [x] documentação e evidências refletem o estado real;
 - [x] pesquisa humana marcada como realizada ou pendente, nunca presumida.
 
-### Resultado observado em 09/09/2026
+### Resultado observado em 14/09/2026
 
 | Grupo | Resultado | Evidência |
 | --- | --- | --- |
-| contratos/store/executor | PASS | 11 testes locais; ação desconhecida e revisão obsoleta rejeitadas; `planId` idempotente; 503 do servidor validado |
+| contratos/store/executor | PASS | 13 testes locais; ação desconhecida e revisão obsoleta rejeitadas; `planId` idempotente; seleção e simplificação local cobertas |
 | TypeScript | PASS | `tsc --noEmit -p tsconfig.app.json --pretty false` |
-| build | PASS | Vite 6.4.3, 1.614 módulos |
-| painel desktop | PASS | 1265×711, sem overflow horizontal; texto 150% e alto contraste inspecionados |
-| painel mobile | PASS de layout | 378×629 no navegador integrado e 320×844 via CDP; sem overflow horizontal, painel com 320 px e acionador dentro do viewport |
+| build | PASS | Vite 6.4.3, 1.616 módulos |
+| painel desktop | PASS | 1440×900; acionador fixo à esquerda permaneceu na posição durante scroll e nas etapas busca, resultados e assentos; drawer não modal, Escape e retorno de foco |
+| painel mobile | PASS | 390×844 modal; em 320×844, documento e painel com `scrollWidth=clientWidth=320`; escala de texto a 150% e alto contraste sem overflow horizontal |
+| breakpoint 820/821 | PASS | 820 px: diálogo, backdrop, `aria-modal="true"` e `body` bloqueado; 821 px: região não modal, sem backdrop e `body` rolável; sem overflow nos dois casos |
 | IA real | NOT RUN | `ACCESSIBILITY_LLM_*` ausentes; 503 seguro observado |
-| explicação local | PASS | “viação” respondida pelo glossário revisado |
-| simplificação real | NOT RUN | provedor ausente; original preservado e limitação informada |
+| seleção e explicação local | PASS | arraste real em `search-help` preencheu e focou o campo; “viação” foi respondida pelo glossário revisado; em 390×844 o painel e o bloqueio modal retornaram |
+| simplificação local | PASS | versão revisada exibida separadamente e texto original preservado |
+| simplificação por LLM | NOT RUN | provedor ausente; caminho remoto permanece protegido pelo 503 seguro |
 | voz real | NOT RUN | permissão de microfone não concedida nesta rodada |
 | Rybená real | BLOCKED / NOT VALIDATED | provider API not yet released/configured |
 | ausência de legado | PASS | zero scripts e zero recursos observados para Rybená/VLibras |
 | leitor de tela/pesquisa humana | NOT RUN | requer NVDA/VoiceOver e participantes adequados |
 
-Captura reproduzível: `app/scripts/capture-accessibility-evidence.mjs`, com emulação CDP de 320×844 CSS px. Métricas observadas: `innerWidth=320`, `clientWidth=320`, `scrollWidth=320`; painel aberto de `left=0` a `right=320`, sem overflow horizontal. Evidências: `evidence/implementation-mobile-320.png`, `evidence/implementation-panel-mobile-320.png` e `evidence/implementation-panel-content-mobile-320.png`.
+A nova direção lateral foi inspecionada no navegador integrado em 1440×900, 390×844 e 320×844 CSS px. Em 320 px, as métricas observadas no estado padrão e com texto a 150% foram `clientWidth=320` e `scrollWidth=320` tanto no documento quanto no painel. As imagens versionadas `evidence/implementation-mobile-320.png`, `evidence/implementation-panel-mobile-320.png` e `evidence/implementation-panel-content-mobile-320.png` registram a versão anterior do painel; o script `app/scripts/capture-accessibility-evidence.mjs` continua sendo o caminho reproduzível para atualizar evidências versionadas.
 
 ## 8. Registro
 

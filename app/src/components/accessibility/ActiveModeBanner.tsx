@@ -14,7 +14,7 @@ export function ActiveModeBanner({ preferences }: ActiveModeBannerProps) {
     <div className="active-mode-banner" role="status">
       <Accessibility aria-hidden="true" size={20} />
       <strong>{labels.join(' + ')} {labels.length > 1 ? 'ativos' : 'ativo'}</strong>
-      <span>Altere ou desfaça no menu Acessibilidade.</span>
+      <span>Altere ou desfaça no botão lateral de Acessibilidade.</span>
     </div>
   );
 }

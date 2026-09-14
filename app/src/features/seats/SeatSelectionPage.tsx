@@ -144,11 +144,10 @@ export function SeatSelectionPage({
               <div className="selection-message" role="status">
                 <CheckCircle2 aria-hidden="true" /> Assento {selectedSeat} selecionado
               </div>
-            ) : (
-              <p className="journey-card__hint" id="seat-map-help" data-a11y-content-id="seat-map-help">
-                Use Tab ou as setas do teclado para navegar pela posição visual dos assentos. Pressione Espaço ou Enter para escolher.
-              </p>
-            )}
+            ) : null}
+            <p className="journey-card__hint" id="seat-map-help" data-a11y-content-id="seat-map-help">
+              Use Tab ou as setas do teclado para navegar pela posição visual dos assentos. Pressione Espaço ou Enter para escolher.
+            </p>
           </aside>
         </div>
       </div>

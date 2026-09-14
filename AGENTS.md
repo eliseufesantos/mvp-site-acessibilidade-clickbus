@@ -10,7 +10,7 @@ Este é um MVP acadêmico que replica uma jornada da ClickBus usando dados fict�
 busca → resultados → seleção de assento → passageiro → confirmação simulada
 ```
 
-O produto inclui um painel de acessibilidade com controles locais e uma arquitetura preparada para planejamento assistido por IA e futura integração de Libras por Rybená.
+O produto inclui um plugin lateral de acessibilidade com controles locais e uma arquitetura preparada para planejamento assistido por IA e futura integração de Libras por Rybená.
 
 Não há consulta comercial real, emissão de bilhete, reserva, cancelamento ou pagamento.
 
@@ -31,13 +31,15 @@ Não há consulta comercial real, emissão de bilhete, reserva, cancelamento ou 
 
 Snapshot operacional atualizado em **14/09/2026**:
 
-- branch: `refactor/organiza-estrutura-do-projeto`;
-- HEAD: `99575af` (`Ignore temporary Chrome QA profile files`);
-- working tree observado limpo e sincronizado com `origin` antes da criação deste arquivo;
+- branch: `main`;
+- HEAD: `463bdf1` (`refactor: documentacao para agents`), sincronizado com `origin/main` antes das alterações locais desta iteração;
+- working tree contém a implementação local ainda não commitada do plugin lateral e das correções de conteúdo; não descarte essas mudanças;
 - aplicação React 18 + TypeScript estrito + Vite 6;
-- build Vite: aprovado, 1.614 módulos transformados;
-- suíte do agente de acessibilidade: 11 testes aprovados;
-- reflow do painel validado em 1265×711, 378×629 e 320×844 CSS px;
+- build Vite: aprovado, 1.616 módulos transformados;
+- suíte do agente de acessibilidade: 13 testes aprovados;
+- fluxo de conteúdo validado em navegador: seleção real de termo na página, explicação pelo glossário e simplificação determinística com original preservado;
+- reflow da nova UI validado em 1440×900, 390×844 e 320×844 CSS px; escala de texto a 150% em 320 px e alto contraste em mobile também permaneceram sem overflow horizontal;
+- breakpoint validado nos limites: 820 px usa diálogo modal com backdrop e bloqueio do body; 821 px usa região não modal, sem backdrop e com a página rolável;
 - `@types/node` é dependência explícita do app e a resolução de tipos está restrita ao `app/node_modules`;
 - `.tmp-chrome-qa/` está ignorado e não deve voltar a ser versionado.
 
@@ -56,7 +58,7 @@ Este snapshot não prova que um deployment remoto posterior continua saudável. 
 │   ├── scripts/                      # testes e captura de evidências
 │   └── src/
 │       ├── app/App.tsx               # estado e navegação da jornada
-│       ├── components/               # layout, UI e fachadas
+│       ├── components/               # layout, UI, fachadas e host do plugin lateral
 │       ├── data/trips.ts             # viagens fictícias
 │       ├── features/                 # search, results, seats, checkout e confirmation
 │       ├── features/accessibility-agent/
@@ -65,7 +67,7 @@ Este snapshot não prova que um deployment remoto posterior continua saudável. 
 │       │   ├── ui/                   # conversa, ajustes, conteúdo e voz
 │       │   └── tests/                # regressão executável do núcleo
 │       ├── hooks/                    # persistência/aplicação das preferências
-│       └── styles/                   # tokens, base global e componentes
+│       └── styles/                   # tokens, base global, componentes e plugin de acessibilidade
 ├── docs/                             # produto, engenharia, QA e continuidade
 ├── entregas/                         # artefatos finais acadêmicos
 └── scripts/                          # geradores de documentos da entrega
@@ -104,6 +106,8 @@ npx --yes pnpm@10.28.0 --dir app test:accessibility
 - Componentes de UI não devem assumir regras comerciais da jornada.
 - Tokens visuais pertencem a `src/styles/tokens.css`; evite valores globais duplicados em componentes.
 - Use os componentes e ícones Lucide existentes antes de criar novas primitivas.
+- O acionador de acessibilidade pertence ao host fixo lateral, fora do `Header`; no desktop o painel é não modal e no mobile é um diálogo modal.
+- A seleção de texto da página só ocorre em modo explícito, dentro de um alvo público registrado; durante esse modo o painel deve recolher sem bloquear a página.
 - Não substitua conteúdo original por texto explicado ou simplificado; apresente a saída separadamente.
 - Checkout, passageiro, bilhete, preço, pagamento e confirmação não podem ser enviados ao planejador ou às ferramentas de conteúdo.
 
@@ -116,7 +120,7 @@ O núcleo local funciona sem IA e sem Rybená:
 - contraste, quatro escalas de texto, controles/cursor grandes, destaques, espaçamento entre letras, entrelinha, alinhamento, guia, máscara e movimento reduzido;
 - preset de leitura confortável, restauração e desfazer de uma transação;
 - contratos runtime fechados e executor local idempotente;
-- glossário determinístico e registro estático de conteúdo público;
+- glossário determinístico, registro estático de conteúdo público e simplificações locais revisadas para os alvos iniciais;
 - voz opcional somente após ação explícita, com transcrição editável e `abort()` ao fechar.
 
 ### Planejador por IA
@@ -149,6 +153,7 @@ Para mudanças no núcleo ou no painel:
 - amplie `app/src/features/accessibility-agent/tests/run.ts` quando houver novo comportamento determinístico;
 - valide ações desconhecidas, estado obsoleto, idempotência, indisponibilidade e exclusões de conteúdo;
 - teste teclado, foco, Escape e retorno ao acionador quando alterar diálogos/painéis;
+- ao alterar ferramentas de conteúdo, teste a entrada e saída do modo de seleção, a captura restrita ao mesmo alvo público e o retorno do foco ao campo de termo;
 - teste reflow sem rolagem horizontal em desktop, mobile e 320 CSS px;
 - confirme que guia e máscara não interceptam ponteiro;
 - inspecione console/rede ao tocar em IA, voz ou Rybená;
@@ -220,7 +225,7 @@ Se duas fontes divergirem, preserve a opção mais segura, confirme o comportame
 
 ## 12. Pendências conhecidas
 
-- configurar e avaliar um provedor real para planejamento/simplificação;
+- configurar e avaliar um provedor real para planejamento, explicação fora do glossário e eventuais alvos sem simplificação local revisada;
 - adicionar proteções de produção antes de habilitar chamadas pagas;
 - receber o contrato técnico e homologar a Rybená;
 - validar com NVDA/VoiceOver e pessoas usuárias;

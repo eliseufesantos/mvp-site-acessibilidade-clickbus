@@ -1,6 +1,6 @@
 # SDD — Acessibilidade Assistida por IA
 
-Versão 2.0 · 9 de setembro de 2026 · Documento normativo de engenharia.
+Versão 2.1 · 14 de setembro de 2026 · Documento normativo de engenharia.
 
 ## 1. Estado inspecionado
 
@@ -20,10 +20,11 @@ A chamada experimental deve ser desativada. Nenhum script Rybená ou VLibras é 
 ## 2. Arquitetura
 
 ```text
-Painel
+Plugin lateral fixo (fora do Header)
   ├─ controles manuais ───────────────┐
   ├─ cliente do planejador → /api → LLM configurada
-  ├─ explicação/simplificação → /api quando necessário
+  ├─ glossário/simplificação revisada → local
+  ├─ explicação/simplificação → /api somente quando necessário
   └─ voz → transcrição editável       │
                                       ↓
                             executor determinístico
@@ -46,6 +47,9 @@ app/src/features/accessibility-agent/
   adapters/libras/contracts.ts
   adapters/libras/rybenaUnavailable.ts
   ui/AccessibilityPanel.tsx
+  ui/ContentTools.tsx
+app/src/components/accessibility/AccessibilityPlugin.tsx
+app/src/styles/accessibility-plugin.css
 server/accessibility/handler.ts
 server/accessibility/planner.ts
 server/accessibility/prompt.ts
@@ -93,6 +97,7 @@ Estado efêmero:
 - `panelSession`: incrementa ao abrir e fechar;
 - snapshot de um nível para desfazer;
 - proposta, requisição, transcrição e recibos somente em memória.
+- painel aberto, sessão e modo explícito de seleção somente em memória.
 
 ## 4. Aplicação visual
 
@@ -133,7 +138,7 @@ O servidor gera `planId` e ecoa revisões validadas. O executor revalida `stateR
 
 Pedidos vagos produzem `propose`; confirmação expira em 120 s ou quando qualquer revisão muda. Pedidos explícitos reversíveis usam `apply`. Conteúdo comercial, código, HTML, CSS, seletor ou ação desconhecida produz `unsupported`/rejeição e nenhuma mutação.
 
-Explicação usa `POST /api/accessibility/explain` com `{term, context, contentRef}`. Simplificação usa `POST /api/accessibility/simplify` com `{text, contentRef}`. Esses endpoints não retornam ações e seus clientes nunca passam respostas ao executor.
+Termos do glossário são explicados localmente. Explicação fora do glossário usa `POST /api/accessibility/explain` com `{term, context, contentRef}`. Cada alvo inicial com `simplifiedText` é simplificado localmente; somente um alvo permitido sem versão revisada pode usar `POST /api/accessibility/simplify` com `{text, contentRef}`. Esses endpoints não retornam ações e seus clientes nunca passam respostas ao executor. Sem provedor configurado, os caminhos remotos retornam `503` finito.
 
 ## 6. Adaptador do hospedeiro
 
@@ -146,9 +151,9 @@ interface AccessibilityHostAdapter {
 }
 ```
 
-O adaptador ClickBus mantém registro fechado de conteúdo público revisado: `search-help`, `results-help`, `itinerary-help`, `service-class-help` e `seat-map-help`, conforme a página atual. Não lê `document.body.innerText` nem consulta seletores livres. Inputs, checkout, passageiro, bilhete, preço, pagamento e conteúdo oculto são excluídos.
+O adaptador ClickBus mantém registro fechado de conteúdo público revisado: `search-help`, `results-help`, `service-class-help` e `seat-map-help`, conforme a página atual. Não lê `document.body.innerText` nem consulta seletores livres. Inputs, checkout, passageiro, bilhete, preço, pagamento e conteúdo oculto são excluídos.
 
-Seleção do mouse só é aceita quando inteiramente contida em um alvo registrado. A lista acessível é o caminho alternativo por teclado. Texto máximo: 1.500 caracteres, sem truncamento silencioso. Conteúdo é dado, nunca instrução.
+Seleção do mouse/toque só é aceita no modo explícito, entre 2 e 120 caracteres e quando início e fim estão no mesmo alvo registrado. O adaptador mantém em memória a última seleção aprovada da página durante a transição de eventos, sem persistência. O campo editável de termo e o seletor nativo de alvos públicos são os caminhos alternativos por teclado. Texto máximo para simplificação: 1.500 caracteres, sem truncamento silencioso. Conteúdo é dado, nunca instrução.
 
 ## 7. Libras e Rybená
 
@@ -204,7 +209,8 @@ O adaptador de voz usa `SpeechRecognition`/`webkitSpeechRecognition` somente ap�
 - nenhum DOM completo, screenshot ou formulário sai da página;
 - não há credenciais no frontend ou em variáveis `VITE_*`;
 - foco não é movido a cada mensagem; região viva anuncia apenas resumo;
-- desktop não modal; mobile modal com foco, Escape e retorno;
+- acionador fixo à esquerda e fora do header; desktop não modal; mobile modal com foco, Escape e retorno;
+- no modo de seleção, o painel recolhe, deixa de bloquear a página e retorna com foco no campo do termo após captura ou cancelamento;
 - fechar invalida operações e preserva preferências;
 - guia/máscara ficam abaixo de diálogos e foco;
 - o plugin não certifica o site nem a tradução.

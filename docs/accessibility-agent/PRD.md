@@ -1,6 +1,6 @@
 # PRD — Acessibilidade Assistida por IA
 
-Versão 2.0 · 9 de setembro de 2026 · Projeto acadêmico FIAP / ClickBus.
+Versão 2.1 · 14 de setembro de 2026 · Projeto acadêmico FIAP / ClickBus.
 
 ## 1. Visão e estado da entrega
 
@@ -56,7 +56,7 @@ Guia e máscara não interceptam cliques, não escondem o foco e respondem tamb�
 
 ## 5. Experiência do painel
 
-O acionador “Acessibilidade” é persistente e abre um painel com:
+O acionador “Acessibilidade” é um plugin fixo na lateral esquerda, fora do header, acompanha todas as etapas da jornada e abre um painel com:
 
 - conversa textual e histórico curto somente em memória;
 - ajustes manuais organizados por Apresentação, Leitura e Conforto;
@@ -68,7 +68,7 @@ O acionador “Acessibilidade” é persistente e abre um painel com:
 
 Pedidos explícitos e reversíveis podem ser aplicados diretamente. Pedidos vagos geram proposta explicada sem alterar a página. Não inferir idade, deficiência ou diagnóstico.
 
-Fechar o painel preserva preferências, interrompe captura/mídia, cancela requisições e propostas e invalida respostas tardias. No desktop o painel é lateral e não modal; no mobile é modal, com foco contido, Escape e retorno ao acionador.
+Fechar o painel preserva preferências, interrompe captura/mídia, cancela requisições e propostas e invalida respostas tardias. No desktop o painel é lateral e não modal; no mobile é modal, com foco contido, Escape e retorno ao acionador. O modo explícito “Selecionar na página” recolhe temporariamente o painel e libera a página; ao concluir ou cancelar, o painel retorna e o foco volta ao campo do termo.
 
 ## 6. Planejamento por IA e execução
 
@@ -88,11 +88,11 @@ Se não houver provedor configurado, a interface informa indisponibilidade tempo
 
 ## 7. Explicação e simplificação
 
-Explicação usa um termo e pequeno contexto público autorizado. Há seleção por lista/teclado, além da seleção do mouse. Um glossário revisado responde diretamente a termos da jornada. Quando a informação não está no contexto, o sistema reconhece o limite e não inventa regras de tarifa, cancelamento, remarcação ou reembolso.
+Explicação usa um termo e pequeno contexto público autorizado. O termo pode ser digitado em campo operável por teclado ou capturado no modo explícito de seleção por mouse/toque. A seleção aceita de 2 a 120 caracteres somente quando começa e termina no mesmo alvo público registrado. Um glossário revisado responde diretamente a termos da jornada. Quando a informação não está no contexto, o sistema reconhece o limite e não inventa regras de tarifa, cancelamento, remarcação ou reembolso.
 
-Simplificação aceita apenas trechos públicos registrados pelo adaptador, com limite de 1.500 caracteres. O resultado aparece separado, identificado como explicação simplificada por IA, com o original sempre disponível. O texto da página nunca é substituído. Conteúdo selecionado é dado não confiável e não pode disparar ferramentas.
+Simplificação aceita apenas trechos públicos registrados pelo adaptador, com limite de 1.500 caracteres. Os alvos iniciais possuem versões simples revisadas e respondem localmente, sem depender de IA. Um provedor configurado pode atender futuramente um alvo autorizado sem versão local, mas sua saída deve ser identificada de acordo com a origem real. Em ambos os casos, o resultado aparece separado, o original permanece disponível e o texto da página nunca é substituído. Conteúdo selecionado é dado não confiável e não pode disparar ferramentas.
 
-Primeiros alvos: ajuda da busca, comparação de resultados, itinerário editorial e instruções do mapa. Excluir dados pessoais, bilhetes, preços, regras contratuais e condições específicas.
+Primeiros alvos: ajuda da busca, comparação de resultados, classe de serviço e instruções do mapa. Excluir dados pessoais, bilhetes, preços, regras contratuais e condições específicas.
 
 ## 8. Voz
 
@@ -109,7 +109,7 @@ Não há escuta contínua, palavra de ativação ou gravação automática. Em n
 
 | ID | Requisito | Critério de aceite |
 | --- | --- | --- |
-| FR01 | Acionador e painel | Operável por teclado, responsivo e com retorno de foco |
+| FR01 | Acionador e painel | Plugin lateral persistente fora do header, operável por teclado, responsivo e com retorno de foco |
 | FR02 | Ferramentas próprias | Todos os ajustes discretos funcionam individualmente e em combinação |
 | FR03 | Preset | Patch explícito preserva preferências não mencionadas |
 | FR04 | Persistência e migração | v1 e v2 legados migram para v3; storage bloqueado funciona em memória |
@@ -118,8 +118,8 @@ Não há escuta contínua, palavra de ativação ou gravação automática. Em n
 | FR07 | Propostas | Pedido vago não altera estado antes da confirmação |
 | FR08 | Concorrência | Resposta tardia, repetida ou obsoleta não executa |
 | FR09 | Escopo | Pedido comercial, código ou ação desconhecida não modifica a jornada |
-| FR10 | Explicação | Termo/contexto mínimo; original preservado; limite reconhecido |
-| FR11 | Simplificação | Somente alvo permitido; resultado separado; sem nova informação |
+| FR10 | Explicação | Termo/contexto mínimo; seleção restrita a alvo público; limite reconhecido |
+| FR11 | Simplificação | Somente alvo permitido; versão local revisada quando disponível; resultado separado e sem nova informação |
 | FR12 | Voz | Captura explícita, transcrição editável e confirmação; fallback textual |
 | FR13 | Libras preparado | Contrato genérico, adaptador isolado e estado indisponível estável |
 | FR14 | Rybená atribuída | Crédito e link legíveis, sem alegar integração operacional |
