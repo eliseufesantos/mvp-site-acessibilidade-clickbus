@@ -1,5 +1,9 @@
 # Documentação do projeto
 
+## Novo agente de acessibilidade — PRD e SDD
+
+[Documentação de produto, arquitetura, implementação e validação](accessibility-agent/README.md) do plugin conversacional com ferramentas próprias e Libras pela Rybená. O núcleo, a interface e os endpoints preparados estão implementados. O uso gratuito da Rybená foi autorizado, condicionado à divulgação da parceria; a integração técnica e o provedor de IA real continuam pendentes de configuração externa.
+
 ## Guias de continuidade
 
 Leia nesta ordem para entender o projeto por inteiro.

@@ -4,10 +4,11 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit -p tsconfig.app.json && vite build",
-    "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json --pretty false"
+    "dev": "vite --configLoader runner",
+    "build": "tsc --noEmit -p tsconfig.app.json && vite build --configLoader runner",
+    "preview": "vite preview --configLoader runner",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json --pretty false",
+    "test:accessibility": "node scripts/run-accessibility-tests.mjs"
   },
   "dependencies": {
     "@fontsource/roboto-mono": "^5.2.6",
@@ -17,6 +18,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/node": "^22.10.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",

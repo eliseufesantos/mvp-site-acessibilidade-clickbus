@@ -1,15 +1,6 @@
 import { ChevronDown, MapPin } from 'lucide-react';
-import { useEffect, useId, useMemo, useState } from 'react';
-import { signLibras } from '../../components/accessibility/signLibras';
-
-const cities = [
-  'São Paulo (SP)',
-  'Rio de Janeiro (RJ)',
-  'Belo Horizonte (MG)',
-  'Curitiba (PR)',
-  'Campinas (SP)',
-  'Florianópolis (SC)',
-];
+import { useId, useMemo, useState } from 'react';
+import { locations } from '../../data/trips';
 
 interface LocationComboboxProps {
   label: string;
@@ -26,21 +17,9 @@ export function LocationCombobox({ label, name, onChange, value }: LocationCombo
 
   const filteredCities = useMemo(() => {
     const query = value.trim().toLocaleLowerCase('pt-BR');
-    if (!query || cities.includes(value)) return cities;
-    return cities.filter((city) => city.toLocaleLowerCase('pt-BR').includes(query));
+    if (!query || locations.includes(value as (typeof locations)[number])) return locations;
+    return locations.filter((city) => city.toLocaleLowerCase('pt-BR').includes(query));
   }, [value]);
-
-  // O VLibras traduz texto selecionado com o mouse, e ninguém consegue
-  // selecionar dentro de uma lista que fecha ao primeiro clique. Então a opção
-  // em foco é enviada direto ao avatar, com uma pausa curta para não disparar
-  // uma tradução a cada tecla digitada.
-  const activeCity = isOpen ? filteredCities[activeIndex] : undefined;
-
-  useEffect(() => {
-    if (!activeCity) return undefined;
-    const timer = window.setTimeout(() => signLibras(activeCity), 250);
-    return () => window.clearTimeout(timer);
-  }, [activeCity]);
 
   const selectCity = (city: string) => {
     onChange(city);
@@ -78,7 +57,7 @@ export function LocationCombobox({ label, name, onChange, value }: LocationCombo
           aria-autocomplete="list"
           aria-expanded={isOpen}
           aria-controls={listboxId}
-          aria-activedescendant={isOpen ? `${listboxId}-${activeIndex}` : undefined}
+          aria-activedescendant={isOpen && filteredCities[activeIndex] ? `${listboxId}-${activeIndex}` : undefined}
           autoComplete="off"
           required
           value={value}
@@ -111,11 +90,10 @@ export function LocationCombobox({ label, name, onChange, value }: LocationCombo
               </li>
             ))
           ) : (
-            <li className="combobox__empty">Nenhuma cidade encontrada.</li>
+            <li className="combobox__empty" role="status">Nenhuma cidade atendida no protótipo.</li>
           )}
         </ul>
       ) : null}
     </div>
   );
 }
-

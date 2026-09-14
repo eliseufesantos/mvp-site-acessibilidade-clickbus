@@ -2,6 +2,7 @@ import { BusFront, CheckCircle2, Home, RotateCcw, ShieldCheck } from 'lucide-rea
 import { Button } from '../../components/ui/Button';
 import { formatCurrency } from '../../data/trips';
 import type { SearchValues, Trip } from '../../types';
+import { formatTravelDate } from '../../utils/date';
 
 interface ConfirmationPageProps {
   onRestart: () => void;
@@ -15,10 +16,10 @@ export function ConfirmationPage({ onRestart, search, seat, trip }: Confirmation
     <div className="page-shell confirmation-page">
       <div className="container confirmation-page__inner">
         <div className="confirmation-icon" aria-hidden="true"><CheckCircle2 /></div>
-        <span className="eyebrow">Tudo certo</span>
-        <h1>Compra confirmada</h1>
+        <span className="eyebrow">Demonstração concluída</span>
+        <h1>Simulação concluída</h1>
         <p className="confirmation-page__lead">
-          Sua passagem está reservada. O bilhete fica disponível em Meus pedidos.
+          Nenhuma passagem foi reservada e nenhum pagamento foi realizado.
         </p>
 
         <section className="confirmation-ticket" aria-label="Resumo da compra">
@@ -29,6 +30,7 @@ export function ConfirmationPage({ onRestart, search, seat, trip }: Confirmation
           </div>
           <dl>
             <div><dt>Empresa</dt><dd>{trip.company}</dd></div>
+            <div><dt>Data</dt><dd>{formatTravelDate(search.date)}</dd></div>
             <div><dt>Horário</dt><dd>{trip.departure}</dd></div>
             <div><dt>Assento</dt><dd>{seat}</dd></div>
             <div><dt>Total</dt><dd>{formatCurrency(trip.price)}</dd></div>
@@ -50,4 +52,3 @@ export function ConfirmationPage({ onRestart, search, seat, trip }: Confirmation
     </div>
   );
 }
-

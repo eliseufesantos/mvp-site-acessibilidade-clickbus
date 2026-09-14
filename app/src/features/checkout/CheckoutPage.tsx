@@ -18,6 +18,7 @@ import { Button } from '../../components/ui/Button';
 import { StepProgress } from '../../components/ui/StepProgress';
 import { formatCurrency } from '../../data/trips';
 import type { AccessibilityPreferences, SearchValues, Trip } from '../../types';
+import { formatTravelDate } from '../../utils/date';
 
 interface CheckoutPageProps {
   onBack: () => void;
@@ -67,7 +68,7 @@ export function CheckoutPage({ onBack, onComplete, preferences, search, seat, tr
     if (!/^\d{2}\/\d{2}\/\d{4}$/.test(values.birthDate)) {
       nextErrors.birthDate = 'Informe a data no formato DD/MM/AAAA.';
     }
-    if (!values.consent) nextErrors.consent = 'Aceite os termos de compra para continuar.';
+    if (!values.consent) nextErrors.consent = 'Confirme que os dados são fictícios para continuar.';
     return nextErrors;
   };
 
@@ -169,24 +170,25 @@ export function CheckoutPage({ onBack, onComplete, preferences, search, seat, tr
                 type="checkbox"
                 checked={values.consent}
                 aria-invalid={Boolean(errors.consent)}
+                aria-describedby={errors.consent ? 'passenger-consent-error' : undefined}
                 onChange={(event) => updateField('consent', event.target.checked)}
               />
-              <span>Li e aceito os termos de compra e a política de privacidade.</span>
+              <span>Estou usando somente dados fictícios nesta demonstração.</span>
             </label>
-            {errors.consent ? <span className="field__error"><AlertCircle aria-hidden="true" />{errors.consent}</span> : null}
+            {errors.consent ? <span id="passenger-consent-error" className="field__error"><AlertCircle aria-hidden="true" />{errors.consent}</span> : null}
           </section>
 
           <aside className="checkout-summary" aria-labelledby="summary-title">
             <h2 id="summary-title">Resumo da viagem</h2>
             <div className="summary-route">
               <MapPin aria-hidden="true" />
-              <div><strong>{search.origin}</strong><span>Terminal Tietê</span></div>
+              <div><strong>{search.origin}</strong><span>{trip.originTerminal}</span></div>
               <ArrowRight aria-hidden="true" />
-              <div><strong>{search.destination}</strong><span>Rodoviária do Rio</span></div>
+              <div><strong>{search.destination}</strong><span>{trip.destinationTerminal}</span></div>
             </div>
             <dl>
               <div><dt><BusFront aria-hidden="true" /> Empresa</dt><dd>{trip.company}</dd></div>
-              <div><dt><CalendarDays aria-hidden="true" /> Data</dt><dd>30 de agosto</dd></div>
+              <div><dt><CalendarDays aria-hidden="true" /> Data</dt><dd>{formatTravelDate(search.date)}</dd></div>
               <div><dt><Clock3 aria-hidden="true" /> Saída</dt><dd>{trip.departure}</dd></div>
               <div><dt><Check aria-hidden="true" /> Assento</dt><dd>{seat}</dd></div>
             </dl>
@@ -195,7 +197,7 @@ export function CheckoutPage({ onBack, onComplete, preferences, search, seat, tr
               <strong>{formatCurrency(trip.price)}</strong>
             </div>
             <Button className="checkout-submit" variant="yellow" type="submit" fullWidth>
-              <ShieldCheck aria-hidden="true" /> Concluir compra <ArrowRight aria-hidden="true" />
+              <ShieldCheck aria-hidden="true" /> Concluir simulação <ArrowRight aria-hidden="true" />
             </Button>
           </aside>
         </form>
