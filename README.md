@@ -15,21 +15,53 @@ A IA fica desativada até a configuração explícita de provedor, modelo e chav
 - `entregas/`: documentos finais em PDF e DOCX.
 - `scripts/`: geradores dos entregáveis (resumo em PDF e escopo técnico em DOCX).
 
-## Executar
+## Pré-requisitos
+
+- Node.js 20 ou superior, com `npm` e `npx` disponíveis;
+- acesso à internet na primeira instalação das dependências.
+
+Os comandos abaixo executam o pnpm 10.28.0 por meio do `npx`, portanto não é necessário instalar o pnpm globalmente. Se optar por uma instalação global, use pnpm 9 ou superior.
+
+## Instalação e execução
+
+Na raiz do repositório:
 
 ```bash
-cd app
-pnpm install
-pnpm dev
+npx --yes pnpm@10.28.0 --dir app install --frozen-lockfile
+npx --yes pnpm@10.28.0 --dir app dev
 ```
 
-Para validar a versão de produção:
+A aplicação ficará disponível em [http://127.0.0.1:4173/](http://127.0.0.1:4173/). Use `Ctrl+C` para encerrar o servidor.
+
+Nenhuma variável de ambiente é necessária para executar a jornada simulada, os controles manuais de acessibilidade e o glossário local.
+
+O planejamento e as ferramentas de conteúdo que dependem de IA são opcionais. Para ativá-los, configure estas variáveis somente no ambiente do servidor:
+
+```text
+ACCESSIBILITY_LLM_ENDPOINT
+ACCESSIBILITY_LLM_MODEL
+ACCESSIBILITY_LLM_API_KEY
+```
+
+Sem as três variáveis, os endpoints de IA respondem com HTTP `503` de forma controlada e o restante do MVP continua funcionando. Não exponha esses valores em variáveis `VITE_*`.
+
+## Validação local
+
+Execute as verificações a partir da raiz:
 
 ```bash
-pnpm build
-pnpm preview
-pnpm test:accessibility
+npx --yes pnpm@10.28.0 --dir app typecheck
+npx --yes pnpm@10.28.0 --dir app build
+npx --yes pnpm@10.28.0 --dir app test:accessibility
 ```
+
+Depois do build, encerre o servidor de desenvolvimento e confira a versão de produção localmente com:
+
+```bash
+npx --yes pnpm@10.28.0 --dir app preview
+```
+
+O `preview` também usa [http://127.0.0.1:4173/](http://127.0.0.1:4173/) e mantém o terminal ocupado até ser encerrado com `Ctrl+C`.
 
 ## Deploy na Vercel
 
