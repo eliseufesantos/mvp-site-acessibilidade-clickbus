@@ -12,39 +12,38 @@ Para continuar o agente de acessibilidade, começar pelo [PRD/SDD, registro de i
 - O fluxo principal vai da busca até uma confirmação simulada.
 - Preferências v3 independentes incluem contraste, quatro escalas, controles/cursor, destaques, letras, entrelinha, alinhamento, guia, máscara e movimento reduzido.
 - O planejador usa contrato fechado e executor local idempotente; sem provedor configurado, responde 503 e mantém os controles manuais.
-- Glossário local funciona; explicação fora do glossário e simplificação dependem do provedor.
+- Glossário e simplificações revisadas dos alvos iniciais funcionam localmente; somente casos autorizados sem resposta local dependem de provedor.
 - Entrada por voz é opcional e explícita; não foi concedida permissão de microfone durante a validação automatizada.
 - Nenhum VLibras ou script Rybená é carregado. O bloco Rybená informa a pendência técnica e preserva o crédito.
 - O projeto não possui pagamento real. Endpoints de acessibilidade estão preparados no servidor Vite/API.
-- TypeScript, build e 11 testes do núcleo/servidor passaram em 09/09/2026; navegador integrado validado em 1265×711 e 378×629, com reflow adicional em 320×844 CSS px via CDP.
+- TypeScript, build e 13 testes do núcleo passaram em 14/09/2026; a interface foi validada em 1440×900, 390×844 e 320×844 CSS px.
 
 ## Primeiro diagnóstico
 
 ```bash
 git status --short --branch
-cd app
-pnpm install
-pnpm typecheck
-pnpm build
-pnpm dev
+npx --yes pnpm@10.28.0 --dir app install --frozen-lockfile
+npx --yes pnpm@10.28.0 --dir app typecheck
+npx --yes pnpm@10.28.0 --dir app build
+npx --yes pnpm@10.28.0 --dir app test:accessibility
+npx --yes pnpm@10.28.0 --dir app dev
 ```
 
 Acesse `http://127.0.0.1:4173/`.
 
 ## Ordem de leitura
 
-1. `01-ARQUITETURA.md`
-2. `02-DESIGN-SYSTEM.md`
-3. `03-ACESSIBILIDADE.md`
-4. `04-FLUXO-E-DADOS.md`
+1. `../RESUMO-PARA-APRESENTACAO.md`
+2. `01-ARQUITETURA.md`
+3. `02-DESIGN-SYSTEM.md`
+4. `03-ACESSIBILIDADE.md`
 5. `05-DESENVOLVIMENTO.md`
-6. `06-QA.md`
-7. `07-RESUMO-IMPLEMENTACAO.md`
-8. `08-DEPLOY-VERCEL.md`
+6. `../accessibility-agent/README.md`
+7. `08-DEPLOY-VERCEL.md`
 
 ## Próximos incrementos possíveis
 
-- criar testes automatizados de componentes e fluxo;
+- ampliar os testes automatizados de componentes e fluxo;
 - validar com leitor de tela real (NVDA/VoiceOver);
 - configurar e avaliar um modelo real para o planejador;
 - receber da Rybená o contrato técnico e homologar tradução/player com pessoas surdas sinalizantes;

@@ -116,8 +116,7 @@ Aceite: navegador sem suporte não quebra; fechamento impede envio tardio.
 - `src/styles/accessibility-plugin.css`: identidade visual e responsividade isoladas do plugin;
 - `server/accessibility/` e `api/accessibility/`: limite servidor e handlers;
 - `src/features/accessibility-agent/tests/run.ts`: regressão do núcleo;
-- `docs/accessibility-agent/concepts/`: três conceitos aceitos como referência.
-- `scripts/capture-accessibility-evidence.mjs` e `docs/accessibility-agent/evidence/`: captura reproduzível e imagens reais em 320×844.
+- `scripts/capture-accessibility-evidence.mjs`: captura reproduzível em 320×844. As imagens antigas foram removidas; novas capturas devem ser revisadas antes de serem versionadas.
 
 ## 4. Roteiro de demonstração atualizado
 

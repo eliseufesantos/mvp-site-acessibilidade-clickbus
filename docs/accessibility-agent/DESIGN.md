@@ -2,14 +2,6 @@
 
 Versão 1.1 · 14 de setembro de 2026.
 
-## Referências visuais
-
-- [Conversa desktop](concepts/panel-conversation-desktop.png)
-- [Ajustes desktop](concepts/panel-adjustments-desktop.png)
-- [Conteúdo mobile](concepts/panel-content-mobile.png)
-
-Esses conceitos registram a primeira versão do painel e continuam úteis como referência de densidade e hierarquia, mas não definem mais seu posicionamento. A direção atual é o plugin lateral descrito neste documento e implementado no código. O texto final segue PRD/SDD e conteúdo revisado do repositório; exemplos inventados por geradores de imagem não são fonte de regras de viagem, privacidade ou tradução.
-
 ## Sistema visual
 
 - fundo da página: `#FAFAFA`; superfícies: branco puro;
@@ -60,30 +52,7 @@ O painel não introduz mídia raster, gradiente, avatar ou ilustração. A campa
 - estados selecionado, hover, foco, disabled e loading usam o mesmo sistema;
 - movimento respeita `prefers-reduced-motion` e preferência explícita.
 
-## Registro de fidelidade da primeira versão
-
-Comparação final feita entre `concepts/panel-content-mobile.png` e `evidence/implementation-panel-content-mobile-320.png`, com captura real por Chrome headless + CDP em 320×844 CSS px. Desktop e interações também foram inspecionados no navegador integrado em 1265×711 e 378×629.
-
-Elementos preservados dos conceitos:
-
-- drawer lateral no desktop e superfície de largura total no mobile;
-- três abas persistentes, cabeçalho claro e ação de fechar;
-- paleta branca, roxa e preta da réplica, com bordas discretas;
-- resumo de preferências ativas antes das ferramentas;
-- explicação e simplificação como operações separadas;
-- bloco Rybená com estado e atribuição visíveis, sem confundir com o núcleo.
-
-Desvios intencionais:
-
-- conteúdo de privacidade, leito ou regras inventado pelo gerador não foi copiado; a UI usa somente alvos públicos estáticos autorizados da réplica;
-- cartões de resultado de IA não são encenados: sem provedor, a interface mostra o 503 seguro e preserva os controles manuais;
-- controles de player/velocidade não aparecem enquanto a API real Rybená estiver indisponível; o bloco mantém estado técnico estável e crédito;
-- a versão mobile ocupa a área abaixo do header ClickBus real, sem moldura de telefone, alça de bottom sheet ou navegação inventada;
-- em 320 px, textos e cartões têm densidade menor para reflow, sem remover funções ou truncar ações.
-
-Diferença de copy: os conceitos usam textos ilustrativos gerados; a primeira implementação usava “Ajustes locais, reversíveis...” e mensagens de limitação coerentes com PRD/SDD. Nenhuma promessa de IA, Libras, privacidade ou regra comercial foi inferida das imagens.
-
-## Registro da direção lateral atual
+## Direção lateral atual
 
 A iteração de 14/09/2026 preserva o minimalismo, mas troca a aparência de menu genérico por uma identidade própria ligada à jornada: acionador vertical violeta, cabeçalho ameixa, marca de rota e drawer anexado à borda esquerda. O botão foi removido do header; ofertas, ajuda e navegação principal permanecem inalterados.
 

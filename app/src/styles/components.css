@@ -721,9 +721,16 @@ html[data-contrast='true'] .clickbus-logo__mark {
   flex-shrink: 0;
   width: 42px;
   height: 42px;
+  padding: 11px;
+  overflow: hidden;
   border-radius: 50%;
   background: color-mix(in srgb, var(--cb-primary) 13%, var(--cb-surface));
   color: var(--cb-primary-strong);
+}
+
+.trip-card__company-icon > svg {
+  width: 100%;
+  height: 100%;
 }
 
 .trip-card__company strong,

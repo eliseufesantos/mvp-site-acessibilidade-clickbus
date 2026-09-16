@@ -170,7 +170,7 @@ cd app
 node scripts/capture-accessibility-evidence.mjs
 ```
 
-Não versione perfis de navegador, caches ou credenciais junto às evidências. Imagens aceitas ficam em `docs/accessibility-agent/evidence/` ou na pasta específica de mapeamento.
+Não versione perfis de navegador, caches ou credenciais junto às evidências. O script pode recriar `docs/accessibility-agent/evidence/`, mas uma captura só deve ser versionada depois de revisada e confirmada como representação da interface atual. As evidências históricas de mapeamento foram removidas e não devem ser restauradas sem uma nova auditoria.
 
 ## 9. Vercel
 
@@ -218,8 +218,7 @@ Leia conforme a tarefa:
 6. `docs/guides/00-CONTINUAR-PROJETO.md` — retomada rápida;
 7. `docs/guides/01-ARQUITETURA.md` — organização geral;
 8. `docs/guides/05-DESENVOLVIMENTO.md` — convenções e rotina;
-9. `docs/guides/06-QA.md` — baseline de QA;
-10. `docs/guides/08-DEPLOY-VERCEL.md` — configuração de hospedagem.
+9. `docs/guides/08-DEPLOY-VERCEL.md` — configuração de hospedagem.
 
 Se duas fontes divergirem, preserve a opção mais segura, confirme o comportamento no código/testes e atualize os documentos afetados. A solicitação explícita do usuário continua sendo a autoridade para o objetivo da tarefa.
 

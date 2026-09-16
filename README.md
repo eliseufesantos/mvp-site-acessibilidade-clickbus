@@ -11,9 +11,9 @@ A IA fica desativada até a configuração explícita de provedor, modelo e chav
 - `app/`: aplicação React + TypeScript + Vite.
 - `docs/guides/`: guias técnicos e de continuidade.
 - `docs/brand/`: brandbook e design system recebidos como referência.
-- `docs/resumo-implementacao.html`: documento A4 que gera o resumo executivo.
+- `docs/RESUMO-PARA-APRESENTACAO.md`: síntese executiva e roteiro-base para slides.
 - `entregas/`: documentos finais em PDF e DOCX.
-- `scripts/`: geradores dos entregáveis (resumo em PDF e escopo técnico em DOCX).
+- `scripts/`: utilitários históricos de geração dos entregáveis acadêmicos.
 
 ## Pré-requisitos
 
@@ -70,5 +70,7 @@ O arquivo `vercel.json` da raiz executa o build da aplicação em `app/` e publi
 O diagnóstico de `404: NOT_FOUND` e o passo a passo de configuração estão em [`docs/guides/08-DEPLOY-VERCEL.md`](docs/guides/08-DEPLOY-VERCEL.md).
 
 O protótipo é uma simulação acadêmica: não consulta horários reais, não cria pedidos e não processa pagamentos.
+
+Para preparar uma apresentação, use [`docs/RESUMO-PARA-APRESENTACAO.md`](docs/RESUMO-PARA-APRESENTACAO.md).
 
 Para continuar o projeto em outra sessão ou ferramenta, comece por [`docs/guides/00-CONTINUAR-PROJETO.md`](docs/guides/00-CONTINUAR-PROJETO.md).

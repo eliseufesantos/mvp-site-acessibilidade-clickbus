@@ -144,7 +144,7 @@ Não alegar conformidade integral apenas por esses testes.
 | ausência de legado | PASS | zero scripts e zero recursos observados para Rybená/VLibras |
 | leitor de tela/pesquisa humana | NOT RUN | requer NVDA/VoiceOver e participantes adequados |
 
-A nova direção lateral foi inspecionada no navegador integrado em 1440×900, 390×844 e 320×844 CSS px. Em 320 px, as métricas observadas no estado padrão e com texto a 150% foram `clientWidth=320` e `scrollWidth=320` tanto no documento quanto no painel. As imagens versionadas `evidence/implementation-mobile-320.png`, `evidence/implementation-panel-mobile-320.png` e `evidence/implementation-panel-content-mobile-320.png` registram a versão anterior do painel; o script `app/scripts/capture-accessibility-evidence.mjs` continua sendo o caminho reproduzível para atualizar evidências versionadas.
+A nova direção lateral foi inspecionada no navegador integrado em 1440×900, 390×844 e 320×844 CSS px. Em 320 px, as métricas observadas no estado padrão e com texto a 150% foram `clientWidth=320` e `scrollWidth=320` tanto no documento quanto no painel. As capturas da versão anterior foram removidas; `app/scripts/capture-accessibility-evidence.mjs` permanece como caminho reproduzível para gerar novas evidências, que devem ser revisadas antes de serem versionadas.
 
 ## 8. Registro
 

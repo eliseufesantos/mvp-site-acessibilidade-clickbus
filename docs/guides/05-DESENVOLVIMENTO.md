@@ -3,13 +3,14 @@
 ## Requisitos
 
 - Node.js 20 ou superior;
-- pnpm 9 ou superior.
+- npm e npx disponíveis.
 
 ## Instalação
 
+Na raiz do repositório:
+
 ```bash
-cd app
-pnpm install
+npx --yes pnpm@10.28.0 --dir app install --frozen-lockfile
 ```
 
 `pnpm-workspace.yaml` autoriza somente o script de build do `esbuild`, necessário ao Vite.
@@ -17,7 +18,7 @@ pnpm install
 ## Rotina local
 
 ```bash
-pnpm dev
+npx --yes pnpm@10.28.0 --dir app dev
 ```
 
 URL: `http://127.0.0.1:4173/`.
@@ -25,28 +26,12 @@ URL: `http://127.0.0.1:4173/`.
 Antes de criar um commit:
 
 ```bash
-pnpm typecheck
-pnpm build
-pnpm test:accessibility
+npx --yes pnpm@10.28.0 --dir app typecheck
+npx --yes pnpm@10.28.0 --dir app build
+npx --yes pnpm@10.28.0 --dir app test:accessibility
 ```
 
-Para regenerar o resumo executivo em PDF a partir da raiz do projeto:
-
-```bash
-node scripts/build-implementation-summary.mjs
-```
-
-O conteúdo vive em `docs/resumo-implementacao.html`, um documento A4 que pode ser aberto direto no navegador. O script imprime esse HTML com o Chrome ou o Edge do sistema em modo headless, sem dependências de npm, e salva em `entregas/Resumo_Implementacao_MVP_ClickBus_Acessivel.pdf`.
-
-O HTML é auto-contido: as capturas estão embutidas nele como JPEG em data URI. Não existe pasta de imagens ao lado, e o arquivo pode ser movido ou enviado sozinho.
-
-O escopo técnico em DOCX tem seu próprio gerador, em Python:
-
-```bash
-python scripts/build_mvp_scope.py
-```
-
-Ele depende de `python-docx` e das capturas de auditoria, que saíram da árvore do repositório e precisam ser restauradas antes (`git checkout 5ebc728 -- docs/audit`). O cabeçalho do arquivo detalha os requisitos.
+O material atual para apresentação está em `docs/RESUMO-PARA-APRESENTACAO.md`. Os geradores históricos de entregáveis não fazem parte da rotina padrão de desenvolvimento.
 
 ## Convenções
 
@@ -67,4 +52,4 @@ Ele depende de `python-docx` e das capturas de auditoria, que saíram da árvore
 - nova preferência: ampliar `AccessibilityPreferences`, o hook e o painel;
 - nova cor ou dimensão global: editar `styles/tokens.css`;
 - nova etapa: editar `JourneyStep` e `App.tsx`;
-- nova evidência para o PDF: converter a captura em data URI e colar no `src` da imagem dentro do HTML A4.
+- nova evidência do painel: executar `app/scripts/capture-accessibility-evidence.mjs`, revisar a captura e versioná-la somente se representar a interface atual.
