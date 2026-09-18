@@ -38,6 +38,9 @@ app/src/
 │   └── components.css                  # layouts e componentes
 ├── types.ts
 └── main.tsx
+
+api/accessibility/                       # funções Vercel canônicas na raiz
+app/server/accessibility/                # handler, prompts e adaptadores LLM
 ```
 
 ## Estado e navegação
@@ -57,6 +60,8 @@ Não foi adicionado React Router porque o MVP tem uma única jornada linear e is
 - `data/trips.ts` concentra conteúdo fictício e formatação monetária.
 - O hook de acessibilidade é o único responsável por persistir preferências e alterar atributos no elemento `html`.
 - A LLM nunca recebe funções de DOM/navegação: responde um plano JSON fechado, validado novamente pelo executor local.
+- O host Gemini usa `generateContent` somente no servidor; chave, prompt e resposta bruta não entram no bundle ou nos logs.
+- O middleware Vite e as funções Vercel da raiz compartilham o mesmo handler protegido por origem, tamanho e quota local.
 - Conteúdo autorizado é um registro estático por etapa; checkout e confirmação não são alvos.
 - O `RybenaBrowserAdapter` carrega o fornecedor sob demanda; falha de domínio/token não bloqueia o núcleo. O adaptador indisponível permanece para fallback/testes.
 

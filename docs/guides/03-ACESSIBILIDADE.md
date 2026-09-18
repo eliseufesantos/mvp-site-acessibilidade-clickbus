@@ -36,7 +36,9 @@ O frontend envia contexto mínimo para `/api/accessibility/plan`: mensagem, pref
 
 A resposta segue contrato 2.0 fechado. O executor verifica schema, `requestId`, revisão, página, sessão, capacidades e conteúdo antes de executar. `planId` é idempotente. Pedidos vagos usam proposta com confirmação; operações comerciais e código estão fora do contrato.
 
-Sem as variáveis de servidor `ACCESSIBILITY_LLM_ENDPOINT`, `ACCESSIBILITY_LLM_MODEL` e `ACCESSIBILITY_LLM_API_KEY`, os endpoints respondem 503 e a interface mantém todos os ajustes manuais. Não há interpretação local por regex apresentada como IA.
+Sem as variáveis de servidor `ACCESSIBILITY_LLM_ENDPOINT`, `ACCESSIBILITY_LLM_MODEL` e `ACCESSIBILITY_LLM_API_KEY`, os endpoints respondem 503 e a interface mantém todos os ajustes manuais. Para Gemini, a base é `https://generativelanguage.googleapis.com/v1beta`; a chave vai somente no header do request servidor. Não há interpretação local por regex apresentada como IA.
+
+O endpoint exige origem autorizada e JSON, aceita no máximo 16 KiB, limita saída a 1.024 tokens, não faz retry e aplica quota local padrão de 12 chamadas/minuto por IP e 200/dia por instância. Essa quota stateless não substitui limites persistentes do host e budget/quota do projeto Google em publicação pública.
 
 ## Conteúdo
 

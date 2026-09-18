@@ -8,3 +8,7 @@ app/vite.config.d.ts
 .tmp-chrome-qa/
 tmp/
 *.log
+.env
+.env.*
+app/.env
+app/.env.*

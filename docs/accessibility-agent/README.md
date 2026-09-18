@@ -4,7 +4,7 @@ Documentação de produto e engenharia para implementação assistida por IA.
 
 - Versão: 2.0.
 - Data: 9 de setembro de 2026.
-- Status: núcleo e interface implementados; IA real pendente de configuração; adaptador Rybená demonstrativo implementado, com domínio/token ainda não autorizado.
+- Status: núcleo e interface implementados; adaptador Gemini e proteções locais implementados e testados com transporte falso, mas chamada real ainda `NOT RUN` por ausência de segredo no runtime; adaptador Rybená demonstrativo implementado, com domínio/token ainda não autorizado.
 - Nome de trabalho: ClickAccess. Não pressupõe aprovação de nome ou identidade pela ClickBus.
 - Canal do MVP: réplica web existente neste repositório.
 

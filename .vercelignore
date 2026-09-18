@@ -1,6 +1,8 @@
 *
 !app/
 !app/**
+!api/
+!api/**
 !vercel.json
 
 app/node_modules/

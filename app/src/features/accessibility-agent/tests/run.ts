@@ -22,7 +22,18 @@ import {
   serializePreferences,
   type StorageLike,
 } from '../core/preferences';
-import { handleAccessibilityRequest } from '../../../../server/accessibility/handler';
+import {
+  createAccessibilityRequestQuota,
+  handleAccessibilityRequest,
+  MAX_ACCESSIBILITY_REQUEST_BYTES,
+  type AccessibilityRequestQuota,
+} from '../../../../server/accessibility/handler';
+import {
+  buildGeminiGenerateContentUrl,
+  GeminiProvider,
+  getConfiguredProvider,
+  type LlmProvider,
+} from '../../../../server/accessibility/provider';
 
 let passed = 0;
 const test = async (name: string, run: () => void | Promise<void>) => {
@@ -40,6 +51,53 @@ const assert: (condition: unknown, message?: string) => asserts condition = (con
 };
 const equal = (actual: unknown, expected: unknown) =>
   assert(JSON.stringify(actual) === JSON.stringify(expected), `expected ${JSON.stringify(expected)}, received ${JSON.stringify(actual)}`);
+
+const unlimitedQuota: AccessibilityRequestQuota = { consume: () => ({ allowed: true }) };
+
+const plannerRequestBody = (requestId = 'request-test') => ({
+  contractVersion: CONTRACT_VERSION,
+  requestId,
+  message: 'Aumente o texto',
+  context: {
+    stateRevision: 0,
+    pageEpoch: 1,
+    panelSession: 1,
+    canUndo: false,
+    librasState: 'unavailable_pending_provider_configuration',
+    preferences: getDefaultPreferences(),
+    capabilities: ['set_preferences'],
+    contentTargets: [],
+  },
+  history: [],
+});
+
+const plannerResponseBody = (requestId = 'request-test'): PlannerResponse => ({
+  contractVersion: CONTRACT_VERSION,
+  requestId,
+  planId: 'plan-test',
+  baseStateRevision: 0,
+  pageEpoch: 1,
+  panelSession: 1,
+  mode: 'apply',
+  message: 'Texto aumentado.',
+  actions: [{ type: 'set_preferences', patch: { textScale: 1.25 } }],
+});
+
+const jsonRequest = (body: unknown, origin = 'http://local') => new Request('http://local/api/accessibility/plan', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json', origin },
+  body: typeof body === 'string' ? body : JSON.stringify(body),
+});
+
+const expectError = async (operation: Promise<unknown>, expectedMessage: string) => {
+  let received = '';
+  try {
+    await operation;
+  } catch (error) {
+    received = error instanceof Error ? error.message : String(error);
+  }
+  assert(received === expectedMessage, `expected ${expectedMessage}, received ${received || 'no error'}`);
+};
 
 class MemoryStorage implements StorageLike {
   values = new Map<string, string>();
@@ -89,6 +147,107 @@ await test('comfortable preset preserves independent preferences', () => {
 await test('planner schema rejects unknown actions and fields', () => {
   const invalid = plannerResponseSchema.safeParse({ contractVersion: CONTRACT_VERSION, requestId: 'r', planId: 'p', baseStateRevision: 0, pageEpoch: 1, panelSession: 1, mode: 'apply', message: 'x', actions: [{ type: 'buy_ticket' }] });
   assert(!invalid.success);
+});
+
+await test('Gemini endpoint builder accepts only the native Google host and matching model', () => {
+  const expected = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent';
+  assert(buildGeminiGenerateContentUrl('https://generativelanguage.googleapis.com/v1beta', 'gemini-flash-latest') === expected);
+  assert(buildGeminiGenerateContentUrl(expected, 'models/gemini-flash-latest') === expected);
+  let rejected = 0;
+  for (const [endpoint, model] of [
+    ['https://example.com/v1beta', 'gemini-flash-latest'],
+    [expected, 'outro-modelo'],
+    ['http://generativelanguage.googleapis.com/v1beta', 'gemini-flash-latest'],
+  ]) {
+    try { buildGeminiGenerateContentUrl(endpoint, model); } catch { rejected += 1; }
+  }
+  assert(rejected === 3);
+});
+
+await test('Gemini provider sends a native structured request and parses split JSON parts', async () => {
+  const sentinelKey = 'test-only-key';
+  const controller = new AbortController();
+  let calls = 0;
+  const provider = new GeminiProvider({
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta',
+    model: 'gemini-flash-latest',
+    apiKey: sentinelKey,
+  }, async (input, init) => {
+    calls += 1;
+    const url = String(input);
+    const headers = new Headers(init?.headers);
+    const payload = JSON.parse(String(init?.body)) as Record<string, any>;
+    assert(url === 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent');
+    assert(headers.get('x-goog-api-key') === sentinelKey);
+    assert(!url.includes(sentinelKey) && !String(init?.body).includes(sentinelKey));
+    assert(payload.systemInstruction.parts[0].text === 'system');
+    assert(payload.contents[0].role === 'user' && payload.contents[0].parts[0].text === 'user');
+    assert(payload.generationConfig.responseMimeType === 'application/json');
+    assert(payload.generationConfig.maxOutputTokens === 1024);
+    assert(payload.generationConfig.candidateCount === undefined);
+    assert(payload.generationConfig.temperature === undefined);
+    assert(payload.generationConfig.thinkingConfig.thinkingLevel === 'low');
+    assert(payload.store === false);
+    assert(init?.signal === controller.signal);
+    return new Response(JSON.stringify({
+      candidates: [{
+        finishReason: 'STOP',
+        content: { parts: [{ text: 'internal', thought: true }, { text: '{"ok":' }, { text: 'true}' }] },
+      }],
+    }), { status: 200, headers: { 'content-type': 'application/json' } });
+  });
+
+  equal(await provider.complete('system', 'user', controller.signal), { ok: true });
+  assert(calls === 1);
+});
+
+await test('Gemini provider fails closed on blocked, incomplete and malformed responses without retry', async () => {
+  const configuration = {
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta',
+    model: 'gemini-flash-latest',
+    apiKey: 'test-only-key',
+  };
+  const responseFor = (body: unknown) => new GeminiProvider(configuration, async () =>
+    new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } }));
+  const signal = new AbortController().signal;
+  await expectError(
+    responseFor({ promptFeedback: { blockReason: 'SAFETY' } }).complete('system', 'user', signal),
+    'provider_blocked_response',
+  );
+  await expectError(
+    responseFor({ candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: '{}' }] } }] }).complete('system', 'user', signal),
+    'provider_incomplete_response',
+  );
+  await expectError(
+    responseFor({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: 'not-json' }] } }] }).complete('system', 'user', signal),
+    'provider_invalid_json',
+  );
+  let httpCalls = 0;
+  const httpFailure = new GeminiProvider(configuration, async () => {
+    httpCalls += 1;
+    return new Response('{"error":{"message":"upstream detail must stay private"}}', { status: 429 });
+  });
+  await expectError(httpFailure.complete('system', 'user', signal), 'provider_http_429');
+  assert(httpCalls === 1);
+});
+
+await test('provider factory keeps missing configuration disabled and selects Gemini by host', () => {
+  assert(getConfiguredProvider({}) === null);
+  assert(getConfiguredProvider({
+    ACCESSIBILITY_LLM_ENDPOINT: 'https://generativelanguage.googleapis.com/v1beta',
+    ACCESSIBILITY_LLM_MODEL: 'gemini-flash-latest',
+  }) === null);
+  const configured = getConfiguredProvider({
+    ACCESSIBILITY_LLM_ENDPOINT: 'https://generativelanguage.googleapis.com/v1beta',
+    ACCESSIBILITY_LLM_MODEL: 'gemini-flash-latest',
+    ACCESSIBILITY_LLM_API_KEY: 'test-only-key',
+  });
+  assert(configured instanceof GeminiProvider);
+  assert(getConfiguredProvider({
+    ACCESSIBILITY_LLM_ENDPOINT: 'https://provider.example/v1',
+    ACCESSIBILITY_LLM_MODEL: 'compatible-model',
+    ACCESSIBILITY_LLM_API_KEY: 'test-only-key',
+  }) !== null);
 });
 
 await test('executor validates revision and applies each plan only once', async () => {
@@ -224,28 +383,102 @@ await test('glossary explains travel terms deterministically', () => {
   assert(explainFromGlossary('termo inexistente') === null);
 });
 
-await test('server returns an honest 503 when no provider is configured', async () => {
-  const request = new Request('http://local/api/accessibility/plan', {
+await test('server accepts a valid provider response and rejects output outside the safe contract', async () => {
+  const validProvider: LlmProvider = {
+    complete: async () => plannerResponseBody('request-200'),
+  };
+  const valid = await handleAccessibilityRequest(
+    jsonRequest(plannerRequestBody('request-200')),
+    'plan',
+    validProvider,
+    unlimitedQuota,
+  );
+  assert(valid.status === 200);
+  equal(await valid.json(), plannerResponseBody('request-200'));
+
+  const invalidProvider: LlmProvider = { complete: async () => ({ optimistic: true }) };
+  const invalid = await handleAccessibilityRequest(
+    jsonRequest(plannerRequestBody('request-502')),
+    'plan',
+    invalidProvider,
+    unlimitedQuota,
+  );
+  assert(invalid.status === 502);
+});
+
+await test('server keeps explanation and simplification on their text-only contracts', async () => {
+  const provider: LlmProvider = {
+    complete: async (_system, user) => {
+      const request = JSON.parse(user) as { requestId: string };
+      return { contractVersion: CONTRACT_VERSION, requestId: request.requestId, text: 'Resposta simples.' };
+    },
+  };
+  const explanation = await handleAccessibilityRequest(jsonRequest({
+    contractVersion: CONTRACT_VERSION,
+    requestId: 'request-explain',
+    term: 'embarque',
+    context: 'Horário e local de embarque.',
+    contentRef: 'results-help',
+  }), 'explain', provider, unlimitedQuota);
+  const simplification = await handleAccessibilityRequest(jsonRequest({
+    contractVersion: CONTRACT_VERSION,
+    requestId: 'request-simplify',
+    text: 'Compare os horários e os locais de embarque antes de escolher.',
+    contentRef: 'results-help',
+  }), 'simplify', provider, unlimitedQuota);
+  assert(explanation.status === 200 && simplification.status === 200);
+});
+
+await test('server rejects cross-origin, non-JSON and oversized requests before calling the provider', async () => {
+  let calls = 0;
+  const provider: LlmProvider = {
+    complete: async () => {
+      calls += 1;
+      return plannerResponseBody();
+    },
+  };
+  const forbidden = await handleAccessibilityRequest(
+    jsonRequest(plannerRequestBody(), 'https://attacker.example'),
+    'plan',
+    provider,
+    unlimitedQuota,
+  );
+  assert(forbidden.status === 403);
+
+  const unsupportedMedia = await handleAccessibilityRequest(new Request('http://local/api/accessibility/plan', {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      contractVersion: CONTRACT_VERSION,
-      requestId: 'request-503',
-      message: 'Aumente o texto',
-      context: {
-        stateRevision: 0,
-        pageEpoch: 1,
-        panelSession: 1,
-        canUndo: false,
-        librasState: 'unavailable_pending_provider_configuration',
-        preferences: getDefaultPreferences(),
-        capabilities: ['set_preferences'],
-        contentTargets: [],
-      },
-      history: [],
-    }),
-  });
-  const response = await handleAccessibilityRequest(request, 'plan', null);
+    headers: { origin: 'http://local', 'content-type': 'text/plain' },
+    body: JSON.stringify(plannerRequestBody()),
+  }), 'plan', provider, unlimitedQuota);
+  assert(unsupportedMedia.status === 415);
+
+  const oversized = await handleAccessibilityRequest(
+    jsonRequest(`{"value":"${'x'.repeat(MAX_ACCESSIBILITY_REQUEST_BYTES)}"}`),
+    'plan',
+    provider,
+    unlimitedQuota,
+  );
+  assert(oversized.status === 413 && calls === 0);
+});
+
+await test('server rate limit returns 429 without a second paid provider call', async () => {
+  let calls = 0;
+  const provider: LlmProvider = {
+    complete: async (_system, user) => {
+      calls += 1;
+      const requestId = (JSON.parse(user) as { requestId: string }).requestId;
+      return plannerResponseBody(requestId);
+    },
+  };
+  const quota = createAccessibilityRequestQuota({ requestsPerMinute: 1, requestsPerDay: 5, now: () => 1_000 });
+  const first = await handleAccessibilityRequest(jsonRequest(plannerRequestBody('request-rate-1')), 'plan', provider, quota);
+  const second = await handleAccessibilityRequest(jsonRequest(plannerRequestBody('request-rate-2')), 'plan', provider, quota);
+  assert(first.status === 200 && second.status === 429 && second.headers.get('retry-after') === '60');
+  assert(calls === 1);
+});
+
+await test('server returns an honest 503 when no provider is configured', async () => {
+  const response = await handleAccessibilityRequest(jsonRequest(plannerRequestBody('request-503')), 'plan', null, unlimitedQuota);
   assert(response.status === 503);
 });
 

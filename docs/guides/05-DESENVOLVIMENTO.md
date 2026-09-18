@@ -43,8 +43,9 @@ O material atual para apresentação está em `docs/RESUMO-PARA-APRESENTACAO.md`
 - ícones de interface via Lucide;
 - sem dados reais nem chamadas de negócio externas;
 - nenhum VLibras; Rybená somente após ação explícita, com falha segura quando domínio/token não estiver autorizado;
-- IA somente pelo backend e somente com endpoint, modelo e chave explicitamente configurados;
-- nunca usar chave de provedor no bundle do frontend.
+- IA somente pelo backend e somente com endpoint, modelo e chave explicitamente configurados no processo ou cofre do host;
+- para Gemini, usar a base `https://generativelanguage.googleapis.com/v1beta`; nunca gravar a chave em `.env*`, comando versionado, log ou bundle do frontend;
+- chamadas de IA exigem origem autorizada, JSON até 16 KiB e respeitam quota local; um deployment público ainda requer quota/budget do Google e limitação persistente no host.
 
 ## Alterações comuns
 

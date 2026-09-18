@@ -2,7 +2,7 @@
 
 Projeto acadêmico que simula a jornada principal da ClickBus com melhorias de acessibilidade de baixo custo e alto impacto visual.
 
-O MVP inclui busca, resultados, seleção de assento, formulário de passageiro e confirmação simulada. A evolução **Acessibilidade Assistida por IA** acrescenta controles visuais e de leitura independentes, persistência/migração, desfazer, glossário, simplificação preparada, voz opcional e um planejador tipado no servidor.
+O MVP inclui busca, resultados, seleção de assento, formulário de passageiro e confirmação simulada. A evolução **Acessibilidade Assistida por IA** acrescenta controles visuais e de leitura independentes, persistência/migração, desfazer, glossário, simplificação preparada, voz opcional e um planejador tipado no servidor, com adaptador REST nativo para Gemini.
 
 A IA fica desativada até a configuração explícita de provedor, modelo e chave no servidor. A autorização gratuita da Rybená está confirmada, mas a API/SDK/player ainda não foi liberada/configurada; por isso a interface mostra indisponibilidade e atribuição sem carregar script ou simular tradução.
 
@@ -35,15 +35,17 @@ A aplicação ficará disponível em [http://127.0.0.1:4173/](http://127.0.0.1:4
 
 Nenhuma variável de ambiente é necessária para executar a jornada simulada, os controles manuais de acessibilidade e o glossário local.
 
-O planejamento e as ferramentas de conteúdo que dependem de IA são opcionais. Para ativá-los, configure estas variáveis somente no ambiente do servidor:
+O planejamento e as ferramentas de conteúdo que dependem de IA são opcionais. Para usar o Gemini pelo endpoint nativo, configure estas variáveis somente no ambiente do servidor ou no cofre de variáveis da Vercel:
 
 ```text
-ACCESSIBILITY_LLM_ENDPOINT
-ACCESSIBILITY_LLM_MODEL
-ACCESSIBILITY_LLM_API_KEY
+ACCESSIBILITY_LLM_ENDPOINT=https://generativelanguage.googleapis.com/v1beta
+ACCESSIBILITY_LLM_MODEL=gemini-flash-latest
+ACCESSIBILITY_LLM_API_KEY=<segredo>
 ```
 
-Sem as três variáveis, os endpoints de IA respondem com HTTP `503` de forma controlada e o restante do MVP continua funcionando. Não exponha esses valores em variáveis `VITE_*`.
+Sem as três variáveis, os endpoints de IA respondem com HTTP `503` de forma controlada e o restante do MVP continua funcionando. Não grave a chave em `.env*`, código, documentação ou variáveis `VITE_*`; o repositório ignora esses arquivos apenas como última barreira contra inclusão acidental.
+
+O servidor aceita somente origem autorizada e JSON, limita cada corpo a 16 KiB, não repete chamadas e usa limites locais padrão de 12 chamadas/minuto por IP e 200/dia por instância. Para uma publicação real, configure também quota/budget no Google e rate limit persistente ou WAF na Vercel. O alias `gemini-flash-latest` pode mudar; fixe um identificador estável após o smoke da conta se precisar de uma demonstração reproduzível.
 
 ## Validação local
 

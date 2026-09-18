@@ -2,25 +2,92 @@ export interface LlmProvider {
   complete(system: string, user: string, signal: AbortSignal): Promise<unknown>;
 }
 
-interface ProviderConfiguration {
+export interface ProviderConfiguration {
   endpoint: string;
   model: string;
   apiKey: string;
 }
 
-const readConfiguration = (): ProviderConfiguration | null => {
-  const environment = typeof process === 'undefined' ? {} : process.env;
+type Environment = Record<string, string | undefined>;
+type FetchImplementation = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+
+const GEMINI_API_HOST = 'generativelanguage.googleapis.com';
+const GEMINI_MODEL_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/;
+
+const normalizeModel = (model: string): string => {
+  const normalized = model.replace(/^models\//, '').trim();
+  if (!GEMINI_MODEL_PATTERN.test(normalized)) throw new Error('provider_configuration_invalid');
+  return normalized;
+};
+
+export const buildGeminiGenerateContentUrl = (endpoint: string, model: string): string => {
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    throw new Error('provider_configuration_invalid');
+  }
+
+  if (
+    url.protocol !== 'https:' ||
+    url.hostname !== GEMINI_API_HOST ||
+    url.port ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash
+  ) throw new Error('provider_configuration_invalid');
+
+  const normalizedModel = normalizeModel(model);
+  const fullEndpoint = /^\/(v1|v1beta)\/models\/([^/]+):generateContent$/.exec(url.pathname);
+  if (fullEndpoint) {
+    if (decodeURIComponent(fullEndpoint[2]) !== normalizedModel) throw new Error('provider_configuration_invalid');
+    return url.toString();
+  }
+
+  const baseEndpoint = /^\/(v1|v1beta)\/?$/.exec(url.pathname);
+  if (!baseEndpoint) throw new Error('provider_configuration_invalid');
+  url.pathname = `/${baseEndpoint[1]}/models/${encodeURIComponent(normalizedModel)}:generateContent`;
+  return url.toString();
+};
+
+const readConfiguration = (environment: Environment): ProviderConfiguration | null => {
   const endpoint = environment.ACCESSIBILITY_LLM_ENDPOINT?.trim();
   const model = environment.ACCESSIBILITY_LLM_MODEL?.trim();
   const apiKey = environment.ACCESSIBILITY_LLM_API_KEY?.trim();
   return endpoint && model && apiKey ? { endpoint, model, apiKey } : null;
 };
 
+interface GeminiResponse {
+  candidates?: Array<{
+    content?: { parts?: Array<{ text?: string; thought?: boolean }> };
+    finishReason?: string;
+  }>;
+  promptFeedback?: { blockReason?: string };
+}
+
 class OpenAiCompatibleProvider implements LlmProvider {
-  constructor(private readonly configuration: ProviderConfiguration) {}
+  private readonly chatCompletionsUrl: string;
+
+  constructor(
+    private readonly configuration: ProviderConfiguration,
+    private readonly fetchImplementation: FetchImplementation = fetch,
+  ) {
+    let url: URL;
+    try {
+      url = new URL(configuration.endpoint);
+    } catch {
+      throw new Error('provider_configuration_invalid');
+    }
+    if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) {
+      throw new Error('provider_configuration_invalid');
+    }
+    url.pathname = `${url.pathname.replace(/\/$/, '')}/chat/completions`;
+    this.chatCompletionsUrl = url.toString();
+  }
 
   async complete(system: string, user: string, signal: AbortSignal): Promise<unknown> {
-    const response = await fetch(`${this.configuration.endpoint.replace(/\/$/, '')}/chat/completions`, {
+    const response = await this.fetchImplementation(this.chatCompletionsUrl, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${this.configuration.apiKey}`,
@@ -29,6 +96,7 @@ class OpenAiCompatibleProvider implements LlmProvider {
       body: JSON.stringify({
         model: this.configuration.model,
         temperature: 0,
+        max_tokens: 1024,
         response_format: { type: 'json_object' },
         messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
       }),
@@ -38,11 +106,90 @@ class OpenAiCompatibleProvider implements LlmProvider {
     const body = await response.json() as { choices?: { message?: { content?: string } }[] };
     const content = body.choices?.[0]?.message?.content;
     if (!content) throw new Error('provider_empty_response');
-    return JSON.parse(content) as unknown;
+    try {
+      return JSON.parse(content) as unknown;
+    } catch {
+      throw new Error('provider_invalid_json');
+    }
   }
 }
 
-export const getConfiguredProvider = (): LlmProvider | null => {
-  const configuration = readConfiguration();
-  return configuration ? new OpenAiCompatibleProvider(configuration) : null;
+export class GeminiProvider implements LlmProvider {
+  private readonly generateContentUrl: string;
+  private readonly useLowThinking: boolean;
+
+  constructor(
+    private readonly configuration: ProviderConfiguration,
+    private readonly fetchImplementation: FetchImplementation = fetch,
+  ) {
+    this.generateContentUrl = buildGeminiGenerateContentUrl(configuration.endpoint, configuration.model);
+    const model = normalizeModel(configuration.model);
+    this.useLowThinking = model === 'gemini-flash-latest' || /^gemini-3(?:[.-]|$)/.test(model);
+  }
+
+  async complete(system: string, user: string, signal: AbortSignal): Promise<unknown> {
+    const response = await this.fetchImplementation(this.generateContentUrl, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-goog-api-key': this.configuration.apiKey,
+      },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ role: 'user', parts: [{ text: user }] }],
+        generationConfig: {
+          maxOutputTokens: 1024,
+          responseJsonSchema: { type: 'object' },
+          responseMimeType: 'application/json',
+          ...(this.useLowThinking ? { thinkingConfig: { thinkingLevel: 'low' } } : {}),
+        },
+        store: false,
+      }),
+      signal,
+    });
+
+    if (!response.ok) throw new Error(`provider_http_${response.status}`);
+
+    let body: GeminiResponse;
+    try {
+      const parsed = await response.json() as unknown;
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('provider_invalid_response');
+      }
+      body = parsed as GeminiResponse;
+    } catch {
+      throw new Error('provider_invalid_response');
+    }
+
+    if (body.promptFeedback?.blockReason) throw new Error('provider_blocked_response');
+    const candidate = body.candidates?.[0];
+    if (!candidate || candidate.finishReason !== 'STOP') throw new Error('provider_incomplete_response');
+    const content = candidate.content?.parts
+      ?.map((part) => !part.thought && typeof part.text === 'string' ? part.text : '')
+      .join('')
+      .trim();
+    if (!content) throw new Error('provider_empty_response');
+
+    try {
+      return JSON.parse(content) as unknown;
+    } catch {
+      throw new Error('provider_invalid_json');
+    }
+  }
+}
+
+export const getConfiguredProvider = (
+  environment: Environment = typeof process === 'undefined' ? {} : process.env,
+  fetchImplementation: FetchImplementation = fetch,
+): LlmProvider | null => {
+  const configuration = readConfiguration(environment);
+  if (!configuration) return null;
+  try {
+    const endpoint = new URL(configuration.endpoint);
+    return endpoint.hostname === GEMINI_API_HOST
+      ? new GeminiProvider(configuration, fetchImplementation)
+      : new OpenAiCompatibleProvider(configuration, fetchImplementation);
+  } catch {
+    return null;
+  }
 };

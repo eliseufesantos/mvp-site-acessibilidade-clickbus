@@ -131,7 +131,7 @@ Não há escuta contínua, palavra de ativação ou gravação automática. Em n
 - Referência WCAG 2.2 AA nos fluxos tocados, sem alegação de certificação.
 - Uso em 320 CSS px, zoom 200% e reflow equivalente quando viável.
 - Ajustes locais perceptíveis em até 200 ms no ambiente de referência.
-- Mensagem até 1.000 caracteres, corpo HTTP até 16 KiB, uma requisição ativa, timeout de 12 s e nenhuma repetição paga automática.
+- Mensagem até 1.000 caracteres, corpo HTTP até 16 KiB, uma requisição ativa, timeout de 10 s no provedor/12 s no cliente e nenhuma repetição paga automática.
 - Preferências são a única informação persistida; conversa, voz, seleção e conteúdo não são persistidos.
 - Chaves somente no servidor, nunca em `VITE_*`, bundle, respostas ou logs.
 - Endpoint de inferência fica desabilitado em hospedagem pública até existir proteção de abuso/quota adequada.
@@ -146,7 +146,7 @@ Descrição de imagens fica apenas em avaliação. Imagens conhecidas da réplic
 
 ### Núcleo de acessibilidade e IA
 
-Pode ser concluído quando ferramentas, store, executor, painel, explicação, simplificação, voz e recuperação de indisponibilidade estiverem implementados e os testes independentes de fornecedor passarem. A integração real com o modelo permanece “configuração pendente” se não houver credenciais/provedor disponíveis.
+Pode ser concluído quando ferramentas, store, executor, painel, explicação, simplificação, voz e recuperação de indisponibilidade estiverem implementados e os testes independentes de fornecedor passarem. O adaptador Gemini e seus limites podem ser aprovados com transporte falso; conectividade e qualidade do modelo real permanecem `NOT RUN` até haver segredo apenas no runtime e evidência registrada.
 
 ### Rybená
 

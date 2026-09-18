@@ -1,6 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { handleAccessibilityRequest, type AccessibilityEndpoint } from './server/accessibility/handler';
+import {
+  handleAccessibilityRequest,
+  MAX_ACCESSIBILITY_REQUEST_BYTES,
+  type AccessibilityEndpoint,
+} from './server/accessibility/handler';
 
 type MiddlewareServer = { middlewares: { use(handler: (request: any, response: any, next: () => void) => void): void } };
 
@@ -9,9 +13,22 @@ const attachAccessibilityApi = (server: MiddlewareServer) => {
       const match = request.url?.match(/^\/api\/accessibility\/(plan|explain|simplify)(?:\?|$)/);
       if (!match) { next(); return; }
       const chunks: Uint8Array[] = [];
-      for await (const chunk of request) chunks.push(typeof chunk === 'string' ? new TextEncoder().encode(chunk) : chunk);
+      let size = 0;
+      for await (const chunk of request) {
+        const bytes = typeof chunk === 'string' ? new TextEncoder().encode(chunk) : chunk;
+        size += bytes.byteLength;
+        if (size > MAX_ACCESSIBILITY_REQUEST_BYTES) {
+          response.statusCode = 413;
+          response.setHeader('content-type', 'application/json; charset=utf-8');
+          response.setHeader('cache-control', 'no-store');
+          response.end(JSON.stringify({ error: 'A solicitação excede o limite de 16 KiB.' }));
+          return;
+        }
+        chunks.push(bytes);
+      }
       const body = Buffer.concat(chunks);
-      const webRequest = new Request(`http://127.0.0.1${request.url}`, {
+      const host = request.headers.host || '127.0.0.1:4173';
+      const webRequest = new Request(`http://${host}${request.url}`, {
         method: request.method,
         headers: request.headers as HeadersInit,
         body: body.length > 0 ? body : undefined,

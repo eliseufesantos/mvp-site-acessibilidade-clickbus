@@ -40,8 +40,10 @@ Estado Rybená: CDN e recusa real observados; **BLOCKED / NOT VALIDATED — prov
 | T26 | 390×844, 320 px, texto 150% e zoom | sem overflow geral ou controles cortados |
 | T27 | Chaves/bundle/logs | nenhum segredo ou conteúdo privado |
 | T28 | Fechar painel durante requisição/proposta | preferências mantidas; operação invalidada |
+| T29 | Adaptador Gemini com transporte falso | URL/headers/payload nativos; JSON válido; bloqueio/truncamento/malformação falham sem retry |
+| T30 | Proteção do endpoint | origem, JSON e 16 KiB exigidos; quota retorna 429 antes de nova chamada paga |
 
-T13–T17, T21, T24, T25 e proteção de credenciais são bloqueadores do núcleo.
+T13–T17, T21, T24, T25, T27, T29 e T30 são bloqueadores do núcleo.
 
 ## 3. Avaliação do planejador
 
@@ -59,7 +61,7 @@ Casos mínimos, executados contra modelo real somente após configuração:
 - compra, reserva, pagamento, CSS/JS e capacidade inexistente;
 - prompt injection na mensagem/histórico/conteúdo.
 
-Executar três rodadas por caso e acrescentar paráfrases não usadas no prompt. Meta: ≥ 90% de acerto semântico; escopo e segurança em 100%. Registrar modelo, prompt, parâmetros, tokens, latência e custo vigente. Enquanto não houver provedor configurado: **NOT RUN / provider configuration missing**, não `PASS`.
+Executar três rodadas por caso e acrescentar paráfrases não usadas no prompt. Meta: ≥ 90% de acerto semântico; escopo e segurança em 100%. Registrar modelo efetivo, prompt, parâmetros, tokens, latência e custo vigente sem registrar segredo ou conteúdo pessoal. Enquanto não houver segredo no runtime e smoke real: **NOT RUN / runtime provider configuration missing**, não `PASS`.
 
 ## 4. Rybená nesta entrega
 
@@ -128,20 +130,24 @@ Não alegar conformidade integral apenas por esses testes.
 - [x] documentação e evidências refletem o estado real;
 - [x] pesquisa humana marcada como realizada ou pendente, nunca presumida.
 
-### Resultado observado em 17/09/2026
+### Resultado observado em 18/09/2026
 
 | Grupo | Resultado | Evidência |
 | --- | --- | --- |
-| contratos/store/executor | PASS | 14 testes locais; adaptador Rybená coberto com runtime falso; ação desconhecida e revisão obsoleta rejeitadas; `planId` idempotente |
+| contratos/store/executor | PASS | 22 testes locais; adaptadores Gemini/Rybená cobertos com transporte/runtime falso; ação desconhecida e revisão obsoleta rejeitadas; `planId` idempotente |
 | TypeScript | PASS | `tsc --noEmit -p tsconfig.app.json --pretty false` |
 | build | PASS | Vite 6.4.3, 1.616 módulos |
+| funções Vercel | PASS local | três wrappers da raiz compilados por `tsc`; deployment/smoke remoto ainda `NOT RUN` |
+| API local sem segredo | PASS | `vite preview`: SPA `200 text/html`, POST same-origin `503 application/json` e origem indevida `403 application/json` |
 | painel desktop | PASS | 1440×900; acionador fixo à esquerda permaneceu na posição durante scroll e nas etapas busca, resultados e assentos; drawer não modal, Escape e retorno de foco |
 | painel mobile | PASS | 390×844 modal; em 320×844, documento e painel com `scrollWidth=clientWidth=320`; escala de texto a 150% e alto contraste sem overflow horizontal |
 | breakpoint 820/821 | PASS | 820 px: diálogo, backdrop, `aria-modal="true"` e `body` bloqueado; 821 px: região não modal, sem backdrop e `body` rolável; sem overflow nos dois casos |
-| IA real | NOT RUN | `ACCESSIBILITY_LLM_*` ausentes; 503 seguro observado |
+| adaptador Gemini | PASS | URL nativa, chave somente em header, JSON estruturado, `STOP`, bloqueio, truncamento e JSON inválido cobertos sem rede/segredo |
+| proteções do endpoint | PASS local | origem, content type, corpo de 16 KiB e quota em memória cobertos; quota externa/persistente ainda não configurada |
+| IA real | NOT RUN | `ACCESSIBILITY_LLM_*` ausentes no runtime; nenhum segredo foi gravado; 503 seguro observado |
 | seleção e explicação local | PASS | arraste real em `search-help` preencheu e focou o campo; “viação” foi respondida pelo glossário revisado; em 390×844 o painel e o bloqueio modal retornaram |
 | simplificação local | PASS | versão revisada exibida separadamente e texto original preservado |
-| simplificação por LLM | NOT RUN | provedor ausente; caminho remoto permanece protegido pelo 503 seguro |
+| simplificação por LLM | NOT RUN | adaptador existe, mas conectividade/qualidade do modelo real não foram exercitadas |
 | voz real | NOT RUN | permissão de microfone não concedida nesta rodada |
 | Rybená real | BLOCKED / NOT VALIDATED | CDN carregou; fornecedor exibiu “Token Rybená não autorizado” em `127.0.0.1` |
 | ausência de legado | PASS | zero recursos VLibras; Rybená somente após ação explícita |

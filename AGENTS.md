@@ -29,14 +29,16 @@ Não há consulta comercial real, emissão de bilhete, reserva, cancelamento ou 
 
 ## 3. Estado verificado
 
-Snapshot operacional atualizado em **17/09/2026**:
+Snapshot operacional atualizado em **18/09/2026**:
 
 - branch: `main`;
-- HEAD: `463bdf1` (`refactor: documentacao para agents`), sincronizado com `origin/main` antes das alterações locais desta iteração;
-- working tree contém a implementação local ainda não commitada do plugin lateral e das correções de conteúdo; não descarte essas mudanças;
+- HEAD: `d0777cc` (`Integrate Rybená Libras controls and update accessibility documentation`), sincronizado com `origin/main` antes das alterações locais desta iteração;
+- working tree contém a implementação local ainda não commitada do adaptador Gemini, das proteções do endpoint e das rotas Vercel; não descarte essas mudanças;
 - aplicação React 18 + TypeScript estrito + Vite 6;
 - build Vite: aprovado, 1.616 módulos transformados;
-- suíte do agente de acessibilidade: 14 testes aprovados;
+- suíte do agente de acessibilidade: 22 testes aprovados, incluindo contrato do adaptador Gemini com transporte falso, origem, limite de corpo e quota local;
+- adaptador REST nativo do Gemini implementado no servidor com JSON estruturado, chave somente em header, limite de 1.024 tokens, raciocínio `low` para Gemini 3/alias Flash e nenhum retry; conectividade real e avaliação semântica permanecem `NOT RUN` porque nenhum segredo foi gravado no workspace;
+- smoke local sem segredo: SPA `200 text/html`, API same-origin `503 application/json` e origem indevida `403 application/json`; deployment remoto não foi executado;
 - fluxo de conteúdo validado em navegador: seleção real de termo na página, explicação pelo glossário e simplificação determinística com original preservado;
 - reflow da nova UI validado em 1440×900, 390×844 e 320×844 CSS px; escala de texto a 150% em 320 px e alto contraste em mobile também permaneceram sem overflow horizontal;
 - breakpoint validado nos limites: 820 px usa diálogo modal com backdrop e bloqueio do body; 821 px usa região não modal, sem backdrop e com a página rolável;
@@ -52,6 +54,7 @@ Este snapshot não prova que um deployment remoto posterior continua saudável. 
 ├── AGENTS.md                         # orientação universal para agentes
 ├── .claude/launch.json               # atalho de execução; não contém política do projeto
 ├── vercel.json                       # build/deploy a partir da raiz
+├── api/accessibility/                # funções Vercel de plan/explain/simplify na raiz canônica
 ├── app/
 │   ├── api/accessibility/            # entradas HTTP de plan/explain/simplify
 │   ├── server/accessibility/         # handler, prompts e provedor LLM
@@ -135,7 +138,9 @@ ACCESSIBILITY_LLM_MODEL
 ACCESSIBILITY_LLM_API_KEY
 ```
 
-Nunca use variáveis `VITE_*` para segredos. Sem as três variáveis, o servidor deve retornar `503` finito e os controles manuais devem continuar funcionando. Antes de ativar um provedor em hospedagem pública, implemente origem autorizada, autenticação quando aplicável, limite de tamanho, rate limit/quota e orçamento.
+Para Gemini nativo, use `ACCESSIBILITY_LLM_ENDPOINT=https://generativelanguage.googleapis.com/v1beta`; `ACCESSIBILITY_LLM_MODEL` permanece separado. O host Google seleciona o adaptador `generateContent`; endpoints HTTPS diferentes preservam o caminho compatível com Chat Completions.
+
+Nunca use variáveis `VITE_*` para segredos. Sem as três variáveis, o servidor deve retornar `503` finito e os controles manuais devem continuar funcionando. O handler exige origem autorizada e JSON, limita o corpo a 16 KiB e aplica, por instância, 12 chamadas/minuto por IP e 200/dia por padrão; `ACCESSIBILITY_LLM_REQUESTS_PER_MINUTE`, `ACCESSIBILITY_LLM_REQUESTS_PER_DAY` e `ACCESSIBILITY_ALLOWED_ORIGINS` permitem ajuste. Como essa quota é apenas defesa em profundidade de uma função stateless, hospedagem pública ainda exige quota/budget no Google e rate limit persistente/WAF na Vercel.
 
 ### Rybená
 
@@ -180,7 +185,8 @@ O projeto é um repositório com aplicação em subpasta. A configuração canô
 - instalação: `npx --yes pnpm@10.28.0 --dir app install --frozen-lockfile`;
 - build: `npx --yes pnpm@10.28.0 --dir app build`;
 - saída: `app/dist`;
-- rewrite SPA: `/(.*)` → `/index.html`.
+- funções: wrappers canônicos em `api/accessibility/`, compartilhando o handler de `app/server/accessibility/`;
+- rewrite SPA exclui `/api/` e envia as demais rotas a `/index.html`.
 
 O deploy do commit `6e579c7` falhou porque `provider.ts` usava `process.env` sem declarar `@types/node`. A correção está no commit `99575af`: dependência e lockfile explícitos, `types: ["node"]` e `typeRoots` local. O mesmo comando de build da Vercel passou localmente após a correção.
 
@@ -224,8 +230,9 @@ Se duas fontes divergirem, preserve a opção mais segura, confirme o comportame
 
 ## 12. Pendências conhecidas
 
-- configurar e avaliar um provedor real para planejamento, explicação fora do glossário e eventuais alvos sem simplificação local revisada;
-- adicionar proteções de produção antes de habilitar chamadas pagas;
+- configurar o segredo somente no runtime escolhido, executar smoke real do Gemini e avaliar a matriz semântica; o adaptador testado com transporte falso não prova conectividade;
+- fixar um modelo estável para a apresentação ou registrar que `gemini-flash-latest` é um alias mutável;
+- configurar quota/budget do Gemini e rate limit persistente/WAF antes de habilitar chamadas pagas em hospedagem pública;
 - obter liberação do domínio/token de demonstração e homologar a Rybená;
 - validar com NVDA/VoiceOver e pessoas usuárias;
 - testar Safari/iOS real e zoom de 200%;

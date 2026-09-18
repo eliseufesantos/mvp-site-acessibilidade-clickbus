@@ -42,7 +42,7 @@ app/src/features/accessibility-agent/
   core/preferences.ts
   core/executor.ts
   core/glossary.ts
-  client/plannerClient.ts
+  core/plannerClient.ts
   adapters/clickbus/content.ts
   adapters/libras/contracts.ts
   adapters/libras/rybenaBrowser.ts
@@ -51,10 +51,10 @@ app/src/features/accessibility-agent/
   ui/ContentTools.tsx
 app/src/components/accessibility/AccessibilityPlugin.tsx
 app/src/styles/accessibility-plugin.css
-server/accessibility/handler.ts
-server/accessibility/planner.ts
-server/accessibility/prompt.ts
-api/accessibility/plan.ts
+app/server/accessibility/handler.ts
+app/server/accessibility/provider.ts
+app/server/accessibility/prompt.ts
+api/accessibility/{plan,explain,simplify}.ts
 ```
 
 ## 3. Estado canônico
@@ -187,15 +187,17 @@ Doubles de Libras ficam exclusivamente em testes, nomeados `TestLibrasAdapter`, 
 
 ## 8. Planejador e infraestrutura
 
-O backend é pequeno, sem banco, RAG ou conversa persistida. Por padrão retorna `503` até que sejam configurados no servidor:
+O backend é pequeno, sem banco, RAG ou conversa persistida. As funções Vercel ficam em `api/accessibility/` na raiz canônica e reutilizam o mesmo handler exercitado pelo middleware Vite. Por padrão retorna `503` até que sejam configurados no servidor:
 
-- `ACCESSIBILITY_LLM_ENDPOINT` para uma API explicitamente escolhida e compatível com Chat Completions;
-- `ACCESSIBILITY_LLM_MODEL` fixado;
+- `ACCESSIBILITY_LLM_ENDPOINT` para a base HTTPS do provedor; no Gemini nativo, `https://generativelanguage.googleapis.com/v1beta`;
+- `ACCESSIBILITY_LLM_MODEL` definido explicitamente; prefira versão estável e registre quando usar um alias `latest` mutável;
 - `ACCESSIBILITY_LLM_API_KEY` secreta.
 
-Antes de habilitar em hospedagem pública, o host também deve impor origens autorizadas, autenticação quando aplicável, limite de tamanho, rate limit/quota e orçamento. Essas proteções não são simuladas no frontend acadêmico.
+Quando o host é `generativelanguage.googleapis.com`, `provider.ts` chama `models/{model}:generateContent`, envia a chave apenas no header `x-goog-api-key`, separa `systemInstruction` de `contents` e pede `application/json` com schema de objeto. Somente uma candidata com `finishReason=STOP` e JSON válido avança; bloqueio, truncamento, vazio, HTTP não 2xx ou JSON malformado falham fechados. O schema runtime local continua sendo a autoridade. Outros endpoints HTTPS mantêm a compatibilidade anterior com Chat Completions.
 
-Limites: uma chamada por pedido, timeout 12 s, saída ≈ 1.000 tokens, sem retry automático pago. Mensagens, conteúdo e áudio não entram em logs. Telemetria possível: ID efêmero, duração, contagens, versão e status.
+O handler recusa origem ausente/não autorizada, exige `application/json`, lê no máximo 16 KiB e aplica uma quota em memória por instância. Defaults: 12 chamadas/minuto por IP e 200/dia; podem ser ajustados por `ACCESSIBILITY_LLM_REQUESTS_PER_MINUTE` e `ACCESSIBILITY_LLM_REQUESTS_PER_DAY`. `ACCESSIBILITY_ALLOWED_ORIGINS` acrescenta origens explícitas quando um proxy confiável faz a origem do navegador divergir da URL recebida pela função; essa opção valida a origem, mas não habilita CORS nem preflight para um frontend hospedado em outro site. Esses limites locais são defesa em profundidade e não substituem quota/budget no projeto Google nem rate limit persistente/WAF no host antes de exposição pública.
+
+Limites por pedido: uma chamada, timeout de 10 s no servidor e 12 s no cliente, saída máxima de 1.024 tokens, `store=false` no Gemini e nenhum retry automático pago. O payload não fixa `temperature`, `topP`, `topK` nem `candidateCount`; para IDs Gemini 3 e `gemini-flash-latest`, usa `thinkingLevel=low` para reservar o teto curto à resposta e reduzir custo/latência. Mensagens, conteúdo, respostas brutas, áudio e chaves não entram em logs. Telemetria possível: ID efêmero, duração, contagens, versão e status.
 
 O cliente usa `AbortController`, uma requisição ativa e token de sessão. Fechar, navegar ou fazer alteração manual aborta e invalida resposta posterior.
 

@@ -40,6 +40,8 @@ Aceite: ajustes independentes/combinados, migração, persistência, no-op, desf
 - criar executor transacional, idempotente, com recibos e revisão;
 - criar contratos/clientes distintos para plano, explicação e simplificação;
 - criar backend desabilitado por padrão e adaptador de provedor configurável;
+- integrar Gemini por REST nativo no servidor, com JSON estruturado e sem expor a chave;
+- limitar origem, corpo, frequência e saída antes de qualquer chamada paga;
 - aplicar pedido explícito; propor pedido vago; recusar escopo comercial/código;
 - cancelar requisição anterior e descartar resposta tardia/duplicada.
 
@@ -85,23 +87,25 @@ Aceite: navegador sem suporte não quebra; fechamento impede envio tardio.
 
 ## 3. Registro da entrega
 
-| Etapa | Estado em 17/09/2026 | Evidência | Limitação |
+| Etapa | Estado em 18/09/2026 | Evidência | Limitação |
 | --- | --- | --- | --- |
 | A | Concluída | leitura e auditoria; `tsc`/Vite diretos passam | scripts `pnpm` tentam reinstalar sem TTY/rede |
 | B | Concluída | store v3, ferramentas, conteúdo e adaptador; testes | — |
-| C | Estrutura concluída | contratos, cliente, endpoint e executor testados | modelo/credencial não configurados; avaliação real `NOT RUN` |
+| C | Adaptador Gemini concluído no escopo local | contratos, cliente, funções Vercel na raiz, endpoint protegido e transporte Gemini testados | segredo ausente do runtime; conectividade e avaliação real `NOT RUN` |
 | D | Integração demonstrativa concluída | porta genérica, adaptador real, carregamento sob demanda, controles e crédito | `127.0.0.1` recusado: domínio/token não autorizado; tradução real `BLOCKED` |
-| E | Concluída no escopo local | seleção real na página, glossário e simplificação local aprovados; original preservado | explicação fora do glossário e fallback remoto `NOT RUN`, pois o provedor não está configurado |
+| E | Concluída no escopo local | seleção real na página, glossário e simplificação local aprovados; original preservado | explicação fora do glossário e fallback remoto `NOT RUN`, pois o segredo não está configurado no runtime |
 | F | Implementada | detecção, captura explícita, edição e abort no fechamento | permissão/microfone real não executados |
-| G | Concluída para o escopo local automatizado | TypeScript, build e 14 testes aprovados; navegador e falha real Rybená exercitados | domínio autorizado, NVDA, zoom 200% e pesquisa humana pendentes |
+| G | Concluída para o escopo local automatizado | TypeScript, build e 22 testes aprovados; navegador e falha real Rybená exercitados | smoke Gemini real, domínio autorizado, NVDA, zoom 200% e pesquisa humana devem permanecer separados conforme evidência |
 
 ### Baseline registrado
 
 - Node `v22.22.0`; pnpm `11.12.0`.
-- `pnpm typecheck` e `pnpm build`: falha ambiental antes do script (`ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY` e tentativa de registry).
+- `npx --yes pnpm@10.28.0 ...`: falha ambiental antes dos scripts ao tentar acessar o registry (`EACCES`); nenhum teste foi contado a partir dessa tentativa.
 - `node_modules/.bin/tsc --noEmit -p tsconfig.app.json`: PASS.
 - `node_modules/.bin/vite build --configLoader runner`: PASS, 1.616 módulos.
-- `node scripts/run-accessibility-tests.mjs`: PASS, 14 testes.
+- `tsc` direto sobre `api/accessibility/{plan,explain,simplify}.ts`: PASS para os wrappers Vercel na raiz.
+- `node scripts/run-accessibility-tests.mjs`: PASS, 22 testes, incluindo adaptador Gemini e proteções do handler com doubles explícitos.
+- smoke em `vite preview`: raiz `200 text/html`; `/api/accessibility/plan` same-origin sem segredo `503 application/json`; origem indevida `403 application/json`.
 - navegador integrado: PASS em 1440×900 e 390×844; acionador lateral fixo preservado na busca, nos resultados e nos assentos, drawer desktop não modal, diálogo mobile e ausência de erros/warnings no console.
 - fluxo de Conteúdo no navegador: PASS para recolher o painel, selecionar termo em `search-help`, retornar com o campo preenchido/focado, explicar “viação” pelo glossário e simplificar localmente com o original preservado; no mobile 390×844, o bloqueio modal foi restaurado após a seleção.
 - reflow da nova UI: PASS em 320×844, com `scrollWidth=clientWidth=320` no documento e no painel; a escala de texto a 150% permaneceu legível e sem overflow horizontal; o alto contraste também foi exercitado em mobile sem overflow.
@@ -114,7 +118,7 @@ Aceite: navegador sem suporte não quebra; fechamento impede envio tardio.
 - `src/features/accessibility-agent/ui/`: conversa, ajustes, conteúdo e voz;
 - `src/components/accessibility/AccessibilityPlugin.tsx`: acionador fixo, superfície desktop/mobile, foco e modo de seleção;
 - `src/styles/accessibility-plugin.css`: identidade visual e responsividade isoladas do plugin;
-- `server/accessibility/` e `api/accessibility/`: limite servidor e handlers;
+- `server/accessibility/`: handler protegido, prompts e provedores; `../api/accessibility/`: funções Vercel canônicas na raiz;
 - `src/features/accessibility-agent/tests/run.ts`: regressão do núcleo;
 - `scripts/capture-accessibility-evidence.mjs`: captura reproduzível em 320×844. As imagens antigas foram removidas; novas capturas devem ser revisadas antes de serem versionadas.
 
@@ -122,8 +126,8 @@ Aceite: navegador sem suporte não quebra; fechamento impede envio tardio.
 
 1. Abrir o painel por teclado e mostrar preferências ativas.
 2. Aplicar ajustes manuais em categorias, combinar e desfazer.
-3. Enviar pedido explícito; se IA não estiver configurada, mostrar indisponibilidade e continuar manualmente.
-4. Enviar pedido vago com planejador configurado/double de teste identificado; revisar proposta antes de aplicar.
+3. Enviar pedido explícito; se o smoke Gemini real não estiver registrado, mostrar indisponibilidade e continuar manualmente.
+4. Só demonstrar o Gemini real após configurar o segredo no runtime escolhido e registrar o smoke; caso contrário, identificar claramente qualquer double de teste.
 5. Na aba Conteúdo, acionar “Selecionar na página”, marcar um termo em alvo identificado, revisar o campo preenchido, explicar pelo glossário e simplificar um trecho público localmente, mantendo o original.
 6. Demonstrar voz somente após consentimento de microfone; editar antes de enviar.
 7. Abrir área Rybená, solicitar tradução e observar player autorizado ou erro explícito de domínio/token, sem tradução simulada.
