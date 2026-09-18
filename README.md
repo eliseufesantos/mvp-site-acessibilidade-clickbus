@@ -2,9 +2,9 @@
 
 Projeto acadêmico que simula a jornada principal da ClickBus com melhorias de acessibilidade de baixo custo e alto impacto visual.
 
-O MVP inclui busca, resultados, seleção de assento, formulário de passageiro e confirmação simulada. A evolução **Acessibilidade Assistida por IA** acrescenta controles visuais e de leitura independentes, persistência/migração, desfazer, glossário, simplificação preparada, voz opcional e um planejador tipado no servidor, com adaptador REST nativo para Gemini.
+O MVP inclui busca, resultados, seleção de assento, formulário de passageiro e confirmação simulada. A evolução **Acessibilidade Assistida por IA** acrescenta controles visuais e de leitura independentes, persistência/migração, desfazer, glossário, simplificação preparada, voz opcional e um planejador tipado no servidor, com adaptador REST nativo para Gemini já implementado.
 
-A IA fica desativada até a configuração explícita de provedor, modelo e chave no servidor. A autorização gratuita da Rybená está confirmada, mas a API/SDK/player ainda não foi liberada/configurada; por isso a interface mostra indisponibilidade e atribuição sem carregar script ou simular tradução.
+Não é necessário instalar ou implementar uma LLM local. Sem credenciais no runtime, os recursos manuais e locais continuam funcionando e os endpoints de IA retornam indisponibilidade controlada. A integração demonstrativa da Rybená também está implementada; a tradução real permanece bloqueada enquanto o fornecedor não autorizar o domínio ou token da demonstração.
 
 ## Estrutura
 
@@ -33,19 +33,9 @@ npx --yes pnpm@10.28.0 --dir app dev
 
 A aplicação ficará disponível em [http://127.0.0.1:4173/](http://127.0.0.1:4173/). Use `Ctrl+C` para encerrar o servidor.
 
-Nenhuma variável de ambiente é necessária para executar a jornada simulada, os controles manuais de acessibilidade e o glossário local.
+Nenhuma variável de ambiente é necessária para executar a jornada simulada, os controles manuais, o glossário e as simplificações locais. O adaptador Gemini já faz parte do servidor; não há modelo local, serviço adicional ou implementação de provedor a configurar no computador de desenvolvimento.
 
-O planejamento e as ferramentas de conteúdo que dependem de IA são opcionais. Para usar o Gemini pelo endpoint nativo, configure estas variáveis somente no ambiente do servidor ou no cofre de variáveis da Vercel:
-
-```text
-ACCESSIBILITY_LLM_ENDPOINT=https://generativelanguage.googleapis.com/v1beta
-ACCESSIBILITY_LLM_MODEL=gemini-flash-latest
-ACCESSIBILITY_LLM_API_KEY=<segredo>
-```
-
-Sem as três variáveis, os endpoints de IA respondem com HTTP `503` de forma controlada e o restante do MVP continua funcionando. Não grave a chave em `.env*`, código, documentação ou variáveis `VITE_*`; o repositório ignora esses arquivos apenas como última barreira contra inclusão acidental.
-
-O servidor aceita somente origem autorizada e JSON, limita cada corpo a 16 KiB, não repete chamadas e usa limites locais padrão de 12 chamadas/minuto por IP e 200/dia por instância. Para uma publicação real, configure também quota/budget no Google e rate limit persistente ou WAF na Vercel. O alias `gemini-flash-latest` pode mudar; fixe um identificador estável após o smoke da conta se precisar de uma demonstração reproduzível.
+Credenciais são necessárias somente para habilitar chamadas reais ao Gemini no runtime escolhido. Elas devem permanecer no servidor ou no cofre da Vercel, nunca em variáveis `VITE_*`, no código ou na documentação. A configuração de hospedagem, segurança, quota e orçamento está descrita em [`docs/guides/08-DEPLOY-VERCEL.md`](docs/guides/08-DEPLOY-VERCEL.md).
 
 ## Validação local
 
