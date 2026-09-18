@@ -45,15 +45,15 @@ Aceite: ajustes independentes/combinados, migração, persistência, no-op, desf
 
 Aceite: schema inválido, ação desconhecida, revisão obsoleta, duplicação, timeout e indisponibilidade não causam efeitos.
 
-### D — Rybená preparada
+### D — Rybená demonstrativa
 
 - manter `LibrasAdapter` independente do fornecedor;
-- exibir `unavailable_pending_provider_configuration` como estado estável;
-- preservar crédito/link e remover carregamento especulativo;
-- documentar credenciais, endpoints, IDs, versão, player, domínio/CORS, homologação, métodos/eventos e teste necessários;
-- criar `TestLibrasAdapter` apenas se necessário para testes do executor.
+- carregar `rybena.js?mode=api` somente após ação explícita, com `doNotTrack="true"`;
+- mapear somente métodos publicados e preservar crédito/link;
+- não fazer polling ou retry automático;
+- tratar domínio/token recusado como `failed`, sem quebrar as ferramentas locais.
 
-Aceite: nenhuma requisição Rybená/VLibras no runtime; UI informa limitação sem quebrar o painel.
+Aceite: nenhuma requisição antes do clique; CDN/erro real observáveis; UI informa limitação sem quebrar o painel; nenhum VLibras.
 
 ### E — Explicação e simplificação
 
@@ -85,15 +85,15 @@ Aceite: navegador sem suporte não quebra; fechamento impede envio tardio.
 
 ## 3. Registro da entrega
 
-| Etapa | Estado em 14/09/2026 | Evidência | Limitação |
+| Etapa | Estado em 17/09/2026 | Evidência | Limitação |
 | --- | --- | --- | --- |
 | A | Concluída | leitura e auditoria; `tsc`/Vite diretos passam | scripts `pnpm` tentam reinstalar sem TTY/rede |
 | B | Concluída | store v3, ferramentas, conteúdo e adaptador; testes | — |
 | C | Estrutura concluída | contratos, cliente, endpoint e executor testados | modelo/credencial não configurados; avaliação real `NOT RUN` |
-| D | Preparação concluída | porta genérica, estado estável, crédito e zero rede | API Rybená não liberada/configurada; operação real `BLOCKED` |
+| D | Integração demonstrativa concluída | porta genérica, adaptador real, carregamento sob demanda, controles e crédito | `127.0.0.1` recusado: domínio/token não autorizado; tradução real `BLOCKED` |
 | E | Concluída no escopo local | seleção real na página, glossário e simplificação local aprovados; original preservado | explicação fora do glossário e fallback remoto `NOT RUN`, pois o provedor não está configurado |
 | F | Implementada | detecção, captura explícita, edição e abort no fechamento | permissão/microfone real não executados |
-| G | Concluída para o escopo local automatizado | TypeScript, build e 13 testes aprovados; navegador desktop/mobile exercitado | NVDA, zoom 200% e pesquisa humana pendentes |
+| G | Concluída para o escopo local automatizado | TypeScript, build e 14 testes aprovados; navegador e falha real Rybená exercitados | domínio autorizado, NVDA, zoom 200% e pesquisa humana pendentes |
 
 ### Baseline registrado
 
@@ -101,7 +101,7 @@ Aceite: navegador sem suporte não quebra; fechamento impede envio tardio.
 - `pnpm typecheck` e `pnpm build`: falha ambiental antes do script (`ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY` e tentativa de registry).
 - `node_modules/.bin/tsc --noEmit -p tsconfig.app.json`: PASS.
 - `node_modules/.bin/vite build --configLoader runner`: PASS, 1.616 módulos.
-- `node scripts/run-accessibility-tests.mjs`: PASS, 13 testes.
+- `node scripts/run-accessibility-tests.mjs`: PASS, 14 testes.
 - navegador integrado: PASS em 1440×900 e 390×844; acionador lateral fixo preservado na busca, nos resultados e nos assentos, drawer desktop não modal, diálogo mobile e ausência de erros/warnings no console.
 - fluxo de Conteúdo no navegador: PASS para recolher o painel, selecionar termo em `search-help`, retornar com o campo preenchido/focado, explicar “viação” pelo glossário e simplificar localmente com o original preservado; no mobile 390×844, o bloqueio modal foi restaurado após a seleção.
 - reflow da nova UI: PASS em 320×844, com `scrollWidth=clientWidth=320` no documento e no painel; a escala de texto a 150% permaneceu legível e sem overflow horizontal; o alto contraste também foi exercitado em mobile sem overflow.
@@ -126,7 +126,7 @@ Aceite: navegador sem suporte não quebra; fechamento impede envio tardio.
 4. Enviar pedido vago com planejador configurado/double de teste identificado; revisar proposta antes de aplicar.
 5. Na aba Conteúdo, acionar “Selecionar na página”, marcar um termo em alvo identificado, revisar o campo preenchido, explicar pelo glossário e simplificar um trecho público localmente, mantendo o original.
 6. Demonstrar voz somente após consentimento de microfone; editar antes de enviar.
-7. Abrir área Rybená e mostrar atribuição + estado aguardando liberação técnica, sem tradução simulada.
+7. Abrir área Rybená, solicitar tradução e observar player autorizado ou erro explícito de domínio/token, sem tradução simulada.
 8. Percorrer busca → resultados → assento e confirmar que preferências não mudam o estado comercial.
 
 Não encenar integração LLM ou Rybená real sem configuração e evidência.

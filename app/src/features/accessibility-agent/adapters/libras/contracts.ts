@@ -1,6 +1,7 @@
 import type { AccessibilityPreferences } from '../../../../types';
 
 export type LibrasState =
+  | 'idle'
   | 'unavailable_pending_provider_configuration'
   | 'loading'
   | 'ready'

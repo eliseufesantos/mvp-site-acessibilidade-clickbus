@@ -1,5 +1,7 @@
 # Mapeamento ClickBus × réplica FIAP
 
+> **Registro histórico (08/09/2026):** este mapeamento descreve uma versão anterior da réplica. Os anexos E01–E30 foram removidos em 16/09/2026 durante a limpeza documental; seus códigos permanecem apenas como marcadores da auditoria original. Para o estado validado atual, consulte [VALIDATION.md](../accessibility-agent/VALIDATION.md).
+
 Observação em **08/09/2026**, fuso America/Sao_Paulo. Entrega documental; nenhuma mudança no código da aplicação. Base Git inspecionada: `4f2eff0278a564977091933daa82c8a07652feef`.
 
 ## Resumo executivo
@@ -22,15 +24,14 @@ A volta é uma diferença observada, mas sua jornada completa não foi verificad
 2. [Análise de diferenças](GAP-ANALYSIS.md): matriz priorizada e arquivos envolvidos.
 3. [Acessibilidade e conteúdo](ACESSIBILIDADE-E-CONTEUDO.md): contratos do hospedeiro, alvos públicos e exclusões.
 4. [Plano de reconstrução](PLANO-DE-RECONSTRUCAO.md): entregas incrementais e critérios de aceite.
-5. [Índice de evidências](evidencias/README.md): capturas, dimensões, URLs, horários e registros textuais.
 
 ## Método e alcance
 
 - Site oficial: [ClickBus](https://www.clickbus.com.br/), navegador integrado do Codex, sessão sem autenticação.
 - Réplica: `http://127.0.0.1:4173/`, servida a partir do código existente com Vite. Todas as etapas compartilham esse caminho; mudam por estado React.
 - Viewports solicitadas e usadas: **1440 × 900 CSS px** e **390 × 844 CSS px**. Redimensionamento de navegador desktop, sem emulação de dispositivo físico, toque ou teclado virtual.
-- Evidência combina captura visual, árvore acessível/DOM, algumas ações de teclado e inspeção do código. Não foram executados NVDA/VoiceOver, axe, Lighthouse ou auditoria WCAG integral.
-- O capturador exportou algumas imagens em 1425 × 891 ou 375 × 812; outras mantêm 1440 × 900 ou 390 × 844. São dimensões do bitmap, não outras viewports. O índice registra ambas. Evitar medir CSS diretamente pelos pixels dessas imagens.
+- A auditoria original combinou captura visual, árvore acessível/DOM, algumas ações de teclado e inspeção do código. Não foram executados NVDA/VoiceOver, axe, Lighthouse ou auditoria WCAG integral.
+- Algumas imagens originais foram exportadas em dimensões diferentes da viewport CSS. Os anexos brutos foram removidos; as conclusões preservadas não devem ser usadas para medir pixels ou representar a interface atual.
 - Preços, campanhas, quantidade de resultados e lugares são retratos do momento. Não são regras permanentes nem dados a copiar para o mock.
 
 ## Convenções de evidência
@@ -42,7 +43,7 @@ A volta é uma diferença observada, mas sua jornada completa não foi verificad
 | **I** | Inferência ou proposta de implementação, com justificativa indicada |
 | **NV** | Não verificado; não deve ser tratado como comportamento conhecido |
 
-Os identificadores E01–E30 correspondem aos prefixos dos arquivos em `evidencias/`. Há registros exclusivamente textuais, explicitados no índice. Recomendações são propostas, não mudanças já entregues.
+Os identificadores E01–E30 eram os prefixos dos anexos removidos. Permanecem apenas como marcadores históricos nas descrições abaixo. Recomendações são propostas, não mudanças já entregues.
 
 ## Limitações e fronteira comercial
 

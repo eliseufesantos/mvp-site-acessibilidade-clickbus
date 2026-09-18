@@ -1,6 +1,6 @@
 # Mapa de telas, estados e interações
 
-Data: 08/09/2026. Convenções O-V/O-C/I/NV e metodologia no [README](README.md). URLs/horários individuais e árvores de acessibilidade no [índice de evidências](evidencias/README.md). Desktop D = 1440 × 900; mobile M = 390 × 844 CSS px.
+Data: 08/09/2026. Documento histórico; convenções O-V/O-C/I/NV e metodologia no [README](README.md). Os anexos brutos foram removidos, e os códigos E01–E30 permanecem apenas como marcadores da auditoria original. Desktop D = 1440 × 900; mobile M = 390 × 844 CSS px.
 
 ## 1. Jornada efetivamente observada
 
@@ -27,10 +27,6 @@ Objetivo: definir trajeto e data para consultar passagens. No desktop, a ordem v
 O cabeçalho desktop contém logo, clube, ofertas, pedidos, ajuda, explorar e entrada de conta. Na versão mobile, há logo, entrada de conta e menu. Abaixo da busca foram identificados ofertas, chamadas de app/clube, principais passagens, rotas, texto institucional e rodapé. Só a porção inicial teve comparação visual detalhada; os blocos inferiores foram inventariados no DOM, sem testar cada link.
 
 No mobile, a arte muda de proporção e o formulário empilha origem/destino; o controle de troca fica junto à borda direita dos campos. A escolha ida/volta vem abaixo deles. Datas compartilham uma linha e o CTA ocupa a largura. A home local, por comparação, gasta mais altura com título e texto sobre o MVP, adiciona uma linha inteira para a troca e só oferece uma data.
-
-![Home real desktop](evidencias/01-real-home-desktop.png)
-
-![Home da réplica desktop](evidencias/15-replica-home-desktop.png)
 
 ### R01a — Validação sem dados
 
@@ -78,11 +74,7 @@ A réplica possui três opções fixas, ícone genérico da viação, horários/
 
 Na réplica, resumo, título grande, explicação e filtros ocupam quase toda a primeira viewport; o primeiro cartão só começa no fim de E24. Os filtros permanecem inline. O cabeçalho conserva apenas logo e acionador de acessibilidade, cujo nome desaparece quando o texto é escondido.
 
-![Resultados reais mobile, com filtro Manhã e ordem preço](evidencias/11-real-resultados-mobile.png)
-
-![Resultados locais mobile, sem filtro](evidencias/24-replica-resultados-mobile.png)
-
-Essas duas capturas têm o mesmo tamanho de viewport, mas filtros e dados diferentes; servem para comparar hierarquia, não disponibilidade nem correspondência de cartões.
+A comparação original usou a mesma viewport, mas filtros e dados diferentes; sua conclusão se limita à hierarquia, não à disponibilidade nem à correspondência de cartões.
 
 ## 4. R03 — Itinerário
 
@@ -92,8 +84,6 @@ Diálogo vertical central com título, botão de fechar, horários/datas, pontos
 
 **Réplica O-C:** não há componente de detalhe. **I:** acrescentar diálogo reutilizável, conteúdo fictício coerente e retorno de foco, mantendo a escolha de viagem separada do comando de tradução. A versão mobile específica desse itinerário não foi capturada.
 
-![Itinerário real](evidencias/07-real-itinerario-desktop.png)
-
 ## 5. R04 — Mapa de assentos
 
 **Acesso:** itinerário → Escolher assento. **O-V:** E09–E10. O caminho principal continua o da rota. Dentro do diálogo há iframe da viagem; seu identificador de inventário é efêmero e não serve como seletor de integração.
@@ -101,10 +91,6 @@ Diálogo vertical central com título, botão de fechar, horários/datas, pontos
 Desktop: título superior, fechamento, informações/benefícios da viação à esquerda e ônibus vertical à direita, classe e data/horário acima do mapa. Há política de embarque recolhida. Poltronas ocupadas aparecem com X; as livres mostram número. Legenda distingue Livre, Escolhido e Ocupado. Na amostra, só quatro números estavam livres. **Nenhum assento foi selecionado.**
 
 Mobile: mapa primeiro; detalhes da viação em superfície inferior recolhida. A quantidade de fileiras exige rolagem. Cupom flutuante continuou por cima. Estados de assento selecionado, CTA após seleção, bloqueio, timeout, preço total e passagem ao checkout: **NV**. Política de embarque e detalhes inferiores não foram expandidos.
-
-![Mapa real desktop sem seleção](evidencias/09-real-mapa-assentos-desktop.png)
-
-![Mapa local desktop sem seleção](evidencias/18-replica-assentos-desktop.png)
 
 **Réplica O-C/O-V, E18, E22–E23:** página com resumo antes do mapa no mobile; 16 números (49–64), três ocupados, treze livres em todas as viagens. Botões ocupados desabilitados, `aria-label` em português, seleção com `aria-pressed` e `role=status`; Continuar só habilita depois da escolha. O primeiro cartão anuncia 12 livres, divergindo dos 13 do mapa. Na execução, ArrowDown partindo de 49 levou a 54, embora 53 esteja geometricamente abaixo. O algoritmo usa a lista de lugares livres com salto de quatro índices, perdendo a coluna quando há ocupado. Enter selecionou 54 apenas no mock local. Tab de 49 chegou a 50, com foco visível em E23.
 
@@ -146,6 +132,6 @@ A preferência legada carrega VLibras; nenhuma chamada real de IA ou integraçã
 | Assentos e formulário | [SeatSelectionPage.tsx](../../app/src/features/seats/SeatSelectionPage.tsx), [CheckoutPage.tsx](../../app/src/features/checkout/CheckoutPage.tsx), [ConfirmationPage.tsx](../../app/src/features/confirmation/ConfirmationPage.tsx) |
 | Compartilhados | [Button.tsx](../../app/src/components/ui/Button.tsx), [Switch.tsx](../../app/src/components/ui/Switch.tsx), [StepProgress.tsx](../../app/src/components/ui/StepProgress.tsx), [Header.tsx](../../app/src/components/layout/Header.tsx), [ClickBusLogo.tsx](../../app/src/components/brand/ClickBusLogo.tsx) |
 | Apresentação | [tokens.css](../../app/src/styles/tokens.css): cores, largura 1180, controle 48/56, raios 8/12/20; [global.css](../../app/src/styles/global.css): base, foco, movimento; [components.css](../../app/src/styles/components.css): layouts e breakpoints 1040/820/640 |
-| Preferências e Libras | [hook](../../app/src/hooks/useAccessibilityPreferences.ts), [painel](../../app/src/components/accessibility/AccessibilityPanel.tsx), [banner](../../app/src/components/accessibility/ActiveModeBanner.tsx), [widget](../../app/src/components/accessibility/VLibrasWidget.tsx), [helper](../../app/src/components/accessibility/signLibras.ts) |
+| Preferências e Libras | [hook](../../app/src/hooks/useAccessibilityPreferences.ts), [host do plugin](../../app/src/components/accessibility/AccessibilityPlugin.tsx), [painel](../../app/src/components/accessibility/AccessibilityPanel.tsx), [contratos de Libras](../../app/src/features/accessibility-agent/adapters/libras/contracts.ts), [adaptador Rybená](../../app/src/features/accessibility-agent/adapters/libras/rybenaBrowser.ts) |
 
 Tipografia local: Rubik e Roboto Mono. **O-V**, amostra de estilos computados nos resultados reais: Noto Sans, CTA Buscar 14px, roxo `rgb(165,40,255)`. Não foi extraído um design system completo do site. O roxo principal já coincide com o token local; tipografia, raios, densidade e hierarquia merecem ajuste localizado.

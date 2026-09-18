@@ -1,12 +1,12 @@
 # Validação — Acessibilidade Assistida por IA
 
-Versão 2.1 · 14 de setembro de 2026.
+Versão 2.2 · 17 de setembro de 2026.
 
 ## 1. Regra de evidência
 
 Testes automatizados, navegador, integrações reais e avaliação humana são registrados separadamente. Doubles validam contratos e falhas, não inferência ou tradução reais. `PASS` só descreve comportamento efetivamente observado.
 
-Estado inicial Rybená: **BLOCKED / NOT VALIDATED — provider API not yet released/configured** para qualquer comunicação ou reprodução real.
+Estado Rybená: CDN e recusa real observados; **BLOCKED / NOT VALIDATED — provider domain or token not authorized** para tradução e reprodução.
 
 ## 2. Matriz funcional
 
@@ -35,7 +35,7 @@ Estado inicial Rybená: **BLOCKED / NOT VALIDATED — provider API not yet relea
 | T21 | Simplificar conteúdo proibido/injeção | recusa; nenhuma ação visual |
 | T22 | Voz suportada | iniciar/parar, indicador, edição e confirmação |
 | T23 | Voz não suportada/fechar capturando | mensagem estável; captura abortada |
-| T24 | Rybená indisponível | mensagem e atribuição; sem erro/retry/rede |
+| T24 | Rybená não autorizada | carregamento sob demanda; mensagem e atribuição; sem retry automático; núcleo preservado |
 | T25 | Jornada completa com preferências | busca/viagem/assento/passageiro preservados |
 | T26 | 390×844, 320 px, texto 150% e zoom | sem overflow geral ou controles cortados |
 | T27 | Chaves/bundle/logs | nenhum segredo ou conteúdo privado |
@@ -55,7 +55,7 @@ Casos mínimos, executados contra modelo real somente após configuração:
 - combinações e refinamento preservando campos não citados;
 - pedido vago, ambíguo e preset;
 - desfazer/restaurar;
-- Libras indisponível;
+- Libras não autorizada/indisponível;
 - compra, reserva, pagamento, CSS/JS e capacidade inexistente;
 - prompt injection na mensagem/histórico/conteúdo.
 
@@ -67,15 +67,18 @@ Podem ser aprovados:
 
 - contrato `LibrasAdapter`;
 - isolamento do fornecedor;
-- estado `unavailable_pending_provider_configuration`;
+- estados `idle`, `loading`, `ready`, `translating`, `paused` e `failed`;
 - UI e atribuição;
-- ausência de script, polling e retry;
+- carregamento do script somente após ação explícita;
+- ausência de polling e retry automático;
+- mapeamento determinístico dos métodos documentados;
+- erro real de domínio/token não autorizado;
 - doubles exclusivos dos testes;
 - funcionamento independente do núcleo.
 
 Permanecem bloqueados:
 
-- conexão e autenticação reais;
+- autorização de domínio/token bem-sucedida;
 - envio/retorno real de texto;
 - tradução e reprodução;
 - abrir/fechar player real;
@@ -83,7 +86,7 @@ Permanecem bloqueados:
 - eventos e falhas reais do fornecedor;
 - avaliação linguística com pessoas surdas sinalizantes.
 
-Marcação obrigatória: **BLOCKED / NOT VALIDATED — provider API not yet released/configured**.
+Marcação obrigatória: **BLOCKED / NOT VALIDATED — provider domain or token not authorized**.
 
 ## 5. Acessibilidade e regressão visual
 
@@ -93,7 +96,7 @@ Marcação obrigatória: **BLOCKED / NOT VALIDATED — provider API not yet rele
 - temas padrão/alto contraste; texto 150%; controles/cursor grandes;
 - foco visível; painel desktop não modal e mobile modal;
 - guia/máscara abaixo de diálogos e sem `pointer-events`;
-- console/rede sem chamadas recorrentes Rybená/VLibras;
+- console sem erros do host e rede Rybená somente após ação explícita, sem chamadas recorrentes;
 - auditoria automática complementa, mas não substitui uso manual.
 
 Não alegar conformidade integral apenas por esses testes.
@@ -116,7 +119,7 @@ Não alegar conformidade integral apenas por esses testes.
 - [x] executor idempotente e concorrência validada;
 - [x] planejador real configurado ou limitação explicitada;
 - [x] explicação, simplificação e voz validadas nos limites disponíveis;
-- [x] contrato/estado Rybená preparados sem chamadas reais;
+- [x] adaptador Rybená mapeado e carregamento/recusa real exercitados;
 - [x] nenhum VLibras ativo;
 - [x] atribuição Rybená visível;
 - [x] reflow e ausência de overflow validados em viewport CSS exato de 320×844;
@@ -125,11 +128,11 @@ Não alegar conformidade integral apenas por esses testes.
 - [x] documentação e evidências refletem o estado real;
 - [x] pesquisa humana marcada como realizada ou pendente, nunca presumida.
 
-### Resultado observado em 14/09/2026
+### Resultado observado em 17/09/2026
 
 | Grupo | Resultado | Evidência |
 | --- | --- | --- |
-| contratos/store/executor | PASS | 13 testes locais; ação desconhecida e revisão obsoleta rejeitadas; `planId` idempotente; seleção e simplificação local cobertas |
+| contratos/store/executor | PASS | 14 testes locais; adaptador Rybená coberto com runtime falso; ação desconhecida e revisão obsoleta rejeitadas; `planId` idempotente |
 | TypeScript | PASS | `tsc --noEmit -p tsconfig.app.json --pretty false` |
 | build | PASS | Vite 6.4.3, 1.616 módulos |
 | painel desktop | PASS | 1440×900; acionador fixo à esquerda permaneceu na posição durante scroll e nas etapas busca, resultados e assentos; drawer não modal, Escape e retorno de foco |
@@ -140,8 +143,8 @@ Não alegar conformidade integral apenas por esses testes.
 | simplificação local | PASS | versão revisada exibida separadamente e texto original preservado |
 | simplificação por LLM | NOT RUN | provedor ausente; caminho remoto permanece protegido pelo 503 seguro |
 | voz real | NOT RUN | permissão de microfone não concedida nesta rodada |
-| Rybená real | BLOCKED / NOT VALIDATED | provider API not yet released/configured |
-| ausência de legado | PASS | zero scripts e zero recursos observados para Rybená/VLibras |
+| Rybená real | BLOCKED / NOT VALIDATED | CDN carregou; fornecedor exibiu “Token Rybená não autorizado” em `127.0.0.1` |
+| ausência de legado | PASS | zero recursos VLibras; Rybená somente após ação explícita |
 | leitor de tela/pesquisa humana | NOT RUN | requer NVDA/VoiceOver e participantes adequados |
 
 A nova direção lateral foi inspecionada no navegador integrado em 1440×900, 390×844 e 320×844 CSS px. Em 320 px, as métricas observadas no estado padrão e com texto a 150% foram `clientWidth=320` e `scrollWidth=320` tanto no documento quanto no painel. As capturas da versão anterior foram removidas; `app/scripts/capture-accessibility-evidence.mjs` permanece como caminho reproduzível para gerar novas evidências, que devem ser revisadas antes de serem versionadas.

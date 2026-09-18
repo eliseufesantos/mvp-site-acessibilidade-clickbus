@@ -1,12 +1,12 @@
 # ClickBus Acessível — resumo para apresentação
 
-Última atualização: 16 de setembro de 2026.
+Última atualização: 17 de setembro de 2026.
 
 ## Resumo executivo
 
 O ClickBus Acessível é um MVP acadêmico que reproduz, com dados fictícios, uma jornada de compra de passagem rodoviária: busca, resultados, escolha de assento, dados do passageiro e confirmação simulada. O principal diferencial é um plugin lateral de acessibilidade que permite adaptar a leitura e a apresentação da interface sem alterar o fluxo principal.
 
-A solução funciona localmente por meio de controles manuais, preferências persistentes, glossário e simplificações revisadas. A arquitetura também está preparada para planejamento assistido por IA e futura integração de Libras pela Rybená, mas essas duas integrações ainda dependem de configuração ou liberação externa.
+A solução funciona localmente por meio de controles manuais, preferências persistentes, glossário e simplificações revisadas. A arquitetura também está preparada para planejamento assistido por IA. A integração demonstrativa Rybená foi implementada, mas a tradução real ainda depende da autorização do domínio/token pelo fornecedor.
 
 ## Estrutura sugerida para a apresentação
 
@@ -79,8 +79,8 @@ Nesta versão, o caminho técnico está implementado, mas a inferência com um p
 
 - A autorização de uso gratuito da Rybená foi confirmada.
 - O projeto já possui um contrato de integração e uma área de atribuição na interface.
-- A API, o SDK ou o player oficial ainda não foram liberados/configurados para o projeto.
-- Por transparência, o MVP informa a indisponibilidade e não simula tradução.
+- O CDN e a API documentada estão integrados sob demanda, com `doNotTrack` ativo.
+- O teste local recebeu “Token Rybená não autorizado”; por transparência, o MVP informa a falha e não simula tradução.
 
 **Estado correto:** arquitetura preparada, integração real bloqueada e ainda não validada.
 
@@ -97,15 +97,15 @@ O núcleo de acessibilidade é determinístico, reversível e independente da di
 
 ### 9. Validação e resultados registrados
 
-Estado documentado em 14 de setembro de 2026:
+Estado documentado em 17 de setembro de 2026:
 
 - TypeScript e build de produção aprovados.
-- 13 testes locais do núcleo de acessibilidade aprovados.
+- 14 testes locais do núcleo de acessibilidade aprovados.
 - Interface verificada em 1440×900, 390×844 e 320×844 pixels CSS.
 - Texto a 150% e alto contraste sem rolagem horizontal em mobile.
 - Comportamento modal e não modal validado no limite entre 820 e 821 pixels.
 - Fluxos locais de seleção, glossário e simplificação aprovados.
-- Ausência de scripts ou chamadas de Rybená/VLibras confirmada.
+- Ausência de VLibras confirmada; Rybená só é carregada após ação explícita.
 
 Esses resultados validam a implementação observada, mas não representam certificação integral de acessibilidade.
 
@@ -114,7 +114,7 @@ Esses resultados validam a implementação observada, mas não representam certi
 Limitações atuais:
 
 - provedor real de IA não configurado;
-- integração Rybená aguardando liberação técnica;
+- integração Rybená aguardando autorização do domínio/token e homologação;
 - voz real ainda não validada nesta rodada;
 - testes com NVDA/VoiceOver, pessoas usuárias, Safari/iOS e zoom de 200% pendentes.
 
@@ -122,7 +122,7 @@ Próximos passos:
 
 - configurar um provedor de IA com autenticação, limite de uso e controle de custos;
 - validar o planejador com uma matriz de pedidos reais;
-- integrar e homologar a Rybená quando o contrato técnico estiver disponível;
+- liberar o domínio/token da demonstração e homologar a Rybená;
 - realizar testes com leitores de tela e pessoas usuárias, incluindo pessoas surdas sinalizantes;
 - repetir a regressão completa da jornada após novas integrações.
 
@@ -136,7 +136,7 @@ Evite afirmar que o projeto:
 
 - realiza vendas, reservas ou pagamentos reais;
 - possui IA real ativa em produção;
-- oferece tradução em Libras já integrada;
+- oferece tradução real em Libras já operacional ou homologada;
 - é integralmente compatível ou certificado pela WCAG;
 - foi validado com leitores de tela ou pessoas usuárias quando esses testes ainda estão pendentes.
 

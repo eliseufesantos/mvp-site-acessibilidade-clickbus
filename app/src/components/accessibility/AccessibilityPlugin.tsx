@@ -1,4 +1,4 @@
-import { Accessibility, MousePointer2 } from 'lucide-react';
+import { MousePointer2, SlidersHorizontal } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PreferencePatch } from '../../features/accessibility-agent/core/preferences';
 import { getActivePreferenceLabels } from '../../features/accessibility-agent/core/preferences';
@@ -143,7 +143,7 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
         ref={triggerRef}
         onClick={() => (isPanelOpen ? closePanel() : openPanel())}
       >
-        <span className="accessibility-plugin__trigger-icon" aria-hidden="true"><Accessibility /></span>
+        <span className="accessibility-plugin__trigger-icon" aria-hidden="true"><SlidersHorizontal /></span>
         <span className="accessibility-plugin__trigger-label" aria-hidden="true">Acessibilidade</span>
         {activeModes > 0 ? <span className="mode-count" aria-hidden="true">{activeModes}</span> : null}
       </button>

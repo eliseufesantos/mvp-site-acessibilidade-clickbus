@@ -1,21 +1,21 @@
 # SDD — Acessibilidade Assistida por IA
 
-Versão 2.1 · 14 de setembro de 2026 · Documento normativo de engenharia.
+Versão 2.2 · 17 de setembro de 2026 · Documento normativo de engenharia.
 
 ## 1. Estado inspecionado
 
-A aplicação usa React 18, TypeScript e Vite. A réplica já possui a jornada `search → results → seats → checkout → confirmation`, tokens e componentes reaproveitáveis. A árvore de trabalho anterior introduziu preferências v2 planas, um painel com interpretação local e um arquivo `rybena.ts` que usa URL pública e métodos presumidos.
+A aplicação usa React 18, TypeScript e Vite. A réplica possui a jornada `search → results → seats → checkout → confirmation`, tokens, preferências v3 e componentes reaproveitáveis.
 
 Classificação da auditoria Rybená:
 
-- integração real comprovada: nenhuma;
-- estrutura preparatória útil: estado React e fronteira de funções do arquivo atual;
+- integração demonstrativa: adaptador real carregado sob demanda a partir do CDN público;
+- métodos confirmados: `openPlayer`, `closePlayer`, `switchToLibras`, `translate`, `pause`, `play`, `stop`, `setSpeed`, `handleLoaded` e `handleTranslate`;
 - mock/double: nenhum em produção;
-- chamada experimental/não verificada: injeção de script, polling a cada 100 ms e chamadas de métodos presumidos;
-- código especulativo: URL fixa e interfaces não confirmadas pelo material operacional fornecido ao projeto;
+- autorização real: `127.0.0.1` recusado pelo fornecedor com “Token Rybená não autorizado”;
+- limites atuais: URL `master/latest` não versionada, domínio/token pendente e tradução não homologada;
 - legado VLibras: removido da árvore atual; existia no `HEAD` e incluía helper não documentado.
 
-A chamada experimental deve ser desativada. Nenhum script Rybená ou VLibras é carregado nesta versão.
+Nenhum VLibras é carregado. O script Rybená só entra após clique explícito em “Traduzir trecho em Libras”; não há polling nem retry automático.
 
 ## 2. Arquitetura
 
@@ -29,7 +29,7 @@ Plugin lateral fixo (fora do Header)
                                       ↓
                             executor determinístico
                                       ├─ store v3 → adaptador ClickBus → tokens
-                                      └─ LibrasPort → RybenaAdapter indisponível
+                                      └─ LibrasPort → RybenaBrowserAdapter sob demanda
 ```
 
 O núcleo não importa dados comerciais nem executa navegação. Contratos de planejamento, explicação e simplificação são distintos. Falhas de IA e Rybená são independentes.
@@ -45,6 +45,7 @@ app/src/features/accessibility-agent/
   client/plannerClient.ts
   adapters/clickbus/content.ts
   adapters/libras/contracts.ts
+  adapters/libras/rybenaBrowser.ts
   adapters/libras/rybenaUnavailable.ts
   ui/AccessibilityPanel.tsx
   ui/ContentTools.tsx
@@ -161,7 +162,7 @@ Contrato estável:
 
 ```ts
 type LibrasState =
-  | 'unavailable_pending_provider_configuration'
+  | 'idle' | 'unavailable_pending_provider_configuration'
   | 'loading' | 'ready' | 'translating' | 'paused' | 'failed';
 
 interface LibrasAdapter {
@@ -178,9 +179,9 @@ interface LibrasAdapter {
 }
 ```
 
-Nesta entrega, `RybenaUnavailableAdapter` retorna de forma idempotente `unavailable_pending_provider_configuration` em todas as operações. Não injeta script, não faz fetch/polling/retry, não expõe controles que aparentem funcionar e não traduz conteúdo. O estado não é logado como erro recorrente.
+Em produção, `RybenaBrowserAdapter` injeta uma única vez `rybena.js?mode=api`, define `doNotTrack="true"`, chama o carregador documentado com `hidden` e só então acessa `RybenaApi`. As operações mapeiam o contrato para os métodos oficiais. Timeout e `script.onerror` são finitos; não há polling nem retry automático. `RybenaUnavailableAdapter` permanece como fallback determinístico e apoio a testes.
 
-Ativação futura exige, conforme o fornecedor: credencial/chave, cliente/projeto, endpoint, versão oficial de API/SDK/player, URL de script, domínio autorizado, CORS/origem, ambiente de homologação, configuração do player, métodos e eventos confirmados, limites/restrições, política de dados, procedimento de teste e contato de suporte. Somente após receber isso será criado um adaptador real atrás do mesmo contrato.
+Para tradução real, a Rybená ainda precisa autorizar o domínio da demonstração ou fornecer o token aplicável. Depois disso devem ser registrados limites, versão, procedimento de teste e homologação com pessoas surdas sinalizantes.
 
 Doubles de Libras ficam exclusivamente em testes, nomeados `TestLibrasAdapter`, sem importação pelo bundle de produção.
 
@@ -205,7 +206,7 @@ O adaptador de voz usa `SpeechRecognition`/`webkitSpeechRecognition` somente ap�
 ## 10. Segurança e acessibilidade
 
 - mensagens renderizadas como texto;
-- nenhum HTML, CSS ou JavaScript remoto é executado;
+- JavaScript remoto da Rybená só é executado após ação explícita na ferramenta de Libras;
 - nenhum DOM completo, screenshot ou formulário sai da página;
 - não há credenciais no frontend ou em variáveis `VITE_*`;
 - foco não é movido a cada mensagem; região viva anuncia apenas resumo;
@@ -217,6 +218,6 @@ O adaptador de voz usa `SpeechRecognition`/`webkitSpeechRecognition` somente ap�
 
 ## 11. Critério técnico Rybená
 
-Podem passar nesta entrega: contrato, isolamento, estado indisponível, atribuição, ausência de retries e independência do núcleo.
+Podem passar nesta entrega: contrato, isolamento, carregamento sob demanda, mapeamento dos métodos, atribuição, ausência de retries, falha de autorização explícita e independência do núcleo.
 
-Permanecem **BLOCKED / NOT VALIDATED — provider API not yet released/configured**: conexão, envio, tradução, player, pause/resume/stop, velocidade, eventos e falhas reais do serviço.
+O CDN e a falha real do serviço foram exercitados. Permanecem **BLOCKED / NOT VALIDATED — provider domain or token not authorized**: envio aceito, tradução, player, pause/resume/stop, velocidade, eventos de conclusão e qualidade linguística.

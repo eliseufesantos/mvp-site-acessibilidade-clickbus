@@ -29,14 +29,14 @@ Não há consulta comercial real, emissão de bilhete, reserva, cancelamento ou 
 
 ## 3. Estado verificado
 
-Snapshot operacional atualizado em **14/09/2026**:
+Snapshot operacional atualizado em **17/09/2026**:
 
 - branch: `main`;
 - HEAD: `463bdf1` (`refactor: documentacao para agents`), sincronizado com `origin/main` antes das alterações locais desta iteração;
 - working tree contém a implementação local ainda não commitada do plugin lateral e das correções de conteúdo; não descarte essas mudanças;
 - aplicação React 18 + TypeScript estrito + Vite 6;
 - build Vite: aprovado, 1.616 módulos transformados;
-- suíte do agente de acessibilidade: 13 testes aprovados;
+- suíte do agente de acessibilidade: 14 testes aprovados;
 - fluxo de conteúdo validado em navegador: seleção real de termo na página, explicação pelo glossário e simplificação determinística com original preservado;
 - reflow da nova UI validado em 1440×900, 390×844 e 320×844 CSS px; escala de texto a 150% em 320 px e alto contraste em mobile também permaneceram sem overflow horizontal;
 - breakpoint validado nos limites: 820 px usa diálogo modal com backdrop e bloqueio do body; 821 px usa região não modal, sem backdrop e com a página rolável;
@@ -113,7 +113,7 @@ npx --yes pnpm@10.28.0 --dir app test:accessibility
 
 ## 7. Acessibilidade assistida
 
-O núcleo local funciona sem IA e sem Rybená:
+O núcleo local funciona sem IA e independentemente da Rybená:
 
 - preferências canônicas v3 em `clickbus-a11y-v3`;
 - migração segura de v1/v2 e fallback em memória;
@@ -140,11 +140,11 @@ Nunca use variáveis `VITE_*` para segredos. Sem as três variáveis, o servidor
 ### Rybená
 
 - autorização gratuita de uso: confirmada;
-- API/SDK/player, credenciais e contrato técnico: ainda não disponibilizados/configurados;
-- estado correto atual: `unavailable_pending_provider_configuration`;
-- integração real: **BLOCKED / NOT VALIDATED — provider API not yet released/configured**.
+- CDN, modo API e métodos de player/tradução: documentados e integrados sob demanda;
+- teste em `127.0.0.1`: script carregado, mas fornecedor exibiu “Token Rybená não autorizado”;
+- tradução real: **BLOCKED / NOT VALIDATED — provider domain or token not authorized**.
 
-Não injete scripts, não faça polling/retry e não invente métodos do fornecedor. Não use VLibras como substituto e não simule tradução. Preserve o crédito “Tradução em Libras por Rybená”. Um adaptador real só pode ser criado após documentação técnica e homologação com pessoas surdas sinalizantes.
+Carregue o script somente após ação explícita, com `mode=api` e `doNotTrack="true"`; não faça polling/retry automático nem invente métodos. Não use VLibras como substituto e não simule tradução. Preserve o crédito “Tradução em Libras por Rybená”. Só declare operação após domínio/token autorizado e homologação com pessoas surdas sinalizantes.
 
 ## 8. Testes e evidência
 
@@ -226,7 +226,7 @@ Se duas fontes divergirem, preserve a opção mais segura, confirme o comportame
 
 - configurar e avaliar um provedor real para planejamento, explicação fora do glossário e eventuais alvos sem simplificação local revisada;
 - adicionar proteções de produção antes de habilitar chamadas pagas;
-- receber o contrato técnico e homologar a Rybená;
+- obter liberação do domínio/token de demonstração e homologar a Rybená;
 - validar com NVDA/VoiceOver e pessoas usuárias;
 - testar Safari/iOS real e zoom de 200%;
 - repetir a regressão integral da jornada após mudanças futuras;

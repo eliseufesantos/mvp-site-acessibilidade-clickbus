@@ -58,6 +58,6 @@ Não foi adicionado React Router porque o MVP tem uma única jornada linear e is
 - O hook de acessibilidade é o único responsável por persistir preferências e alterar atributos no elemento `html`.
 - A LLM nunca recebe funções de DOM/navegação: responde um plano JSON fechado, validado novamente pelo executor local.
 - Conteúdo autorizado é um registro estático por etapa; checkout e confirmação não são alvos.
-- O adaptador Rybená atual é indisponível por projeto e não faz rede.
+- O `RybenaBrowserAdapter` carrega o fornecedor sob demanda; falha de domínio/token não bloqueia o núcleo. O adaptador indisponível permanece para fallback/testes.
 
 Para incluir uma nova etapa, atualize `JourneyStep` em `types.ts`, o mapa de títulos e a composição em `App.tsx`.

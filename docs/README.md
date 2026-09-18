@@ -37,6 +37,4 @@ Os documentos finais ficam em `entregas/`, na raiz do repositório:
 | `Escopo_Tecnico_MVP_ClickBus_Web.docx` | mesma peça em formato editável, gerada por `scripts/build_mvp_scope.py` |
 | `Escopo_Original_ClickBus_MVP.pdf` | escopo recebido no início do projeto |
 
-O arquivo legado `entregas/Resumo_Implementacao_MVP_ClickBus_Acessivel.pdf` ainda existe, mas descreve uma versão anterior com VLibras e não deve ser usado como fonte do estado atual.
-
 Os conceitos visuais antigos e as capturas desatualizadas foram removidos. O histórico do Git preserva esses arquivos caso seja necessário consultar a evolução do projeto.

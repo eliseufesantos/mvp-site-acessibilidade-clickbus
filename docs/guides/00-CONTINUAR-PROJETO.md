@@ -4,7 +4,7 @@ Este é o ponto de entrada recomendado para retomar o trabalho em outra sessão 
 
 ## Evolução atual
 
-Para continuar o agente de acessibilidade, começar pelo [PRD/SDD, registro de implementação e validação](../accessibility-agent/README.md). O núcleo e a UI estão implementados. A LLM real exige configuração de servidor; a Rybená tem autorização gratuita confirmada, mas ainda aguarda integração técnica e homologação.
+Para continuar o agente de acessibilidade, começar pelo [PRD/SDD, registro de implementação e validação](../accessibility-agent/README.md). O núcleo e a UI estão implementados. A LLM real exige configuração de servidor; a integração demonstrativa Rybená está implementada, mas ainda aguarda autorização de domínio/token e homologação.
 
 ## Estado atual
 
@@ -14,9 +14,9 @@ Para continuar o agente de acessibilidade, começar pelo [PRD/SDD, registro de i
 - O planejador usa contrato fechado e executor local idempotente; sem provedor configurado, responde 503 e mantém os controles manuais.
 - Glossário e simplificações revisadas dos alvos iniciais funcionam localmente; somente casos autorizados sem resposta local dependem de provedor.
 - Entrada por voz é opcional e explícita; não foi concedida permissão de microfone durante a validação automatizada.
-- Nenhum VLibras ou script Rybená é carregado. O bloco Rybená informa a pendência técnica e preserva o crédito.
+- Nenhum VLibras é carregado. O script Rybená só entra após clique explícito; a recusa de domínio/token é informada e o crédito é preservado.
 - O projeto não possui pagamento real. Endpoints de acessibilidade estão preparados no servidor Vite/API.
-- TypeScript, build e 13 testes do núcleo passaram em 14/09/2026; a interface foi validada em 1440×900, 390×844 e 320×844 CSS px.
+- TypeScript, build e 14 testes do núcleo passaram em 17/09/2026; a interface anterior foi validada em 1440×900, 390×844 e 320×844 CSS px.
 
 ## Primeiro diagnóstico
 
@@ -46,7 +46,7 @@ Acesse `http://127.0.0.1:4173/`.
 - ampliar os testes automatizados de componentes e fluxo;
 - validar com leitor de tela real (NVDA/VoiceOver);
 - configurar e avaliar um modelo real para o planejador;
-- receber da Rybená o contrato técnico e homologar tradução/player com pessoas surdas sinalizantes;
+- solicitar à Rybená a liberação do domínio/token e homologar tradução/player com pessoas surdas sinalizantes;
 - ligar a busca a uma API mockada;
 - criar página de comparação “antes e depois” para a apresentação;
 - executar auditoria Lighthouse/axe e documentar os resultados.

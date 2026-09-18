@@ -1,6 +1,6 @@
 # Comparação priorizada
 
-08/09/2026. Evidências e ressalvas no [mapa](MAPA-DE-TELAS.md) e [índice](evidencias/README.md). **O-V**: navegador; **O-C**: código; **I**: recomendação; **NV**: não verificado. Nenhuma linha abaixo representa uma mudança implementada.
+08/09/2026. Documento histórico; evidências e ressalvas estão sintetizadas no [mapa](MAPA-DE-TELAS.md). Os anexos brutos foram removidos e os códigos E01–E30 permanecem apenas como marcadores. **O-V**: navegador; **O-C**: código; **I**: recomendação; **NV**: não verificado. Nenhuma linha abaixo representa o estado atual da implementação.
 
 Prioridade **essencial**: compromete o cenário demonstrado, sua coerência ou a integração. **Importante**: melhora reconhecimento/uso, sem bloquear o núcleo. **Opcional**: acabamento ou expansão fora do recorte. Esforço relativo ao repositório: baixo = poucos arquivos/sem novo estado relevante; médio = componentes/estados e regressão; alto = integração transversal ou jornada adicional. Não são estimativas de prazo.
 

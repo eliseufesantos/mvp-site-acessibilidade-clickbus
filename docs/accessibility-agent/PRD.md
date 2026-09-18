@@ -1,6 +1,6 @@
 # PRD — Acessibilidade Assistida por IA
 
-Versão 2.1 · 14 de setembro de 2026 · Projeto acadêmico FIAP / ClickBus.
+Versão 2.2 · 17 de setembro de 2026 · Projeto acadêmico FIAP / ClickBus.
 
 ## 1. Visão e estado da entrega
 
@@ -11,12 +11,12 @@ A réplica e sua identidade visual são a aplicação hospedeira e devem ser pre
 ## 2. Estado autoritativo da Rybená
 
 - A parceria e a autorização de uso gratuito estão confirmadas, condicionadas à divulgação da parceria.
-- O acesso técnico, as credenciais e/ou a configuração oficial da API/SDK/player ainda não foram liberados para o projeto.
-- A demonstração não oferece tradução real em Libras e não pode simular sucesso.
-- A entrega prepara um contrato genérico de Libras e um adaptador Rybená isolado. O estado operacional nesta versão é `unavailable_pending_provider_configuration`.
-- A interface exibe: **“Tradução em Libras por Rybená. Recurso aguardando liberação técnica para esta demonstração.”**
+- A documentação pública passou a fornecer o script CDN, o modo `api` e os métodos de player, tradução, reprodução, velocidade e eventos.
+- A entrega possui um `RybenaBrowserAdapter` isolado, carregado somente após ação explícita e configurado com `doNotTrack="true"`.
+- O teste real em `127.0.0.1` carregou o fornecedor, mas a Rybená recusou a origem com **“Token Rybená não autorizado”**; tradução e reprodução continuam não validadas.
+- O estado inicial é `idle`; carregamento autorizado pode avançar para `ready`, enquanto domínio/token recusado termina em `failed` com mensagem explícita.
 
-A indisponibilidade não é erro inesperado, não gera polling ou retry automático e não bloqueia as ferramentas próprias, o painel, a persistência, a IA, a explicação, a simplificação ou a voz.
+A falha de autorização não gera polling ou retry automático e não bloqueia as ferramentas próprias, o painel, a persistência, a IA, a explicação, a simplificação ou a voz.
 
 ## 3. Objetivos
 
@@ -24,7 +24,7 @@ A indisponibilidade não é erro inesperado, não gera polling ou retry automát
 2. Permitir pedidos naturais com confirmação proporcional à ambiguidade.
 3. Garantir que somente ações enumeradas e valores válidos possam ser executados.
 4. Preservar estado comercial, conteúdo original, privacidade e foco.
-5. Preparar a integração Rybená sem inventar APIs nem apresentar doubles como tradução.
+5. Integrar somente os métodos publicados da Rybená, sem apresentar doubles ou falhas de autorização como tradução.
 
 Não são resultados comprovados desta entrega: ganho de conversão, redução de abandono, conformidade integral, qualidade linguística de Libras ou superioridade do agente. Esses resultados exigem avaliação posterior.
 
@@ -64,7 +64,7 @@ O acionador “Acessibilidade” é um plugin fixo na lateral esquerda, fora do 
 - proposta, confirmação, cancelamento e desfazer;
 - explicação de termos e simplificação de trechos;
 - entrada opcional por voz com transcrição editável;
-- área de Libras/Rybená com estado indisponível e atribuição visível.
+- área de Libras/Rybená com carregamento sob demanda, falha segura e atribuição visível.
 
 Pedidos explícitos e reversíveis podem ser aplicados diretamente. Pedidos vagos geram proposta explicada sem alterar a página. Não inferir idade, deficiência ou diagnóstico.
 
@@ -80,7 +80,7 @@ O servidor e o cliente validam schemas de runtime com chaves fechadas. Ações s
 - `apply_comfortable_reading`;
 - `undo_preferences`;
 - `reset_preferences`;
-- `open_libras`, `close_libras`, `translate_content`, `pause_libras`, `resume_libras`, `stop_libras`, `set_libras_speed` — presentes no contrato, mas indisponíveis enquanto o fornecedor não liberar a configuração.
+- `open_libras`, `close_libras`, `translate_content`, `pause_libras`, `resume_libras`, `stop_libras`, `set_libras_speed` — mapeados para a API documentada e aceitos somente quando o runtime autorizado estiver pronto.
 
 IDs, revisões e contexto são revalidados antes de executar. Lotes inválidos não produzem efeitos. `planId` é idempotente. Confirmações são derivadas de recibos do executor, nunca da frase otimista do modelo.
 
@@ -121,7 +121,7 @@ Não há escuta contínua, palavra de ativação ou gravação automática. Em n
 | FR10 | Explicação | Termo/contexto mínimo; seleção restrita a alvo público; limite reconhecido |
 | FR11 | Simplificação | Somente alvo permitido; versão local revisada quando disponível; resultado separado e sem nova informação |
 | FR12 | Voz | Captura explícita, transcrição editável e confirmação; fallback textual |
-| FR13 | Libras preparado | Contrato genérico, adaptador isolado e estado indisponível estável |
+| FR13 | Libras preparado | Contrato genérico, adaptador isolado, carregamento sob demanda e falha segura |
 | FR14 | Rybená atribuída | Crédito e link legíveis, sem alegar integração operacional |
 | FR15 | Preservação | Busca, viagem, assento, passageiro, preço e navegação não são alterados pelo agente |
 | FR16 | Fechamento seguro | Cancela solicitações/propostas/voz e impede efeitos tardios |
@@ -150,6 +150,6 @@ Pode ser concluído quando ferramentas, store, executor, painel, explicação, s
 
 ### Rybená
 
-Nesta entrega só pode ser descrita como: **“Preparada arquiteturalmente, aguardando liberação técnica e validação real.”**
+Nesta entrega só pode ser descrita como: **“Integração demonstrativa implementada; domínio/token e tradução real ainda não validados.”**
 
-Conexão, envio real, tradução, player, pausa, retomada, parada, velocidade, eventos e erros reais permanecem **BLOCKED / NOT VALIDATED — provider API not yet released/configured**.
+O carregamento do script e a recusa real de autorização foram observados. Envio aceito, tradução, player, pausa, retomada, parada, velocidade e eventos permanecem **BLOCKED / NOT VALIDATED — provider domain or token not authorized**.

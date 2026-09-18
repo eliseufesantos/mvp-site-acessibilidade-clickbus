@@ -1,6 +1,6 @@
 # Design do painel de acessibilidade
 
-Versão 1.1 · 14 de setembro de 2026.
+Versão 1.2 · 17 de setembro de 2026.
 
 ## Sistema visual
 
@@ -34,10 +34,10 @@ Não adicionar nome de produto novo, badge, métrica, selo, promessa de conformi
 - proposta: resumo do patch, aplicar e cancelar;
 - recibo: resultado local real, inclusive parcial ou `no_change`;
 - ajustes: seções Apresentação, Leitura e Conforto; segmented controls e switches existentes;
-- conteúdo: glossário/explicação, modo explícito de seleção, simplificação local revisada com original preservado e bloco Rybená indisponível;
+- conteúdo: glossário/explicação, modo explícito de seleção, simplificação local revisada com original preservado e controles Rybená sob demanda;
 - seleção: ao acionar “Selecionar na página”, o painel recolhe, a página fica selecionável e uma instrução curta permanece visível; ao concluir ou cancelar, o painel retorna com foco no campo do termo;
 - voz: indisponível, ociosa, ouvindo, transcrição pronta e erro;
-- Rybená: somente `unavailable_pending_provider_configuration` nesta entrega.
+- Rybená: `idle`, carregando, pronta, traduzindo, pausada ou falha; domínio/token recusado deve permanecer explícito.
 
 ## Media e continuidade
 
@@ -56,4 +56,4 @@ O painel não introduz mídia raster, gradiente, avatar ou ilustração. A campa
 
 A iteração de 14/09/2026 preserva o minimalismo, mas troca a aparência de menu genérico por uma identidade própria ligada à jornada: acionador vertical violeta, cabeçalho ameixa, marca de rota e drawer anexado à borda esquerda. O botão foi removido do header; ofertas, ajuda e navegação principal permanecem inalterados.
 
-Na aba Conteúdo, a hierarquia visível é: orientação curta, seleção na página, campo do termo e explicação; em seguida, trecho original, ação “Simplificar trecho” e versão simplificada separada. As versões simples dos alvos iniciais são locais e revisadas, por isso a interface não as apresenta como IA. O estado Rybená continua indisponível e atribuído, sem player ou tradução simulados.
+Na aba Conteúdo, a hierarquia visível é: orientação curta, seleção na página, campo do termo e explicação; em seguida, trecho original, ação “Simplificar trecho” e versão simplificada separada. As versões simples dos alvos iniciais são locais e revisadas, por isso a interface não as apresenta como IA. A seção Rybená oferece trecho, velocidade, tradução e reprodução; o script só carrega após clique e falhas nunca são apresentadas como tradução.

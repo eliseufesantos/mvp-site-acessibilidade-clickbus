@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Accessibility, Bot, BookOpenText, Check, MessageCircle, Mic, Send, SlidersHorizontal, Sparkles, Square, X } from 'lucide-react';
+import { Bot, BookOpenText, Check, MessageCircle, Mic, Send, SlidersHorizontal, Sparkles, Square, X } from 'lucide-react';
 import type { AccessibilityPreferences, JourneyStep } from '../../../types';
 import { Button } from '../../../components/ui/Button';
 import { getPublicContentTargets, resolvePublicContent } from '../adapters/clickbus/content';
-import { rybenaAdapter } from '../adapters/libras/rybenaUnavailable';
+import { rybenaAdapter } from '../adapters/libras/rybenaBrowser';
 import {
   ALL_ACTION_TYPES,
   CONTRACT_VERSION,
@@ -167,7 +167,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
   return (
     <section className="accessibility-panel" aria-label="Acessibilidade assistida por IA" ref={panelRef}>
       <div className="accessibility-panel__heading">
-        <Accessibility aria-hidden="true" size={22} />
+        <SlidersHorizontal aria-hidden="true" size={22} />
         <div><h2>Acessibilidade</h2><p>Ajustes que acompanham você.</p></div>
         <svg className="a11y-route-mark" viewBox="0 0 96 40" aria-hidden="true" focusable="false">
           <path d="M9 9h22c13 0 13 22 27 22h28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -212,7 +212,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       ) : null}
 
       {tab === 'settings' ? <div id="a11y-panel-settings" role="tabpanel" aria-labelledby="a11y-tab-settings" className="a11y-tab-panel"><PreferenceControls canUndo={props.canUndo} preferences={props.preferences} onApply={props.onApply} onReset={props.onReset} onUndo={props.onUndo} onStatus={setStatus} />{status ? <p className="assistant-message" role="status">{status}</p> : null}</div> : null}
-      {tab === 'content' ? <div id="a11y-panel-content" role="tabpanel" aria-labelledby="a11y-tab-content" className="a11y-tab-panel"><ContentTools page={props.page} onSelectionModeChange={props.onSelectionModeChange} /></div> : null}
+      {tab === 'content' ? <div id="a11y-panel-content" role="tabpanel" aria-labelledby="a11y-tab-content" className="a11y-tab-panel"><ContentTools librasSpeed={props.preferences.librasSpeed} onLibrasSpeedChange={(librasSpeed) => props.onApply({ librasSpeed })} page={props.page} onSelectionModeChange={props.onSelectionModeChange} /></div> : null}
     </section>
   );
 }

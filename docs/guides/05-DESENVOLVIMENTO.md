@@ -42,7 +42,7 @@ O material atual para apresentação está em `docs/RESUMO-PARA-APRESENTACAO.md`
 - tokens visuais em `styles/tokens.css`;
 - ícones de interface via Lucide;
 - sem dados reais nem chamadas de negócio externas;
-- nenhum script VLibras/Rybená no runtime atual;
+- nenhum VLibras; Rybená somente após ação explícita, com falha segura quando domínio/token não estiver autorizado;
 - IA somente pelo backend e somente com endpoint, modelo e chave explicitamente configurados;
 - nunca usar chave de provedor no bundle do frontend.
 

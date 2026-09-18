@@ -1,5 +1,6 @@
 import type { AccessibilityPreferences } from '../../../types';
 import type { LibrasAdapter } from '../adapters/libras/contracts';
+import { RybenaBrowserAdapter, type RybenaRuntime } from '../adapters/libras/rybenaBrowser';
 import { RybenaUnavailableAdapter, RYBENA_UNAVAILABLE_MESSAGE } from '../adapters/libras/rybenaUnavailable';
 import {
   clearRememberedApprovedPageSelection,
@@ -137,6 +138,41 @@ await test('content adapter excludes checkout and confirmation', () => {
   assert(getPublicContentTargets('confirmation').length === 0);
   assert(resolvePublicContent('search', 'search-help')?.allowSimplify === true);
   assert(resolvePublicContent('search', 'unknown') === null);
+});
+
+await test('Rybená browser adapter maps the documented player controls', async () => {
+  const calls: string[] = [];
+  let onTranslated: () => void = () => undefined;
+  const runtime: RybenaRuntime = {
+    closePlayer: () => calls.push('close'),
+    handleLoaded: () => undefined,
+    handleTranslate: (callback) => { onTranslated = callback; },
+    isTranslating: () => false,
+    openPlayer: () => calls.push('open'),
+    pause: () => calls.push('pause'),
+    play: () => calls.push('play'),
+    setSpeed: (speed) => calls.push(`speed:${speed}`),
+    stop: () => calls.push('stop'),
+    switchToLibras: () => calls.push('libras'),
+    translate: (text) => calls.push(`translate:${text}`),
+  };
+  const adapter = new RybenaBrowserAdapter(async () => runtime);
+
+  assert((await adapter.initialize()).status === 'accepted');
+  await adapter.setSpeed(0.75);
+  await adapter.translate({ id: 'search-help', text: 'Ajuda da busca' });
+  assert(adapter.getSnapshot().state === 'translating');
+  await adapter.pause();
+  assert(adapter.getSnapshot().state === 'paused');
+  await adapter.resume();
+  onTranslated();
+  assert(adapter.getSnapshot().state === 'ready');
+  await adapter.stop();
+  await adapter.close();
+  equal(calls, [
+    'speed:1', 'speed:0.75', 'open', 'libras', 'speed:0.75', 'translate:Ajuda da busca',
+    'pause', 'play', 'stop', 'close',
+  ]);
 });
 
 await test('content adapter simplifies only reviewed public targets locally', () => {
