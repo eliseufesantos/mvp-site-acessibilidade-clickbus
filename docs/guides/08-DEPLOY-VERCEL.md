@@ -22,6 +22,8 @@ A versão do pnpm está fixada porque comandos de instalação personalizados se
 
 A saída publicada é `app/dist`. As funções Vercel canônicas ficam em `api/accessibility/` na raiz e compartilham os handlers de `app/server/accessibility/`. A regra de `rewrites` exclui `/api/` e direciona somente as demais URLs para `index.html`.
 
+O `tsconfig.json` da raiz é exclusivo das funções em `api/`. Ele usa `moduleResolution: "Bundler"` e os tipos instalados em `app/node_modules`, evitando que o compilador interno da Vercel trate os imports compartilhados como `NodeNext` e exija extensões `.js` inexistentes no código TypeScript.
+
 ## Rybená sob demanda
 
 Um token temporário vinculado ao domínio autorizado da demonstração foi recebido fora do repositório. A implementação usa somente esta variável no servidor:

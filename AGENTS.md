@@ -55,6 +55,7 @@ Este snapshot não prova que um deployment remoto posterior continua saudável. 
 ├── AGENTS.md                         # orientação universal para agentes
 ├── .claude/launch.json               # atalho de execução; não contém política do projeto
 ├── vercel.json                       # build/deploy a partir da raiz
+├── tsconfig.json                     # compilação das funções Vercel em api/
 ├── api/accessibility/                # funções Vercel de plan/explain/simplify na raiz canônica
 ├── app/
 │   ├── api/accessibility/            # entradas HTTP de plan/explain/simplify
@@ -191,6 +192,7 @@ O projeto é um repositório com aplicação em subpasta. A configuração canô
 - build: `npx --yes pnpm@10.28.0 --dir app build`;
 - saída: `app/dist`;
 - funções: wrappers canônicos em `api/accessibility/`, compartilhando os handlers de `app/server/accessibility/`, inclusive a configuração Rybená sob demanda;
+- TypeScript das funções: `tsconfig.json` na raiz, com resolução `Bundler` e tipos lidos de `app/node_modules`, para que a Vercel não aplique `NodeNext` aos imports internos sem extensão;
 - rewrite SPA exclui `/api/` e envia as demais rotas a `/index.html`.
 
 O deploy do commit `6e579c7` falhou porque `provider.ts` usava `process.env` sem declarar `@types/node`. A correção está no commit `99575af`: dependência e lockfile explícitos, `types: ["node"]` e `typeRoots` local. O mesmo comando de build da Vercel passou localmente após a correção.
