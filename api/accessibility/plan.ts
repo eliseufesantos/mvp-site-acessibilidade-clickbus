@@ -1,3 +1,3 @@
-import { handleAccessibilityRequest } from '../../app/server/accessibility/handler';
+import { handleAccessibilityRequest } from '../../app/server/accessibility/handler.js';
 
 export default { fetch: (request: Request) => handleAccessibilityRequest(request, 'plan') };

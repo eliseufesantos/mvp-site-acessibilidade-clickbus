@@ -54,6 +54,7 @@ Este snapshot não prova que um deployment remoto posterior continua saudável. 
 .
 ├── AGENTS.md                         # orientação universal para agentes
 ├── .claude/launch.json               # atalho de execução; não contém política do projeto
+├── package.json                      # fronteira ESM das funções Vercel na raiz
 ├── vercel.json                       # build/deploy a partir da raiz
 ├── tsconfig.json                     # compilação das funções Vercel em api/
 ├── api/accessibility/                # funções Vercel de plan/explain/simplify na raiz canônica
@@ -188,6 +189,7 @@ Não versione perfis de navegador, caches ou credenciais junto às evidências. 
 O projeto é um repositório com aplicação em subpasta. A configuração canônica está no `vercel.json` da raiz:
 
 - **Root Directory** da Vercel: vazio;
+- `package.json` da raiz declara `type: "module"` para manter os wrappers de `api/` e os handlers compartilhados de `app/` na mesma fronteira ESM;
 - instalação: `npx --yes pnpm@10.28.0 --dir app install --frozen-lockfile`;
 - build: `npx --yes pnpm@10.28.0 --dir app build`;
 - saída: `app/dist`;

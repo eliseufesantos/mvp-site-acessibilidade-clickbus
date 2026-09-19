@@ -1,6 +1,6 @@
 # Deploy na Vercel
 
-O código da aplicação está na subpasta `app/`. O arquivo `vercel.json` na raiz informa à Vercel como instalar as dependências, executar o build e publicar `app/dist`.
+O código da aplicação está na subpasta `app/`. O arquivo `vercel.json` na raiz informa à Vercel como instalar as dependências, executar o build e publicar `app/dist`; o `package.json` da raiz declara a fronteira ESM usada pelas funções em `api/`.
 
 ## Configuração recomendada
 
@@ -22,7 +22,7 @@ A versão do pnpm está fixada porque comandos de instalação personalizados se
 
 A saída publicada é `app/dist`. As funções Vercel canônicas ficam em `api/accessibility/` na raiz e compartilham os handlers de `app/server/accessibility/`. A regra de `rewrites` exclui `/api/` e direciona somente as demais URLs para `index.html`.
 
-O `tsconfig.json` da raiz é exclusivo das funções em `api/`. Ele usa `moduleResolution: "Bundler"` e os tipos instalados em `app/node_modules`, evitando que o compilador interno da Vercel trate os imports compartilhados como `NodeNext` e exija extensões `.js` inexistentes no código TypeScript.
+O `tsconfig.json` da raiz é exclusivo das funções em `api/` e usa os tipos instalados em `app/node_modules`. Os imports relativos no grafo compartilhado das funções usam extensões `.js`, como exigido pela resolução ESM do Node para fontes TypeScript. O `package.json` da raiz deve manter `type: "module"`; sem ele, a Vercel emite os wrappers de `api/` como CommonJS e o runtime falha com `ERR_REQUIRE_ESM` ao carregar os handlers ESM de `app/`.
 
 ## Rybená sob demanda
 
@@ -38,7 +38,7 @@ O frontend não lê a variável. Após a pessoa solicitar uma tradução, o load
 
 O protocolo do fornecedor torna a URL tokenizada observável na rede do navegador após a ação explícita. Por isso, não salve HAR, prints de rede ou logs com a URL completa; a proteção operacional depende do vínculo ao domínio e da validade curta, não de sigilo no navegador. `127.0.0.1` pode continuar não autorizado.
 
-Estado atual: handler, URL e contrato do adaptador com runtime falso passaram localmente; a rota sem token teve smoke `503`/`405`. Fetch no navegador, injeção da tag, download do CDN, globals, preparação e player permanecem `NOT RUN`, assim como configuração de `RYBENA_ACCESS_TOKEN` na Vercel, deploy e smoke no domínio autorizado. Após o deploy, registre sem expor a URL:
+Estado atual: handler, URL e contrato do adaptador com runtime falso passaram localmente; `RYBENA_ACCESS_TOKEN` foi configurada no ambiente Production e o build remoto concluiu. O smoke remoto encontrou `FUNCTION_INVOCATION_FAILED` por incompatibilidade CommonJS/ESM antes de executar o handler; a correção da fronteira ESM está preparada localmente e ainda requer novo deploy. Fetch bem-sucedido da configuração, injeção da tag, download do CDN, globals, preparação e player permanecem `NOT RUN`. Após o deploy, registre sem expor a URL:
 
 1. nenhuma requisição à Rybená ocorre antes da ação explícita;
 2. sem a variável, o endpoint retorna JSON `503` com `cache-control: no-store`;
