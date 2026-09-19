@@ -14,8 +14,27 @@ import {
 // Códigos que significam "tente de novo daqui a pouco", não "está quebrado".
 const BUSY_PROVIDER_CODES = new Set(['provider_http_429', 'provider_http_503', 'provider_timeout']);
 
+/**
+ * Classe do problema, para a interface escolher o texto e o tom sem reinterpretar
+ * mensagem. `unavailable` = 503 honesto do servidor; `busy` = sobrecarga ou
+ * limite do provedor, que passa sozinho; `rate_limited` = nossa quota por IP;
+ * `contract` = a resposta não coube no contrato seguro.
+ */
+export type AccessibilityServiceKind =
+  | 'unavailable'
+  | 'busy'
+  | 'rate_limited'
+  | 'contract'
+  | 'cancelled'
+  | 'network'
+  | 'failed';
+
 export class AccessibilityServiceError extends Error {
-  constructor(message: string, readonly status?: number) {
+  constructor(
+    message: string,
+    readonly status?: number,
+    readonly kind: AccessibilityServiceKind = 'failed',
+  ) {
     super(message);
   }
 }
@@ -53,20 +72,51 @@ const postJson = async <Request, Response>(
         throw new AccessibilityServiceError(
           'O serviço de IA está ocupado agora. Aguarde alguns segundos e peça novamente — os ajustes manuais continuam disponíveis.',
           response.status,
+          'busy',
         );
       }
-      const fallback = response.status === 503
-        ? 'O planejamento por IA ainda não foi configurado. Os ajustes manuais continuam disponíveis.'
-        : 'O assistente não conseguiu responder agora. Tente novamente ou use os ajustes manuais.';
-      throw new AccessibilityServiceError(body?.error || fallback, response.status);
+      if (response.status === 429) {
+        throw new AccessibilityServiceError(
+          'Muitos pedidos em pouco tempo. Aguarde um minuto — os ajustes manuais continuam disponíveis.',
+          429,
+          'rate_limited',
+        );
+      }
+      if (response.status === 503) {
+        throw new AccessibilityServiceError(
+          'O planejamento por IA ainda não foi configurado neste ambiente. Os ajustes manuais continuam disponíveis.',
+          503,
+          'unavailable',
+        );
+      }
+      // A ressalva vai junto mesmo quando o servidor manda a própria mensagem:
+      // a pessoa precisa saber que os controles manuais seguem funcionando.
+      const detail = body?.error ? `${body.error} ` : 'O assistente não conseguiu responder agora. ';
+      throw new AccessibilityServiceError(
+        `${detail}Os ajustes manuais continuam disponíveis.`,
+        response.status,
+        'failed',
+      );
     }
     const parsed = schema.safeParse(body);
-    if (!parsed.success) throw new AccessibilityServiceError('A resposta do serviço não seguiu o contrato seguro.');
+    if (!parsed.success) {
+      throw new AccessibilityServiceError(
+        'A resposta do serviço não seguiu o contrato seguro e foi descartada. Os ajustes manuais continuam disponíveis.',
+        response.status,
+        'contract',
+      );
+    }
     return parsed.data;
   } catch (error) {
     if (error instanceof AccessibilityServiceError) throw error;
-    if (controller.signal.aborted) throw new AccessibilityServiceError('A solicitação foi cancelada ou excedeu 12 segundos.');
-    throw new AccessibilityServiceError('Não foi possível acessar o serviço de IA. Os ajustes manuais continuam disponíveis.');
+    if (controller.signal.aborted) {
+      throw new AccessibilityServiceError('A solicitação foi cancelada ou excedeu 12 segundos.', undefined, 'cancelled');
+    }
+    throw new AccessibilityServiceError(
+      'Não foi possível acessar o serviço de IA. Os ajustes manuais continuam disponíveis.',
+      undefined,
+      'network',
+    );
   } finally {
     window.clearTimeout(timeout);
     signal?.removeEventListener('abort', abort);

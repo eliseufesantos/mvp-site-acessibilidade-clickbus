@@ -51,7 +51,7 @@ Para tarefas que tocam funções de `api/`, adicionalmente:
 | **T0.0** | **Corrigir `.vercelignore` — funções quebradas em produção** | **0** | **PASS 19/09 — verificado em produção, ver 5.1** |
 | T0.1 | Corrigir enum `thinkingLevel` do Gemini | 0 | PASS 19/09 — aceito pelo provedor em chamada real |
 | T0.2 | Smoke real do Gemini | 0 | PASS 19/09 em produção, ver 5.2 — `.env` local segue pendente |
-| T0.3 | Adaptador Libras de desenvolvimento (fake) | 0 | pendente |
+| T0.3 | Adaptador Libras de desenvolvimento (fake) | 0 | PASS 19/09 — exercitado no navegador, ver 5.5 |
 | T0.4 | Deploy e smoke real da Rybená no domínio autorizado | 0 | endpoint 200 e player aberto no navegador 19/09 — falta evidência registrada |
 | T1.1 | `aria-label` descartado em `<div>` (14 casos) | 1 | PASS 19/09 — rótulos presentes na árvore |
 | T1.2 | Anúncio de filtragem nos resultados | 1 | PASS 19/09 — 1 anúncio atômico por filtro |
@@ -61,11 +61,11 @@ Para tarefas que tocam funções de `api/`, adicionalmente:
 | T1.6 | Foco independente de `requestAnimationFrame` | 1 | PASS 19/09 — verificado com rAF desligado |
 | T1.7 | Correções menores agrupadas | 1 | PASS 19/09 |
 | T1.8 | Revisar prompts de explicação e simplificação | 1 | prompt reescrito 19/09 — **avaliação semântica humana pendente** |
-| T2.1 | Acionador circular e grade de recursos | 2 | pendente |
-| T2.2 | Chat assistente com ditado por voz | 2 | pendente |
-| T2.3 | Capacidade de voz no contrato e no executor | 2 | pendente |
-| T2.4 | Roteamento do chat para ferramentas, Libras e voz | 2 | pendente |
-| T3.1 | Regressão integral e evidências | 3 | pendente |
+| T2.1 | Acionador circular e grade de recursos | 2 | PASS 19/09 — ver 7.6 |
+| T2.2 | Chat assistente com ditado por voz | 2 | PASS 19/09 — ver 7.6 |
+| T2.3 | Capacidade de voz no contrato e no executor | 2 | PASS 19/09 — contrato 2.1, ver 7.6 |
+| T2.4 | Roteamento do chat para ferramentas, Libras e voz | 2 | PASS 19/09 em desenvolvimento, ver 7.6 |
+| T3.1 | Regressão integral e evidências | 3 | PASS 19/09 com ressalvas explícitas, ver 8.1 |
 
 ---
 
@@ -404,6 +404,78 @@ O port `LibrasAdapter` (`adapters/libras/contracts.ts`) já isola tudo: `getSnap
 
 **Risco:** alto se malfeito. Um adaptador falso que vaze para produção vira alegação falsa de tradução em Libras. Trate a seleção do adaptador como código de segurança.
 
+#### 5.5 Resultado de T0.3: PASS em 19/09/2026
+
+Arquivos novos: `adapters/libras/rybenaDevelopment.ts` (o double) e
+`adapters/libras/selection.ts` (a escolha). O port ganhou
+`LibrasSnapshot.simulated`, que é o que obriga a interface a avisar.
+
+**Como ligar em desenvolvimento** — a flag não é segredo e nunca carrega
+credencial:
+
+```bash
+VITE_A11Y_LIBRAS_SIMULATION=on npx --yes pnpm@10.28.0 --dir app dev
+```
+
+No PowerShell, `$env:VITE_A11Y_LIBRAS_SIMULATION='on'` antes do comando, ou um
+`app/.env.local` com a mesma linha — esse caminho já está no `.gitignore`.
+
+**Duas barreiras independentes contra vazamento para produção.** A primeira é a
+dobra estática: `import.meta.env.DEV` aparece literalmente no ternário de
+`selection.ts`, então o empacotador o substitui por `false`, dobra o `&&` e
+remove a referência à classe. A segunda é `shouldSimulateLibras`, função pura
+que exige o valor exato `on` além de desenvolvimento, e que os testes cobrem.
+**Não extraia `import.meta.env.DEV` para dentro da função:** isso quebra a dobra
+e o adaptador falso volta a ser empacotado.
+
+Verificação do bundle de produção após `build` limpo, por busca literal em
+`app/dist/assets/index-*.js`:
+
+| Marcador | No bundle |
+|---|---|
+| `RybenaDevelopment` | ausente |
+| `Player simulado`, `Simulação pausada`, `Simulação interrompida` | ausentes |
+| `Carregando a simulação`, `Velocidade da simulação` | ausentes |
+| `nenhuma tradução real`, `percorrendo o trecho` | ausentes |
+| `Simulação de Libras — ambiente de desenvolvimento` | **presente** |
+
+A última linha é honesta e esperada: é apenas o rótulo do aviso, que mora em
+`adapters/libras/contracts.ts` porque a interface precisa dele para renderizar.
+A classe do adaptador falso não está no bundle, e em produção `simulated` é
+sempre `false`, então o aviso nunca é renderizado — confirmado no preview da
+build, onde `.a11y-simulation-notice` não existe no DOM.
+
+**Exercício no navegador**, com a flag ligada em `127.0.0.1:4173`, painel aberto
+na aba Conteúdo:
+
+```text
+painel aberto -> "Simulação de Libras — ambiente de desenvolvimento. Nenhuma tradução real será executada."
+traduzir      -> "…: percorrendo o trecho selecionado."      (state = translating)
+pausar        -> "Simulação pausada."                        (state = paused)
+retomar       -> "Simulação retomada."                       (state = translating)
+parar         -> "Simulação interrompida."                   (state = ready)
+fechar        -> "Player simulado de Libras fechado."
+```
+
+Nenhuma requisição a `cdn.rybena.com.br` e nenhuma chamada a
+`GET /api/accessibility/rybena` foram emitidas — medido com `PerformanceObserver`
+sobre `resource`. As únicas URLs com "rybena" observadas são os próprios módulos
+servidos pelo Vite em desenvolvimento.
+
+O aviso permanente aparece logo abaixo do cabeçalho do painel, visível em todas
+as superfícies, e o crédito do double diz **"Simulação local — nenhuma tradução
+real foi executada"**. O crédito "Tradução em Libras por Rybená" continua sendo
+exibido pelo adaptador real, que é o único que pode reivindicá-lo.
+
+**Limite honesto:** isto é ferramenta de desenvolvimento. Não prova nada sobre a
+Rybená, sobre o token, sobre `mode=api` ou sobre qualidade linguística. T0.4
+continua sendo a única forma de validar a integração real.
+
+Cobertura acrescentada em `tests/run.ts` (4 testes, suíte foi de 27 para 31):
+máquina de estados completa sem rede, idempotência e transições impossíveis,
+`shouldSimulateLibras` fora de desenvolvimento, e o fato de que só o double se
+declara `simulated`.
+
 ### T0.4 — Deploy e smoke real da Rybená
 
 **Pré-requisitos:** T0.0 e T0.3 concluídas, e **autorização explícita do responsável para fazer o deploy**. O domínio já está ativo na plataforma da Rybená e o token já foi emitido — ver seção 4.2.
@@ -711,6 +783,164 @@ O chat precisa levar o pedido em linguagem natural a um de três destinos:
 
 ---
 
+### 7.6 Resultado da Fase 2: PASS em 19/09/2026
+
+Executada por um único agente, na ordem T2.1 → T2.2 → T2.3 → T2.4, com
+validação mínima a cada tarefa. A suíte foi de 31 para 35 testes.
+
+#### Estrutura entregue
+
+```text
+acionador circular (60 px, pictograma de acessibilidade, host lateral fixo)
+└── painel
+    ├── cabeçalho + [aviso de simulação, quando ativo]
+    ├── superfície rolável (uma por vez, `root` por padrão)
+    │   ├── RAIZ: grade de 5 cartões + "Agora na página"
+    │   │   Libras · Voz · Ajustes visuais · Conteúdo · Sobre acessibilidade
+    │   └── demais: "Voltar aos recursos" + título + conteúdo reaproveitado
+    └── faixa fixa na base: chat + ditado + estado + desfazer
+```
+
+Arquivos novos em `ui/`: `FeatureGrid.tsx`, `PlayerSurface.tsx`,
+`AboutSurface.tsx`. `PreferenceControls.tsx`, `ContentTools.tsx` e
+`useVoiceInput.ts` foram reaproveitados — a casca de navegação mudou, o motor
+não. O bloco de Libras saiu de `ContentTools` para `PlayerSurface`, que serve
+Libras e voz.
+
+#### T2.1 — acionador e grade
+
+O `tablist` saiu, como manda a seção 7.5. A grade é percorrida por `Tab`; cada
+cartão é `<button>` com id estável `a11y-card-<superfície>`.
+
+Modelo de foco, medido por teclado (só `Tab` e `Enter`, sem clique):
+
+| Cartão | Abre | Foco ao entrar | Voltou à raiz | Foco ao voltar |
+|---|---|---|---|---|
+| `a11y-card-libras` | Libras | `a11y-back` | sim | `a11y-card-libras` |
+| `a11y-card-voice` | Voz | `a11y-back` | sim | `a11y-card-voice` |
+| `a11y-card-settings` | Ajustes visuais | `a11y-back` | sim | `a11y-card-settings` |
+| `a11y-card-content` | Conteúdo | `a11y-back` | sim | `a11y-card-content` |
+| `a11y-card-about` | Sobre acessibilidade | `a11y-back` | sim | `a11y-card-about` |
+
+"Voltar" é o primeiro focável de toda superfície não raiz, e sair devolve o foco
+ao cartão de origem. O chat continua visível nas cinco superfícies.
+
+#### T2.2 — chat
+
+Faixa fixa na base, com rótulo explícito, campo, botão de ditado e botão de
+envio. Em 320 px colapsa para uma linha com campo e botões — nunca some atrás de
+outro clique. O ditado só começa por ação explícita, a transcrição é editável
+antes do envio e `abort()` continua acontecendo ao fechar o painel, porque o
+painel desmonta.
+
+A região de estado é `role="status"` com `aria-atomic="true"` e existe sempre no
+DOM, vazia e sem caixa, para que o anúncio funcione. Estados medidos no
+navegador, com o endpoint substituído por respostas controladas:
+
+| Situação | Texto renderizado | Tom |
+|---|---|---|
+| enviando | "Analisando seu pedido com o planejador seguro…" | busy |
+| 503 | "O planejamento por IA ainda não foi configurado neste ambiente. Os ajustes manuais continuam disponíveis." | warning |
+| 429 nosso | "Muitos pedidos em pouco tempo. Aguarde um minuto — os ajustes manuais continuam disponíveis." | warning |
+| 502 `provider_http_429` | "O serviço de IA está ocupado agora. Aguarde alguns segundos e peça novamente — os ajustes manuais continuam disponíveis." | warning |
+| 502 genérico | mensagem do servidor + "Os ajustes manuais continuam disponíveis." | error |
+| 200 fora do contrato | "A resposta do serviço não seguiu o contrato seguro e foi descartada. Os ajustes manuais continuam disponíveis." | error |
+
+`AccessibilityServiceError` ganhou um campo `kind`, para a interface escolher o
+texto e o tom sem reinterpretar mensagem de erro por substring.
+
+#### T2.3 — contrato 2.1 e voz
+
+O port foi renomeado de `LibrasAdapter` para `RybenaAdapter`, ganhou
+`setMode('libras' | 'voz')` e `mode` no snapshot. **Não** existe port separado
+para voz: o fornecedor trata os dois como modos do mesmo player, e duplicar o
+ciclo de vida geraria dois players concorrentes.
+
+`CONTRACT_VERSION` foi para `2.1`, com seis ações novas: `open_voice`,
+`close_voice`, `speak_content`, `pause_voice`, `resume_voice`, `stop_voice`.
+
+**Migração.** O contrato não tem artefato persistido — as preferências vivem em
+`clickbus-a11y-v3`, versionadas à parte. Então migrar é rejeitar o que não é
+desta versão, e isso acontece nas duas pontas. Medido contra o servidor local:
+
+```text
+POST /api/accessibility/plan  contractVersion 2.1  ->  503 (honesto: sem provedor)
+POST /api/accessibility/plan  contractVersion 2.0  ->  400 (rejeitado no contrato)
+```
+
+O executor rejeita do mesmo jeito, então um plano 2.0 em voo é descartado em vez
+de aplicado pela metade.
+
+**Regra de modo no executor.** Entrada (`open_*`, `translate_content`,
+`speak_content`) troca o modo antes de agir. Transporte (`pause_*`, `resume_*`,
+`stop_*`) só age quando o player já está no modo pedido; caso contrário devolve
+recusa honesta. Assim "pausa a narração" nunca pausa, em silêncio, uma tradução
+em Libras. `close_*` vale para os dois modos.
+
+**Seção 7.4, verificada por teste.** `RybenaAdapter` não declara nenhum método
+visual da Rybená. O teste monta um runtime falso com os 16 métodos visuais
+documentados (`toggleZoom`, `toggleDarkContrast`, `toggleReadingMask`…), executa
+seis planos que mexem em preferências, Libras, voz e velocidade, e afirma que a
+lista de métodos visuais tocados é vazia.
+
+#### T2.4 — roteamento
+
+O destino vem das **ações do plano**, não de heurística de string no cliente. O
+executor revalida esquema, capacidades, página, sessão, revisão e `planId` antes
+de qualquer efeito. Medido ponta a ponta contra o servidor de desenvolvimento
+com o adaptador simulado, substituindo apenas o planejador:
+
+| Pedido | Plano devolvido | Resultado observado |
+|---|---|---|
+| visual | `apply` + `set_preferences` | `data-text-scale=1.25` aplicado, "Desfazer este ajuste" oferecido |
+| visual vago | `propose` + `apply_comfortable_reading` | proposta renderizada; **nada aplicado** até confirmar; depois aplicado e desfazer oferecido |
+| Libras | `apply` + `translate_content` | player simulado em modo Libras, estado `translating` |
+| voz | `apply` + `speak_content` | player simulado em modo voz, estado `translating` |
+| fora de escopo | `unsupported` | recusa honesta, nada aplicado |
+
+**Indisponibilidade honesta**, medida na build de produção sem token da Rybená:
+o plano pede `translate_content`, o adaptador real falha e a resposta é
+"A Rybená ainda não foi configurada neste ambiente.", em tom de erro, sem oferta
+de desfazer e sem fingir que executou.
+
+**Exclusões, medidas inspecionando o corpo enviado.** No checkout, com nome, CPF
+e data de nascimento preenchidos, o pedido ao planejador levou
+`contentTargets: []`, **não** levou `translate_content` nem `speak_content` nas
+capacidades, e o corpo não continha o nome, o CPF nem a data de nascimento. As
+chaves do contexto são exatamente as do contrato.
+
+#### O que caiu na contagem do axe, e por quê
+
+`passes` caiu de 304 para 295 no total. A diferença inteira é de duas regras,
+`aria-required-children` e `aria-required-parent`, e só nas execuções com o
+painel aberto. Elas só tinham nós a examinar porque existia `role="tablist"`
+com `role="tab"`. Removido o `tablist` — exigência da seção 7.5 —, as duas
+regras ficam **inaplicáveis**, não reprovadas. Nenhuma regra passou de `pass`
+para `violation` ou `incomplete`, e `scrollable-region-focusable` passou a
+figurar entre as aprovadas em três execuções.
+
+Comparação feita por identificador de regra, não por contagem: a linha de base
+foi recapturada no `HEAD` `91b8f7d` com o mesmo script e o mesmo axe 4.10.2.
+
+**Defeito encontrado e corrigido na revisão da evidência.** O acionador
+circular aparecia **sem pictograma** abaixo de 360 px: duas regras de
+`components.css` escritas para o acionador antigo do `Header`
+(`.accessibility-trigger > svg:last-child { display: none }` e
+`.accessibility-trigger > span:not(.mode-count) { display: none }`) escondiam o
+ícone do acionador novo. O elemento que elas miravam não existe mais, então as
+duas foram removidas. O axe não pegaria isso: o botão tem `aria-label` e o ícone
+é `aria-hidden`. Só apareceu ao revisar a captura de 320 px com o painel
+**fechado** — as varreduras anteriores em 320 px tinham o painel aberto, estado
+em que o acionador fica oculto por CSS. Verificado depois da correção em 1440,
+821, 820, 480, 390, 360 e 320 px: ícone presente e com tamanho maior que zero em
+todas.
+
+**Correção menor aproveitada no caminho:** o rótulo do botão de fechar do painel
+era idêntico ao do acionador ("Fechar acessibilidade"); passou a ser "Fechar o
+painel de acessibilidade". E as seções internas das superfícies desceram de
+`h3` para `h4`, porque o título da superfície agora ocupa o `h3` — a hierarquia
+do painel é `h2` (painel) → `h3` (superfície) → `h4` (seção).
+
 ## 8. Fase 3 — Validação e evidências
 
 ### T3.1 — Regressão integral
@@ -733,6 +963,56 @@ O chat precisa levar o pedido em linguagem natural a um de três destinos:
 | Exclusões | inspeção da rede | checkout e confirmação nunca vão ao planejador |
 | Guia e máscara | ponteiro | não interceptam cliques |
 | Console e rede | ao tocar IA, voz e Rybená | sem erro e sem vazamento de token |
+
+### 8.1 Resultado de T3.1: 19/09/2026
+
+Tudo abaixo foi medido nesta rodada, com a build de produção servida em
+`127.0.0.1:4175` e, onde indicado, o servidor de desenvolvimento em `:4173` com
+`VITE_A11Y_LIBRAS_SIMULATION=on`.
+
+| Verificação | Resultado |
+|---|---|
+| `typecheck` do app | **PASS** |
+| `build` | **PASS** |
+| `test:accessibility` | **PASS** — 35 testes |
+| `typecheck` de `api/` pelo binário local | **PASS** |
+| Jornada completa busca → confirmação | **PASS** — 5 etapas, `scrollY = 0` e foco em `main#main-content` a cada troca |
+| Console e exceções durante a jornada | **PASS** — 0 erros, 0 avisos, 0 exceções |
+| axe em 5 telas | **PASS** — 0 violações |
+| axe com o painel aberto, 5 larguras | **PASS** — 0 violações |
+| Reflow 1440×900, 390×844, 320×844 | **PASS** — 0 px de overflow, painel aberto e fechado |
+| Reflow extremo 320 px + texto 150% + alto contraste + painel | **PASS** — 0 px |
+| Breakpoint 821 px | **PASS** — `role="region"`, sem `aria-modal`, sem backdrop, body rolável |
+| Breakpoint 820 px | **PASS** — `role="dialog"`, `aria-modal="true"`, backdrop, `body.overflow = hidden` |
+| Escape fecha e devolve foco ao acionador | **PASS** — desktop e mobile |
+| Armadilha de foco só no modal | **PASS** — 30 `Tab` escapam em 1440 px, nenhum escapa em 390 px |
+| Foco com aba oculta e `requestAnimationFrame` desligado | **PASS** — abre e devolve o foco corretamente |
+| Teclado da grade a cada superfície e de volta | **PASS** — 5 superfícies |
+| Anúncio de filtragem | **PASS** — 1 anúncio atômico, "2 opções encontradas para 26 de setembro." |
+| Guia e máscara não interceptam ponteiro | **PASS** — `pointer-events: none` nas 4 camadas; `elementFromPoint` devolve o botão |
+| Endpoints: 405, 403, 415, 413, 503 | **PASS** — todos `application/json` |
+| Contrato antigo (2.0) no endpoint | **PASS** — `400`, rejeitado na fronteira |
+| Exclusões de checkout e passageiro | **PASS** — nada de nome, CPF ou nascimento no corpo enviado |
+| Captura de evidência em 320 px | **PASS** — 3 PNG regenerados, revisados, **não versionados** |
+
+#### `NOT RUN` e `BLOCKED` — nada disto virou `PASS`
+
+| Item | Situação |
+|---|---|
+| Tradução real em Libras pela Rybená | **BLOCKED** — token preso ao domínio autorizado; localhost é recusado pelo fornecedor. T0.4 continua aberta |
+| Narração real em voz pela Rybená | **BLOCKED** — mesmo motivo. `switchToVoz()` está integrado e coberto por runtime falso, nunca exercitado de verdade |
+| `mode=api` com o token real | **NOT RUN** — depende de T0.4 |
+| Smoke real do Gemini nesta rodada | **NOT RUN** — não há credencial local; o endpoint responde `503` honesto |
+| Explicação por IA com o prompt revisto (T1.8) | **NOT RUN** — avaliação semântica humana continua pendente |
+| Homologação com pessoas surdas sinalizantes | **NOT RUN** |
+| NVDA, VoiceOver e pessoas usuárias reais | **NOT RUN** |
+| Safari e iOS reais, zoom de 200% | **NOT RUN** |
+| `429` do nosso rate limit no navegador | **NOT RUN** ao vivo — coberto por teste e pelo estado renderizado com resposta controlada |
+
+#### Ressalva sobre o que o axe significa
+
+Zero violações continua significando ausência de defeito automatizável, não
+acessibilidade comprovada. O axe cobre cerca de um terço dos critérios WCAG.
 
 ### Captura de evidência
 

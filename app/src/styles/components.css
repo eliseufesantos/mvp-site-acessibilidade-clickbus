@@ -1371,10 +1371,6 @@ html[data-contrast='true'] .summary-route > svg:first-child {
     height: auto;
   }
 
-  .accessibility-trigger > span:not(.mode-count) {
-    display: none;
-  }
-
   .benefit-grid,
   .results-layout,
   .seats-layout,
@@ -1598,44 +1594,7 @@ html[data-contrast='true'] .summary-route > svg:first-child {
   min-width: 0;
 }
 
-.a11y-tabs {
-  position: sticky;
-  top: 76px;
-  z-index: 2;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  padding: 8px 12px 0;
-  border-bottom: 1px solid var(--cb-border);
-  background: var(--cb-surface);
-}
-
-.a11y-tabs button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-width: 0;
-  min-height: 46px;
-  padding: 8px 6px;
-  border: 0;
-  border-bottom: 3px solid transparent;
-  background: transparent;
-  color: var(--cb-muted);
-  font-size: 0.86rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.a11y-tabs button[aria-selected='true'] {
-  border-bottom-color: var(--cb-primary);
-  color: var(--cb-primary-strong);
-}
-
-.a11y-tabs svg {
-  width: 18px;
-}
-
-.a11y-tab-panel {
+.a11y-surface {
   padding: 18px 20px 22px;
 }
 
@@ -1795,14 +1754,14 @@ html[data-contrast='true'] .summary-route > svg:first-child {
   border-bottom: 1px solid var(--cb-border);
 }
 
-.a11y-section__heading h3 {
+.a11y-section__heading h4 {
   display: flex;
   align-items: center;
   gap: 7px;
   margin: 0;
 }
 
-.a11y-section__heading h3 svg {
+.a11y-section__heading h4 svg {
   width: 19px;
   color: var(--cb-primary-strong);
 }
@@ -1929,17 +1888,8 @@ html[data-contrast='true'] .summary-route > svg:first-child {
   }
 
   .accessibility-panel__heading,
-  .a11y-tab-panel {
+  .a11y-surface {
     padding-inline: 14px;
-  }
-
-  .a11y-tabs {
-    padding-inline: 6px;
-  }
-
-  .a11y-tabs button {
-    gap: 4px;
-    font-size: 0.76rem;
   }
 
   .segmented-control--four {
@@ -2408,10 +2358,6 @@ html[data-contrast='high'] .campaign-hero > img { opacity: 0.28; }
     width: 48px;
     min-width: 48px;
     padding-inline: 6px;
-  }
-
-  .accessibility-trigger > svg:last-child {
-    display: none;
   }
 
   .campaign-hero__notice {

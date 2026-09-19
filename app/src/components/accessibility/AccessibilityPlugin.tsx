@@ -1,4 +1,4 @@
-import { MousePointer2, SlidersHorizontal } from 'lucide-react';
+import { Accessibility, MousePointer2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PreferencePatch } from '../../features/accessibility-agent/core/preferences';
 import { getActivePreferenceLabels } from '../../features/accessibility-agent/core/preferences';
@@ -62,16 +62,18 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [closePanel, isPanelOpen, isSelectingPage]);
 
+  // O painel abre sempre na grade de recursos; o foco vai para o primeiro
+  // cartao, marcado por `data-a11y-entry`.
   useEffect(() => {
     if (!isPanelOpen) return;
-    focusAfterRender(() => document.getElementById('a11y-tab-conversation'));
+    focusAfterRender(() => surfaceRef.current?.querySelector<HTMLElement>('[data-a11y-entry]'));
   }, [isPanelOpen]);
 
   useEffect(() => {
     if (!isPanelOpen || isSelectingPage || !isMobile) return;
     const surface = surfaceRef.current;
     if (surface?.contains(document.activeElement)) return;
-    focusAfterRender(() => surface?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]'));
+    focusAfterRender(() => surface?.querySelector<HTMLElement>('[data-a11y-entry]'));
   }, [isMobile, isPanelOpen, isSelectingPage]);
 
   useEffect(() => {
@@ -144,8 +146,7 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
         ref={triggerRef}
         onClick={() => (isPanelOpen ? closePanel() : openPanel())}
       >
-        <span className="accessibility-plugin__trigger-icon" aria-hidden="true"><SlidersHorizontal /></span>
-        <span className="accessibility-plugin__trigger-label" aria-hidden="true">Acessibilidade</span>
+        <Accessibility className="accessibility-plugin__trigger-icon" aria-hidden="true" />
         {activeModes > 0 ? <span className="mode-count" aria-hidden="true">{activeModes}</span> : null}
       </button>
 

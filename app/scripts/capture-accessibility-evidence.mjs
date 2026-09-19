@@ -106,7 +106,7 @@ try {
   const panelCapture = await command('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: false });
   await writeFile(path.join(evidence, 'implementation-panel-mobile-320.png'), Buffer.from(panelCapture.data, 'base64'));
 
-  await command('Runtime.evaluate', { expression: `document.querySelector('#a11y-tab-content')?.click()` });
+  await command('Runtime.evaluate', { expression: `document.querySelector('#a11y-card-content')?.click()` });
   await delay(180);
   const contentCapture = await command('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: false });
   await writeFile(path.join(evidence, 'implementation-panel-content-mobile-320.png'), Buffer.from(contentCapture.data, 'base64'));

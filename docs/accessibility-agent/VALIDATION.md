@@ -162,6 +162,64 @@ Não alegar conformidade integral apenas por esses testes.
 
 A nova direção lateral foi inspecionada no navegador integrado em 1440×900, 390×844 e 320×844 CSS px. Em 320 px, as métricas observadas no estado padrão e com texto a 150% foram `clientWidth=320` e `scrollWidth=320` tanto no documento quanto no painel. As capturas da versão anterior foram removidas; `app/scripts/capture-accessibility-evidence.mjs` permanece como caminho reproduzível para gerar novas evidências, que devem ser revisadas antes de serem versionadas.
 
+### Resultado observado em 19/09/2026 — Fase 2 e T0.3
+
+Rodada do redesenho do painel para o padrão lançador + superfície, do adaptador
+de desenvolvimento de Libras/voz e da regressão integral. Build de produção
+servida em `127.0.0.1:4175`; onde indicado, servidor de desenvolvimento em
+`:4173` com `VITE_A11Y_LIBRAS_SIMULATION=on`.
+
+| Caso | Status | Evidência |
+|---|---|---|
+| typecheck do app, build, suíte, typecheck de `api/` | PASS | suíte de 27 para 35 testes |
+| jornada busca → confirmação | PASS | 5 etapas; `scrollY = 0` e foco em `main#main-content` a cada troca; 0 erro e 0 exceção no console |
+| axe-core 4.10.2 em 5 telas | PASS | 0 violações, tags wcag2a/2aa/21a/21aa/22aa |
+| axe com o painel aberto em 1440, 821, 820, 390 e 320 px | PASS | 0 violações |
+| queda de `passes` de 304 para 295 | PASS, explicado | apenas `aria-required-children` e `aria-required-parent`, que ficaram **inaplicáveis** com a saída do `tablist`; nenhuma regra passou de aprovada a violada; comparação por identificador de regra contra linha de base recapturada no `HEAD` `91b8f7d` |
+| reflow 1440×900, 390×844, 320×844 | PASS | 0 px de overflow, painel aberto e fechado |
+| reflow extremo 320 px + texto 150% + alto contraste + painel | PASS | 0 px de overflow |
+| breakpoint 820 px | PASS | `role="dialog"`, `aria-modal="true"`, backdrop, `body.overflow = hidden` |
+| breakpoint 821 px | PASS | `role="region"`, sem `aria-modal`, sem backdrop, body rolável |
+| Escape fecha e devolve foco ao acionador | PASS | desktop e mobile |
+| armadilha de foco só no modal | PASS | 30 `Tab` escapam em 1440 px; nenhum escapa em 390 px |
+| foco com aba oculta e `requestAnimationFrame` desligado | PASS | abre no primeiro cartão e devolve o foco ao acionador |
+| teclado da grade a cada superfície e de volta | PASS | 5 superfícies; "Voltar" é o primeiro focável; o foco retorna ao cartão de origem |
+| chat visível em todas as superfícies | PASS | inclusive em 320 px, colapsado em uma linha |
+| estados do chat: enviando, 503, 429, 502 ocupado, 502 genérico, fora do contrato | PASS | seis mensagens em português, `role="status"` com `aria-atomic="true"`; nenhuma finge sucesso |
+| roteamento visual pelo plano | PASS dev | `set_preferences` aplicado, desfazer oferecido |
+| `propose` não aplica sem confirmação | PASS dev | proposta renderizada, nada aplicado até a confirmação explícita |
+| roteamento Libras pelo plano | PASS dev, **simulado** | `translate_content` levou o player simulado a `translating` em modo Libras |
+| roteamento voz pelo plano | PASS dev, **simulado** | `speak_content` levou o player simulado a `translating` em modo voz |
+| indisponibilidade comunicada com honestidade | PASS | build de produção sem token: "A Rybená ainda não foi configurada neste ambiente.", em tom de erro, sem desfazer e sem fingir execução |
+| exclusões de checkout e passageiro | PASS | no checkout o pedido ao planejador levou `contentTargets: []`, sem `translate_content` nem `speak_content` nas capacidades, e o corpo não continha nome, CPF nem data de nascimento |
+| executor não toca nos métodos visuais da Rybená | PASS | teste com runtime falso contendo os 16 métodos visuais documentados; após seis planos, a lista de métodos tocados é vazia |
+| contrato 2.1 e rejeição do 2.0 | PASS | `POST /plan` com `2.1` responde `503` honesto; com `2.0` responde `400`; o executor também rejeita |
+| endpoints 405, 403, 415, 413, 503 | PASS | todos `application/json` |
+| adaptador de desenvolvimento ausente do bundle | PASS | busca literal em `app/dist/assets/index-*.js`: `RybenaDevelopment` e as mensagens do double ausentes; só o rótulo do aviso permanece, e ele nunca é renderizado em produção |
+| aviso permanente de simulação | PASS | visível em todas as superfícies com a flag ligada; o double não reivindica o crédito de tradução real |
+| guia e máscara não interceptam ponteiro | PASS | `pointer-events: none` nas quatro camadas; `elementFromPoint` devolve o botão |
+| anúncio de filtragem | PASS | um anúncio atômico: "2 opções encontradas para 26 de setembro." |
+| pictograma do acionador visível de 320 a 1440 px | PASS após correção | duas regras de `components.css` do acionador antigo do `Header` escondiam o ícone abaixo de 360 px; removidas. Verificado em 1440, 821, 820, 480, 390, 360 e 320 px |
+| captura de evidência em 320 px | PASS | três PNG regenerados e revisados em `docs/accessibility-agent/evidence/`, **não versionados** |
+| tradução real em Libras | BLOCKED | token preso ao domínio autorizado; localhost é recusado pelo fornecedor |
+| narração real em voz | BLOCKED | mesmo motivo; `switchToVoz()` está integrado e coberto por runtime falso, nunca exercitado de verdade |
+| `mode=api` com o token real | NOT RUN | depende do deploy no domínio autorizado |
+| IA real nesta rodada | NOT RUN | sem credencial local; endpoint responde `503` honesto |
+| qualidade semântica da explicação por IA | NOT RUN | prompt revisto em T1.8; avaliação humana continua pendente |
+| `429` do nosso rate limit no navegador | NOT RUN ao vivo | coberto por teste e pelo estado renderizado com resposta controlada |
+| NVDA, VoiceOver e pessoas usuárias | NOT RUN | |
+| pessoas surdas sinalizantes | NOT RUN | |
+| Safari e iOS reais, zoom de 200% | NOT RUN | |
+
+**Desvio consciente registrado (T1.7, item 3).** `autocomplete="off"` em nome,
+CPF e data de nascimento conflita com o SC 1.3.5, mas é defensável num protótipo
+que proíbe dados reais e pede confirmação explícita de dados fictícios.
+
+**Limite que permanece.** Zero violações no axe significa ausência de defeito
+automatizável, não acessibilidade comprovada: a ferramenta cobre cerca de um
+terço dos critérios WCAG. O adaptador de desenvolvimento é ferramenta de
+desenvolvimento e não prova nada sobre a Rybená.
+
 ## 8. Registro
 
 ```text

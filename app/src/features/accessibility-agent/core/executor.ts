@@ -1,5 +1,5 @@
 import type { AccessibilityPreferences } from '../../../types';
-import type { LibrasAdapter } from '../adapters/libras/contracts';
+import type { RybenaAdapter, RybenaMode, RybenaReceipt } from '../adapters/libras/contracts';
 import { COMFORTABLE_READING_PATCH, type PreferencePatch } from './preferences';
 import {
   plannerResponseSchema,
@@ -33,9 +33,43 @@ export interface ExecutorDependencies {
   undoPreferences(): boolean;
   resetPreferences(): boolean;
   resolveContent(id: string): { id: string; text: string } | null;
-  libras: LibrasAdapter;
+  rybena: RybenaAdapter;
   capabilities: readonly ActionType[];
 }
+
+/**
+ * Ações de voz e de Libras acionam o MESMO player, em modos diferentes.
+ *
+ * Entrada (`open_*`, `translate_content`, `speak_content`) troca o modo antes
+ * de agir. Transporte (`pause_*`, `resume_*`, `stop_*`) só age quando o player
+ * já está no modo pedido — assim "pausa a narração" nunca pausa, em silêncio,
+ * uma tradução em Libras. Fechar vale para os dois modos.
+ *
+ * O executor nunca chama os métodos visuais da Rybená: `RybenaAdapter` não os
+ * declara, e os ajustes visuais são responsabilidade exclusiva do executor
+ * local. Se os dois aplicarem, os efeitos somam e quebram — seção 7.4 do plano.
+ */
+const VOICE_ACTIONS: readonly ActionType[] = [
+  'open_voice', 'close_voice', 'speak_content', 'pause_voice', 'resume_voice', 'stop_voice',
+];
+
+const ENTRY_ACTIONS: readonly ActionType[] = [
+  'open_libras', 'translate_content', 'open_voice', 'speak_content',
+];
+
+const TRANSPORT_ACTIONS: readonly ActionType[] = [
+  'pause_libras', 'resume_libras', 'stop_libras', 'pause_voice', 'resume_voice', 'stop_voice',
+];
+
+const modeOf = (action: ActionType): RybenaMode => (VOICE_ACTIONS.includes(action) ? 'voz' : 'libras');
+
+const wrongModeReceipt = (wanted: RybenaMode, current: RybenaMode): RybenaReceipt => ({
+  status: 'failed',
+  state: 'ready',
+  message: wanted === 'voz'
+    ? `O player está em ${current === 'libras' ? 'Libras' : 'voz'}. Peça a narração de um trecho antes de controlá-la.`
+    : `O player está em ${current === 'voz' ? 'voz' : 'Libras'}. Peça a tradução de um trecho antes de controlá-la.`,
+});
 
 export class PlanExecutionError extends Error {}
 
@@ -65,6 +99,37 @@ export class AccessibilityExecutor {
     }
   }
 
+  private async runPlayerAction(
+    action: PlanAction,
+    dependencies: ExecutorDependencies,
+    preparedContent: Map<string, { id: string; text: string }>,
+  ): Promise<RybenaReceipt> {
+    const { rybena } = dependencies;
+
+    if (action.type === 'set_libras_speed') return rybena.setSpeed(action.speed);
+    if (action.type === 'close_libras' || action.type === 'close_voice') return rybena.close();
+
+    const wanted = modeOf(action.type);
+    if (ENTRY_ACTIONS.includes(action.type)) {
+      const switched = await rybena.setMode(wanted);
+      if (switched.status !== 'accepted') return switched;
+    } else if (TRANSPORT_ACTIONS.includes(action.type)) {
+      const current = rybena.getSnapshot().mode;
+      if (current !== wanted) return wrongModeReceipt(wanted, current);
+    }
+
+    if (action.type === 'open_libras' || action.type === 'open_voice') return rybena.open();
+    if (action.type === 'pause_libras' || action.type === 'pause_voice') return rybena.pause();
+    if (action.type === 'resume_libras' || action.type === 'resume_voice') return rybena.resume();
+    if (action.type === 'stop_libras' || action.type === 'stop_voice') return rybena.stop();
+    if (action.type === 'translate_content' || action.type === 'speak_content') {
+      return rybena.translate(preparedContent.get(action.contentRef)!);
+    }
+    // Inalcançável: o esquema já rejeitou qualquer outro tipo. Fica como recusa
+    // explícita em vez de efeito silencioso.
+    return { status: 'failed', state: 'ready', message: 'Ação de player não reconhecida.' };
+  }
+
   async execute(value: unknown, dependencies: ExecutorDependencies): Promise<ExecutionReceipt> {
     const parsed = plannerResponseSchema.safeParse(value);
     if (!parsed.success) throw new PlanExecutionError(parsed.error);
@@ -81,7 +146,7 @@ export class AccessibilityExecutor {
     const preparedContent = new Map<string, { id: string; text: string }>();
     for (const action of plan.actions) {
       if (!dependencies.capabilities.includes(action.type)) throw new PlanExecutionError('O plano pediu uma capacidade indisponível.');
-      if (action.type === 'translate_content') {
+      if (action.type === 'translate_content' || action.type === 'speak_content') {
         const content = dependencies.resolveContent(action.contentRef);
         if (!content || content.text.length > 1500) throw new PlanExecutionError('O trecho não está disponível nesta página.');
         preparedContent.set(action.contentRef, content);
@@ -103,13 +168,7 @@ export class AccessibilityExecutor {
         continue;
       }
 
-      const result = action.type === 'open_libras' ? await dependencies.libras.open()
-        : action.type === 'close_libras' ? await dependencies.libras.close()
-          : action.type === 'pause_libras' ? await dependencies.libras.pause()
-            : action.type === 'resume_libras' ? await dependencies.libras.resume()
-              : action.type === 'stop_libras' ? await dependencies.libras.stop()
-                : action.type === 'set_libras_speed' ? await dependencies.libras.setSpeed(action.speed)
-                  : await dependencies.libras.translate(preparedContent.get(action.contentRef)!);
+      const result = await this.runPlayerAction(action, dependencies, preparedContent);
       actions.push({
         action: action.type,
         status: result.status === 'accepted' ? 'applied' : 'failed',

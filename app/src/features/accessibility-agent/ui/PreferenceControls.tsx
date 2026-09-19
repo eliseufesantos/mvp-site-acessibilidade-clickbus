@@ -26,7 +26,7 @@ export function PreferenceControls({ canUndo, preferences, onApply, onReset, onS
   return (
     <div className="a11y-settings">
       <section className="a11y-section" aria-labelledby="a11y-vision-title">
-        <div className="a11y-section__heading"><h3 id="a11y-vision-title">Visão e tamanho</h3><span>Controles independentes</span></div>
+        <div className="a11y-section__heading"><h4 id="a11y-vision-title">Visão e tamanho</h4><span>Controles independentes</span></div>
         <Switch checked={preferences.contrast === 'high'} label="Alto contraste" description="Usa preto, branco e amarelo." onChange={() => apply({ contrast: preferences.contrast === 'high' ? 'default' : 'high' }, 'Contraste')} />
         <div className="preference-field">
           <div><strong>Tamanho do texto</strong><span>Amplia a tipografia sem zoom da página.</span></div>
@@ -41,7 +41,7 @@ export function PreferenceControls({ canUndo, preferences, onApply, onReset, onS
       </section>
 
       <section className="a11y-section" aria-labelledby="a11y-reading-title">
-        <div className="a11y-section__heading"><h3 id="a11y-reading-title">Leitura</h3><span>Combine como preferir</span></div>
+        <div className="a11y-section__heading"><h4 id="a11y-reading-title">Leitura</h4><span>Combine como preferir</span></div>
         <div className="preference-field">
           <div><strong>Espaço entre letras</strong></div>
           <div className="segmented-control" role="group" aria-label="Espaço entre letras">

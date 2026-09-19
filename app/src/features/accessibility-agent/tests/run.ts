@@ -4,13 +4,20 @@ import {
   handleRybenaRequest,
   RYBENA_AUTHORIZED_HOST,
 } from '../../../../server/accessibility/rybena';
-import type { LibrasAdapter } from '../adapters/libras/contracts';
+import { RYBENA_SIMULATION_NOTICE } from '../adapters/libras/contracts';
+import type { RybenaAdapter } from '../adapters/libras/contracts';
 import {
   parseRybenaScriptUrl,
   RybenaBrowserAdapter,
   type RybenaRuntime,
 } from '../adapters/libras/rybenaBrowser';
 import { RybenaUnavailableAdapter, RYBENA_UNAVAILABLE_MESSAGE } from '../adapters/libras/rybenaUnavailable';
+import { RybenaDevelopmentAdapter } from '../adapters/libras/rybenaDevelopment';
+import {
+  LIBRAS_SIMULATION_ENABLED_VALUE,
+  LIBRAS_SIMULATION_ENV_VAR,
+  shouldSimulateLibras,
+} from '../adapters/libras/selection';
 import {
   clearRememberedApprovedPageSelection,
   getApprovedPageSelection,
@@ -20,9 +27,11 @@ import {
   simplifyPublicContent,
 } from '../adapters/clickbus/content';
 import {
+  ALL_ACTION_TYPES,
   CONTRACT_VERSION,
   PLANNER_RESPONSE_JSON_SCHEMA,
   TEXT_RESPONSE_JSON_SCHEMA,
+  parsePlanAction,
   plannerResponseSchema,
   type PlannerResponse,
 } from '../core/contracts';
@@ -441,7 +450,7 @@ await test('executor validates revision and applies each plan only once', async 
     undoPreferences: () => false,
     resetPreferences: () => false,
     resolveContent: () => null,
-    libras: libras as LibrasAdapter,
+    rybena: libras as RybenaAdapter,
     capabilities: ['set_preferences'] as const,
   };
   const plan: PlannerResponse = { contractVersion: CONTRACT_VERSION, requestId: 'request-1', planId: 'plan-1', baseStateRevision: 0, pageEpoch: 3, panelSession: 2, mode: 'apply', message: 'Aplicar', actions: [{ type: 'set_preferences', patch: { contrast: 'high' } }] };
@@ -455,7 +464,7 @@ await test('executor validates revision and applies each plan only once', async 
 });
 
 await test('Rybená adapter stays unavailable without network behavior', async () => {
-  const adapter: LibrasAdapter = new RybenaUnavailableAdapter();
+  const adapter: RybenaAdapter = new RybenaUnavailableAdapter();
   const receipt = await adapter.translate({ id: 'search-help', text: 'Ajuda' });
   assert(receipt.status === 'unavailable' && receipt.message === RYBENA_UNAVAILABLE_MESSAGE);
 });
@@ -539,6 +548,7 @@ await test('Rybená browser adapter maps the documented player controls', async 
     setSpeed: (speed) => calls.push(`speed:${speed}`),
     stop: () => calls.push('stop'),
     switchToLibras: () => calls.push('libras'),
+    switchToVoz: () => calls.push('voz'),
     translate: (text) => calls.push(`translate:${text}`),
   };
   const adapter = new RybenaBrowserAdapter(async () => runtime);
@@ -554,10 +564,281 @@ await test('Rybená browser adapter maps the documented player controls', async 
   assert(adapter.getSnapshot().state === 'ready');
   await adapter.stop();
   await adapter.close();
+  // `libras` logo apos `speed:1` e a sincronizacao do modo declarado na carga:
+  // o player nasce no modo que o snapshot anuncia, nunca num modo implicito.
   equal(calls, [
-    'speed:1', 'speed:0.75', 'open', 'libras', 'speed:0.75', 'translate:Ajuda da busca',
+    'speed:1', 'libras', 'speed:0.75', 'open', 'libras', 'speed:0.75', 'translate:Ajuda da busca',
     'pause', 'play', 'stop', 'close',
   ]);
+});
+
+await test('development Libras adapter walks the real state machine without network', async () => {
+  let pendingTranslation: (() => void) | null = null;
+  const adapter = new RybenaDevelopmentAdapter({
+    delay: async () => undefined,
+    schedule: (callback) => {
+      pendingTranslation = callback;
+      return () => { pendingTranslation = null; };
+    },
+  });
+
+  const initial = adapter.getSnapshot();
+  assert(initial.state === 'idle' && initial.simulated === true, 'simulação deve se declarar simulação');
+  assert(initial.message.includes(RYBENA_SIMULATION_NOTICE), 'a mensagem inicial deve avisar que é simulação');
+  assert(!initial.attribution.includes('Tradução em Libras'), 'o double não pode reivindicar tradução real');
+
+  assert((await adapter.initialize()).status === 'accepted');
+  assert(adapter.getSnapshot().state === 'ready');
+
+  assert((await adapter.open()).status === 'accepted');
+  assert((await adapter.translate({ id: 'search-help', text: 'Ajuda da busca' })).status === 'accepted');
+  assert(adapter.getSnapshot().state === 'translating');
+
+  assert((await adapter.pause()).status === 'accepted');
+  assert(adapter.getSnapshot().state === 'paused');
+  assert(pendingTranslation === null, 'pausar deve cancelar o término agendado');
+
+  assert((await adapter.resume()).status === 'accepted');
+  assert(adapter.getSnapshot().state === 'translating');
+
+  assert((await adapter.stop()).status === 'accepted');
+  assert(adapter.getSnapshot().state === 'ready');
+
+  assert((await adapter.close()).status === 'accepted');
+  assert(adapter.getSnapshot().state === 'ready');
+
+  // O término agendado devolve o player a `ready`, como o handleTranslate real.
+  await adapter.translate({ id: 'search-help', text: 'Ajuda da busca' });
+  assert(adapter.getSnapshot().state === 'translating');
+  (pendingTranslation as unknown as () => void)();
+  assert(adapter.getSnapshot().state === 'ready');
+});
+
+await test('development Libras adapter is idempotent and rejects impossible transitions', async () => {
+  const adapter = new RybenaDevelopmentAdapter({ delay: async () => undefined, schedule: () => () => undefined });
+
+  const first = await adapter.initialize();
+  const second = await adapter.initialize();
+  assert(first.status === 'accepted' && second.status === 'accepted');
+  assert(adapter.getSnapshot().state === 'ready');
+
+  assert((await adapter.open()).status === 'accepted');
+  const reopened = await adapter.open();
+  assert(reopened.status === 'accepted' && reopened.message.includes('já estava aberto'));
+
+  assert((await adapter.pause()).status === 'failed', 'não há o que pausar sem tradução em curso');
+  assert((await adapter.resume()).status === 'failed', 'não há o que retomar sem pausa');
+  assert((await adapter.translate({ id: 'search-help', text: '   ' })).status === 'failed');
+
+  const closed = await adapter.close();
+  const closedAgain = await adapter.close();
+  assert(closed.status === 'accepted' && closedAgain.status === 'accepted');
+
+  const speed = await adapter.setSpeed(0.75);
+  const sameSpeed = await adapter.setSpeed(0.75);
+  assert(speed.status === 'accepted' && sameSpeed.message.includes('já estava'));
+});
+
+await test('the simulated Libras adapter is unreachable outside development', () => {
+  assert(LIBRAS_SIMULATION_ENV_VAR === 'VITE_A11Y_LIBRAS_SIMULATION');
+  assert(LIBRAS_SIMULATION_ENABLED_VALUE === 'on');
+
+  // Produção: nem mesmo com a flag ligada.
+  assert(shouldSimulateLibras({ dev: false, simulation: LIBRAS_SIMULATION_ENABLED_VALUE }) === false);
+  assert(shouldSimulateLibras({ dev: false, simulation: undefined }) === false);
+
+  // Desenvolvimento: só com a flag exatamente no valor de ativação.
+  assert(shouldSimulateLibras({ dev: true, simulation: undefined }) === false);
+  assert(shouldSimulateLibras({ dev: true, simulation: '' }) === false);
+  assert(shouldSimulateLibras({ dev: true, simulation: 'off' }) === false);
+  assert(shouldSimulateLibras({ dev: true, simulation: 'true' }) === false);
+  assert(shouldSimulateLibras({ dev: true, simulation: LIBRAS_SIMULATION_ENABLED_VALUE }) === true);
+});
+
+await test('only the development adapter declares itself simulated', () => {
+  assert(new RybenaDevelopmentAdapter().getSnapshot().simulated === true);
+  assert(new RybenaUnavailableAdapter().getSnapshot().simulated === false);
+  assert(new RybenaBrowserAdapter(async () => { throw new Error('sem runtime'); }).getSnapshot().simulated === false);
+});
+
+await test('contract 2.1 carries the voice actions and rejects the previous version', () => {
+  assert(CONTRACT_VERSION === '2.1');
+  for (const type of ['open_voice', 'close_voice', 'speak_content', 'pause_voice', 'resume_voice', 'stop_voice']) {
+    assert(ALL_ACTION_TYPES.includes(type as never), `${type} deveria estar no contrato`);
+  }
+
+  // speak_content aceita contentRef, como translate_content.
+  const spoken = parsePlanAction({ type: 'speak_content', contentRef: 'search-help' });
+  equal(spoken, { type: 'speak_content', contentRef: 'search-help' });
+  assert(parsePlanAction({ type: 'speak_content' }) === null, 'speak_content sem contentRef é inválido');
+  assert(parsePlanAction({ type: 'speak_content', contentRef: 'a', extra: 1 }) === null);
+  assert(parsePlanAction({ type: 'narrate_everything' }) === null, 'ação inventada é rejeitada');
+
+  // Um plano 2.0 em voo não pode ser aplicado pela metade: é descartado.
+  const legacy = { ...plannerResponseBody('request-legacy'), contractVersion: '2.0' };
+  assert(plannerResponseSchema.safeParse(legacy).success === false, 'plano 2.0 deve ser rejeitado');
+  assert(plannerResponseSchema.safeParse(plannerResponseBody('request-current')).success === true);
+
+  // O esquema enviado ao provedor deriva das mesmas constantes.
+  const schemaTypes = PLANNER_RESPONSE_JSON_SCHEMA.properties.actions.items.properties.type.enum;
+  equal([...schemaTypes].sort(), [...ALL_ACTION_TYPES].sort());
+  equal(PLANNER_RESPONSE_JSON_SCHEMA.properties.contractVersion.enum, ['2.1']);
+});
+
+await test('executor routes voice and Libras to the same player in the right mode', async () => {
+  const calls: string[] = [];
+  const player = new RybenaDevelopmentAdapter({ delay: async () => undefined, schedule: () => () => undefined });
+  const traced: RybenaAdapter = {
+    ...player,
+    setMode: async (mode) => { calls.push(`mode:${mode}`); return player.setMode(mode); },
+    open: async () => { calls.push('open'); return player.open(); },
+    close: async () => { calls.push('close'); return player.close(); },
+    translate: async (content) => { calls.push(`translate:${content.id}`); return player.translate(content); },
+    pause: async () => { calls.push('pause'); return player.pause(); },
+    resume: async () => { calls.push('resume'); return player.resume(); },
+    stop: async () => { calls.push('stop'); return player.stop(); },
+  };
+
+  const capabilities = [
+    'open_libras', 'translate_content', 'pause_libras', 'stop_libras',
+    'open_voice', 'speak_content', 'pause_voice', 'stop_voice', 'close_voice',
+  ] as const;
+
+  const dependencies = {
+    requestId: 'request-voice',
+    getStateRevision: () => 0,
+    getPageEpoch: () => 1,
+    getPanelSession: () => 1,
+    getPreferences: () => getDefaultPreferences(),
+    applyPreferences: () => false,
+    undoPreferences: () => false,
+    resetPreferences: () => false,
+    resolveContent: (id: string) => resolvePublicContent('search', id),
+    rybena: traced,
+    capabilities,
+  };
+
+  const plan = (planId: string, actions: unknown[]): unknown => ({
+    ...plannerResponseBody('request-voice'), planId, mode: 'apply', actions,
+  });
+
+  const executor = new AccessibilityExecutor();
+
+  const spoken = await executor.execute(plan('plan-voz', [{ type: 'speak_content', contentRef: 'search-help' }]), dependencies);
+  assert(spoken.status === 'applied');
+  assert(traced.getSnapshot().mode === 'voz', 'narrar deve deixar o player em voz');
+
+  // Transporte de Libras enquanto a voz toca: recusa honesta, sem efeito.
+  const crossed = await executor.execute(plan('plan-cruzado', [{ type: 'pause_libras' }]), dependencies);
+  assert(crossed.status === 'rejected', 'pausar Libras com voz tocando deve falhar');
+  assert(crossed.actions[0].message.includes('voz'), crossed.actions[0].message);
+  assert(traced.getSnapshot().state === 'translating', 'o estado não pode ter mudado');
+
+  // Transporte do modo certo funciona.
+  const paused = await executor.execute(plan('plan-pausa-voz', [{ type: 'pause_voice' }]), dependencies);
+  assert(paused.status === 'applied' && traced.getSnapshot().state === 'paused');
+
+  // Trocar para Libras é uma ação de entrada: troca o modo antes de agir.
+  const libras = await executor.execute(plan('plan-libras', [{ type: 'translate_content', contentRef: 'search-help' }]), dependencies);
+  assert(libras.status === 'applied' && traced.getSnapshot().mode === 'libras');
+
+  assert(calls.includes('mode:voz') && calls.includes('mode:libras'));
+  assert(!calls.includes('mode:voz;mode:voz'));
+});
+
+await test('executor refuses player actions that are not in the capability list', async () => {
+  const player = new RybenaDevelopmentAdapter({ delay: async () => undefined, schedule: () => () => undefined });
+  const dependencies = {
+    requestId: 'request-cap',
+    getStateRevision: () => 0,
+    getPageEpoch: () => 1,
+    getPanelSession: () => 1,
+    getPreferences: () => getDefaultPreferences(),
+    applyPreferences: () => false,
+    undoPreferences: () => false,
+    resetPreferences: () => false,
+    resolveContent: (id: string) => resolvePublicContent('search', id),
+    rybena: player,
+    // Voz ausente de propósito: é o caso de "capacidade indisponível".
+    capabilities: ['open_libras'] as const,
+  };
+  const executor = new AccessibilityExecutor();
+  let rejected = false;
+  try {
+    await executor.execute({
+      ...plannerResponseBody('request-cap'), planId: 'plan-sem-voz', mode: 'apply',
+      actions: [{ type: 'open_voice' }],
+    }, dependencies);
+  } catch (error) {
+    rejected = error instanceof PlanExecutionError;
+  }
+  assert(rejected, 'capacidade ausente deve ser recusada antes de qualquer efeito');
+  assert(player.getSnapshot().state === 'idle', 'nada pode ter acontecido com o player');
+});
+
+await test('the Rybena port never exposes the vendor visual controls to the executor', async () => {
+  // Secao 7.4: os ajustes visuais sao do executor local. Se a Rybena tambem
+  // aplicar, os efeitos somam e quebram. Este runtime registra qualquer toque.
+  const visualTouched: string[] = [];
+  const visualMethods = [
+    'toggleZoom', 'nextZoom', 'previousZoom', 'toggleDarkContrast', 'toggleLightContrast',
+    'toggleInvertedContrast', 'toggleLineHeight', 'toggleLetterSpacing', 'toggleCursorSize',
+    'toggleAmplifyCursor', 'toggleLinkHighlight', 'toggleTitleHighlight', 'toggleReadingMask',
+    'toggleCursorGuide', 'togglePauseAnimations', 'toggleDictionary',
+  ];
+  const runtime = {
+    closePlayer: () => undefined,
+    handleLoaded: (callback: () => void) => callback(),
+    handleTranslate: () => undefined,
+    isTranslating: () => false,
+    openPlayer: () => undefined,
+    pause: () => undefined,
+    play: () => undefined,
+    setSpeed: () => undefined,
+    stop: () => undefined,
+    switchToLibras: () => undefined,
+    switchToVoz: () => undefined,
+    translate: () => undefined,
+  } as unknown as RybenaRuntime;
+  for (const method of visualMethods) {
+    Object.assign(runtime, { [method]: () => visualTouched.push(method) });
+  }
+
+  const adapter = new RybenaBrowserAdapter(async () => runtime);
+  const executor = new AccessibilityExecutor();
+  const dependencies = {
+    requestId: 'request-visual',
+    getStateRevision: () => 0,
+    getPageEpoch: () => 1,
+    getPanelSession: () => 1,
+    getPreferences: () => getDefaultPreferences(),
+    applyPreferences: () => true,
+    undoPreferences: () => false,
+    resetPreferences: () => false,
+    resolveContent: (id: string) => resolvePublicContent('search', id),
+    rybena: adapter,
+    capabilities: [
+      'set_preferences', 'apply_comfortable_reading', 'open_libras', 'translate_content',
+      'open_voice', 'speak_content', 'set_libras_speed', 'close_voice',
+    ] as const,
+  };
+
+  const run = (planId: string, actions: unknown[]) => executor.execute({
+    ...plannerResponseBody('request-visual'), planId, mode: 'apply', actions,
+  }, dependencies);
+
+  await run('plan-v1', [{ type: 'set_preferences', patch: { contrast: 'high', textScale: 1.5 } }]);
+  await run('plan-v2', [{ type: 'apply_comfortable_reading' }]);
+  await run('plan-v3', [{ type: 'translate_content', contentRef: 'search-help' }]);
+  await run('plan-v4', [{ type: 'speak_content', contentRef: 'search-help' }]);
+  await run('plan-v5', [{ type: 'set_libras_speed', speed: 1.25 }]);
+  await run('plan-v6', [{ type: 'close_voice' }]);
+
+  equal(visualTouched, []);
+  // E o port simplesmente nao declara esses metodos.
+  for (const method of visualMethods) {
+    assert(!(method in (adapter as unknown as Record<string, unknown>)), `${method} não pode existir no adaptador`);
+  }
 });
 
 await test('content adapter simplifies only reviewed public targets locally', () => {
