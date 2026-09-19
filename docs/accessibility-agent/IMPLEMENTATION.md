@@ -49,7 +49,7 @@ Aceite: schema inválido, ação desconhecida, revisão obsoleta, duplicação, 
 
 ### D — Rybená demonstrativa
 
-- manter `LibrasAdapter` independente do fornecedor;
+- manter `RybenaAdapter` independente do fornecedor, com Libras e voz como modos do mesmo player;
 - ler `RYBENA_ACCESS_TOKEN` somente no servidor e expor `GET /api/accessibility/rybena` com `no-store`, CORP same-origin, `503` quando não configurado e `405` para outro método;
 - com credencial, aceitar somente HTTPS em `mvp-site-acessibilidade-clickbus-lovat.vercel.app` e recusar localhost, aliases e previews;
 - consultar o endpoint somente após ação explícita e carregar a URL validada do CDN com `mode=api` e `doNotTrack=true`;

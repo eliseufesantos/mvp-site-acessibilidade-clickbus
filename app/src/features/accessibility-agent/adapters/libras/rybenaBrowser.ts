@@ -1,5 +1,5 @@
 import type { AccessibilityPreferences } from '../../../../types';
-import type { LibrasAdapter, LibrasContent, LibrasReceipt, LibrasSnapshot, LibrasState } from './contracts';
+import type { RybenaAdapter, RybenaContent, RybenaMode, RybenaReceipt, RybenaSnapshot, RybenaState } from './contracts';
 
 const RYBENA_SCRIPT_ID = 'rybena-api-script';
 const RYBENA_CONFIG_URL = '/api/accessibility/rybena';
@@ -26,6 +26,7 @@ export interface RybenaRuntime {
   setSpeed(speed: AccessibilityPreferences['librasSpeed']): void;
   stop(): void;
   switchToLibras(): void;
+  switchToVoz(): void;
   translate(text: string): void;
 }
 
@@ -252,19 +253,22 @@ const loadRybenaRuntime: RuntimeLoader = () => {
   return providerLoadPromise;
 };
 
-const initialSnapshot = (): LibrasSnapshot => ({
+const initialSnapshot = (): RybenaSnapshot => ({
   state: 'idle',
+  mode: 'libras',
   message: 'Pronto para carregar a tradução demonstrativa em Libras.',
   attribution: RYBENA_ATTRIBUTION,
   attributionUrl: RYBENA_ATTRIBUTION_URL,
+  simulated: false,
 });
 
-export class RybenaBrowserAdapter implements LibrasAdapter {
+export class RybenaBrowserAdapter implements RybenaAdapter {
   private runtime: RybenaRuntime | null = null;
   private snapshot = initialSnapshot();
   private readonly listeners = new Set<() => void>();
-  private initializePromise: Promise<LibrasReceipt> | null = null;
+  private initializePromise: Promise<RybenaReceipt> | null = null;
   private speed: AccessibilityPreferences['librasSpeed'] = 1;
+  private mode: RybenaMode = 'libras';
 
   constructor(private readonly loadRuntime: RuntimeLoader = loadRybenaRuntime) {}
 
@@ -275,7 +279,7 @@ export class RybenaBrowserAdapter implements LibrasAdapter {
     return () => this.listeners.delete(listener);
   };
 
-  initialize = async (): Promise<LibrasReceipt> => {
+  initialize = async (): Promise<RybenaReceipt> => {
     if (this.runtime && this.snapshot.state !== 'failed') return this.accepted();
     if (this.initializePromise) return this.initializePromise;
 
@@ -289,7 +293,9 @@ export class RybenaBrowserAdapter implements LibrasAdapter {
           }
         });
         runtime.setSpeed(this.speed);
-        this.update('ready', 'Rybená carregada. Escolha um trecho público para traduzir.');
+        if (this.mode === 'voz') runtime.switchToVoz();
+        else runtime.switchToLibras();
+        this.update('ready', 'Rybená carregada. Escolha um trecho público.', this.mode);
         return this.accepted();
       })
       .catch((error: unknown) => this.failed(error))
@@ -300,23 +306,43 @@ export class RybenaBrowserAdapter implements LibrasAdapter {
     return this.initializePromise;
   };
 
-  open = async () => this.withRuntime('ready', 'Player de Libras aberto.', (runtime) => runtime.openPlayer());
-
-  close = async (): Promise<LibrasReceipt> => {
-    if (!this.runtime) return this.accepted('O player de Libras já está fechado.');
-    return this.callRuntime('ready', 'Player de Libras fechado.', (runtime) => runtime.closePlayer());
+  /**
+   * Libras e voz são modos do mesmo player: a troca é `switchToLibras()` ou
+   * `switchToVoz()`, nunca um segundo player.
+   */
+  setMode = async (mode: RybenaMode): Promise<RybenaReceipt> => {
+    if (this.mode === mode && this.runtime) return this.accepted('O player já estava nesse modo.');
+    this.mode = mode;
+    if (!this.runtime) return this.accepted('Modo salvo para a próxima solicitação.');
+    return this.callRuntime(
+      this.snapshot.state,
+      mode === 'voz' ? 'Player em modo de voz.' : 'Player em modo de Libras.',
+      (runtime) => (mode === 'voz' ? runtime.switchToVoz() : runtime.switchToLibras()),
+      mode,
+    );
   };
 
-  translate = async (content: LibrasContent): Promise<LibrasReceipt> => {
+  open = async () => this.withRuntime('ready', 'Player aberto.', (runtime) => runtime.openPlayer());
+
+  close = async (): Promise<RybenaReceipt> => {
+    if (!this.runtime) return this.accepted('O player já está fechado.');
+    return this.callRuntime('ready', 'Player fechado.', (runtime) => runtime.closePlayer());
+  };
+
+  translate = async (content: RybenaContent): Promise<RybenaReceipt> => {
     const text = content.text.trim();
     if (!text) return this.failed(new Error('Escolha um trecho antes de solicitar a tradução.'));
 
     const initialized = await this.initialize();
     if (initialized.status !== 'accepted' || !this.runtime) return initialized;
 
-    return this.callRuntime('translating', 'Traduzindo o trecho selecionado em Libras…', (runtime) => {
+    const message = this.mode === 'voz'
+      ? 'Narrando o trecho selecionado…'
+      : 'Traduzindo o trecho selecionado em Libras…';
+    return this.callRuntime('translating', message, (runtime) => {
       runtime.openPlayer();
-      runtime.switchToLibras();
+      if (this.mode === 'voz') runtime.switchToVoz();
+      else runtime.switchToLibras();
       runtime.setSpeed(this.speed);
       runtime.translate(text);
     });
@@ -328,53 +354,55 @@ export class RybenaBrowserAdapter implements LibrasAdapter {
 
   stop = async () => this.withRuntime('ready', 'Tradução interrompida.', (runtime) => runtime.stop());
 
-  setSpeed = async (speed: AccessibilityPreferences['librasSpeed']): Promise<LibrasReceipt> => {
+  setSpeed = async (speed: AccessibilityPreferences['librasSpeed']): Promise<RybenaReceipt> => {
     this.speed = speed;
     if (!this.runtime) return this.accepted('Velocidade salva para a próxima tradução.');
     return this.callRuntime(this.snapshot.state, 'Velocidade da tradução atualizada.', (runtime) => runtime.setSpeed(speed));
   };
 
   private withRuntime = async (
-    state: LibrasState,
+    state: RybenaState,
     message: string,
     action: (runtime: RybenaRuntime) => void,
-  ): Promise<LibrasReceipt> => {
+  ): Promise<RybenaReceipt> => {
     const initialized = await this.initialize();
     if (initialized.status !== 'accepted' || !this.runtime) return initialized;
     return this.callRuntime(state, message, action);
   };
 
   private callRuntime = (
-    state: LibrasState,
+    state: RybenaState,
     message: string,
     action: (runtime: RybenaRuntime) => void,
-  ): LibrasReceipt => {
+    mode?: RybenaMode,
+  ): RybenaReceipt => {
     if (!this.runtime) return this.failed(new Error('A Rybená ainda não está disponível.'));
     try {
       action(this.runtime);
-      this.update(state, message);
+      this.update(state, message, mode);
       return this.accepted();
     } catch (error) {
       return this.failed(error);
     }
   };
 
-  private update = (state: LibrasState, message: string) => {
-    this.snapshot = { ...this.snapshot, state, message };
+  private update = (state: RybenaState, message: string, mode = this.snapshot.mode) => {
+    this.snapshot = { ...this.snapshot, state, message, mode };
     this.listeners.forEach((listener) => listener());
   };
 
-  private accepted = (message = this.snapshot.message): LibrasReceipt => ({
+  private accepted = (message = this.snapshot.message): RybenaReceipt => ({
     status: 'accepted',
     state: this.snapshot.state,
     message,
   });
 
-  private failed = (error: unknown): LibrasReceipt => {
+  private failed = (error: unknown): RybenaReceipt => {
     const message = error instanceof Error ? error.message : 'A tradução em Libras não pôde ser executada.';
     this.update('failed', message);
     return { status: 'failed', state: 'failed', message };
   };
 }
 
-export const rybenaAdapter = new RybenaBrowserAdapter();
+// A escolha do adaptador vive em `selection.ts`. Nao exporte um singleton
+// daqui: haveria duas instancias do player concorrendo pelo mesmo runtime.

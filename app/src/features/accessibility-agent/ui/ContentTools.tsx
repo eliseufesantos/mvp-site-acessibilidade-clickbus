@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { BookOpenText, Languages, Pause, Play, ScanText, Square, WandSparkles, X } from 'lucide-react';
-import type { AccessibilityPreferences, JourneyStep } from '../../../types';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { BookOpenText, ScanText, WandSparkles } from 'lucide-react';
+import type { JourneyStep } from '../../../types';
 import { Button } from '../../../components/ui/Button';
 import {
   clearRememberedApprovedPageSelection,
@@ -10,20 +10,16 @@ import {
   resolvePublicContent,
   simplifyPublicContent,
 } from '../adapters/clickbus/content';
-import { rybenaAdapter } from '../adapters/libras/rybenaBrowser';
 import { CONTRACT_VERSION } from '../core/contracts';
 import { explainFromGlossary } from '../core/glossary';
 import { createRequestId, requestExplanation, requestSimplification } from '../core/plannerClient';
-import { LIBRAS_SPEEDS } from '../core/preferences';
 
 interface ContentToolsProps {
-  librasSpeed: AccessibilityPreferences['librasSpeed'];
-  onLibrasSpeedChange(speed: AccessibilityPreferences['librasSpeed']): boolean;
   onSelectionModeChange?(active: boolean): void;
   page: JourneyStep;
 }
 
-export function ContentTools({ librasSpeed, onLibrasSpeedChange, onSelectionModeChange, page }: ContentToolsProps) {
+export function ContentTools({ onSelectionModeChange, page }: ContentToolsProps) {
   const targets = useMemo(() => getPublicContentTargets(page), [page]);
   const [contentRef, setContentRef] = useState(targets[0]?.id ?? '');
   const [term, setTerm] = useState('');
@@ -31,20 +27,17 @@ export function ContentTools({ librasSpeed, onLibrasSpeedChange, onSelectionMode
   const [simplified, setSimplified] = useState('');
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState<'explain' | 'simplify' | null>(null);
-  const [librasFeedback, setLibrasFeedback] = useState('');
   const [selectingPage, setSelectingPage] = useState(false);
   const requestRef = useRef<AbortController | null>(null);
   const selectionModeRef = useRef(false);
   const selectionModeCallbackRef = useRef(onSelectionModeChange);
   const selected = resolvePublicContent(page, contentRef) ?? targets[0] ?? null;
-  const libras = useSyncExternalStore(rybenaAdapter.subscribe, rybenaAdapter.getSnapshot, rybenaAdapter.getSnapshot);
 
   useEffect(() => {
     setContentRef(targets[0]?.id ?? '');
     setExplanation('');
     setSimplified('');
     setStatus('');
-    setLibrasFeedback('');
     requestRef.current?.abort();
   }, [page, targets]);
 
@@ -205,38 +198,13 @@ export function ContentTools({ librasSpeed, onLibrasSpeedChange, onSelectionMode
     }
   };
 
-  const runLibrasAction = async (action: () => Promise<{ message: string }>) => {
-    const receipt = await action();
-    setLibrasFeedback(receipt.message);
-  };
-
-  const translateToLibras = async () => {
-    if (!selected) {
-      setLibrasFeedback('Esta etapa não oferece um trecho público para tradução.');
-      return;
-    }
-    await runLibrasAction(() => rybenaAdapter.translate({ id: selected.id, text: selected.text }));
-  };
-
-  const changeLibrasSpeed = async (value: string) => {
-    const speed = Number(value) as AccessibilityPreferences['librasSpeed'];
-    if (!LIBRAS_SPEEDS.includes(speed)) return;
-    onLibrasSpeedChange(speed);
-    await runLibrasAction(() => rybenaAdapter.setSpeed(speed));
-  };
-
-  const librasLoaded = libras.state === 'ready' || libras.state === 'translating' || libras.state === 'paused';
-
   return (
     <div className="content-tools">
-      <header className="content-tools__intro">
-        <h3>Entenda qualquer trecho</h3>
-        <p>Selecione um texto na página para explicar ou simplificar.</p>
-      </header>
+      <p className="content-tools__intro">Selecione um texto na página para explicar ou simplificar.</p>
       {status ? <p className="assistant-message content-tools__status" role="status">{status}</p> : null}
 
       <section className="a11y-section" aria-labelledby="explain-title">
-        <div className="a11y-section__heading"><h3 id="explain-title"><BookOpenText aria-hidden="true" /> Explicar termo</h3><span>Não executa ajustes</span></div>
+        <div className="a11y-section__heading"><h4 id="explain-title"><BookOpenText aria-hidden="true" /> Explicar termo</h4><span>Não executa ajustes</span></div>
         <p>Termos conhecidos são explicados localmente. Outros termos só usam o trecho público escolhido.</p>
         <Button className="page-selection-button" variant="quiet" aria-pressed={selectingPage} onClick={startPageSelection} disabled={targets.length === 0}>
           <ScanText aria-hidden="true" />
@@ -249,7 +217,7 @@ export function ContentTools({ librasSpeed, onLibrasSpeedChange, onSelectionMode
       </section>
 
       <section className="a11y-section" aria-labelledby="simplify-title">
-        <div className="a11y-section__heading"><h3 id="simplify-title"><WandSparkles aria-hidden="true" /> Simplificar trecho</h3><span>Original preservado</span></div>
+        <div className="a11y-section__heading"><h4 id="simplify-title"><WandSparkles aria-hidden="true" /> Simplificar trecho</h4><span>Original preservado</span></div>
         <label className="field-label" htmlFor="content-to-simplify">Trecho público desta tela</label>
         <select id="content-to-simplify" value={selected?.id ?? ''} onChange={(event) => { setContentRef(event.target.value); setSimplified(''); }} disabled={targets.length === 0}>
           {targets.length === 0 ? <option value="">Nenhum trecho disponível</option> : targets.map((target) => <option key={target.id} value={target.id}>{target.label}</option>)}
@@ -259,30 +227,6 @@ export function ContentTools({ librasSpeed, onLibrasSpeedChange, onSelectionMode
         {simplified ? <div className="content-result" aria-live="polite"><strong>Versão simplificada</strong><p>{simplified}</p></div> : null}
       </section>
 
-      <section className="libras-controls" aria-labelledby="libras-title">
-        <div className="libras-controls__heading">
-          <div><h3 id="libras-title"><Languages aria-hidden="true" /> Tradução em Libras</h3><p>O player externo será carregado somente quando você solicitar uma tradução.</p></div>
-          <button type="button" aria-label="Fechar player de Libras" onClick={() => void runLibrasAction(rybenaAdapter.close)} disabled={!librasLoaded}><X aria-hidden="true" /></button>
-        </div>
-        <label htmlFor="content-to-libras">Trecho público para traduzir</label>
-        <select id="content-to-libras" value={selected?.id ?? ''} onChange={(event) => setContentRef(event.target.value)} disabled={targets.length === 0}>
-          {targets.length === 0 ? <option value="">Nenhum trecho disponível nesta etapa</option> : targets.map((target) => <option key={target.id} value={target.id}>{target.label}</option>)}
-        </select>
-        <label htmlFor="libras-speed">Velocidade</label>
-        <select id="libras-speed" value={librasSpeed} onChange={(event) => void changeLibrasSpeed(event.target.value)}>
-          {LIBRAS_SPEEDS.map((speed) => <option key={speed} value={speed}>{speed === 1 ? 'Normal' : `${speed}×`}</option>)}
-        </select>
-        <Button fullWidth onClick={() => void translateToLibras()} disabled={!selected || libras.state === 'loading'}>
-          <Languages aria-hidden="true" /> {libras.state === 'loading' ? 'Carregando Rybená…' : 'Traduzir trecho em Libras'}
-        </Button>
-        <div className="libras-controls__row" aria-label="Controles da tradução">
-          <Button variant="quiet" onClick={() => void runLibrasAction(rybenaAdapter.pause)} disabled={libras.state !== 'translating'}><Pause aria-hidden="true" /> Pausar</Button>
-          <Button variant="quiet" onClick={() => void runLibrasAction(rybenaAdapter.resume)} disabled={libras.state !== 'paused'}><Play aria-hidden="true" /> Retomar</Button>
-          <button type="button" aria-label="Parar tradução" onClick={() => void runLibrasAction(rybenaAdapter.stop)} disabled={libras.state !== 'translating' && libras.state !== 'paused'}><Square aria-hidden="true" /></button>
-        </div>
-        <p className={`rybena-status${libras.state === 'failed' ? ' rybena-status--error' : ''}`} role="status">{librasFeedback || libras.message}</p>
-        <a href={libras.attributionUrl} target="_blank" rel="noreferrer">{libras.attribution}</a>
-      </section>
       <p className="privacy-note">As explicações aparecem separadamente e não substituem o texto original. Nenhum dado de passageiro, pagamento, checkout ou confirmação é enviado.</p>
     </div>
   );

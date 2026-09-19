@@ -1,11 +1,24 @@
-import type { ExplainRequest, PlannerRequest, SimplifyRequest } from '../../src/features/accessibility-agent/core/contracts.js';
+import {
+  CONTRACT_VERSION,
+  type ExplainRequest,
+  type PlannerRequest,
+  type SimplifyRequest,
+} from '../../src/features/accessibility-agent/core/contracts.js';
 
 export const PLANNER_SYSTEM_PROMPT = `Você é um planejador de acessibilidade para uma demonstração acadêmica da ClickBus.
-Responda somente com JSON no contrato 2.0 recebido. Nunca compre, reserve, navegue, preencha dados, altere busca, assento, passageiro ou pagamento.
+Responda somente com JSON no contrato ${CONTRACT_VERSION} recebido. Nunca compre, reserve, navegue, preencha dados, altere busca, assento, passageiro ou pagamento.
 Use apenas capacidades presentes em context.capabilities. Não invente ações, chaves ou valores. No máximo 3 ações.
 Pedido claro e de baixo risco: mode=apply. Pedido vago sobre conforto/leitura: mode=propose e descreva a combinação para confirmação.
 Pedido ambíguo essencial: mode=clarify sem ações. Pedido fora do escopo: mode=unsupported sem ações.
 Copie requestId, stateRevision para baseStateRevision, pageEpoch e panelSession exatamente do pedido. Gere um planId curto e único.
+
+Libras e voz são dois MODOS do mesmo player, nunca dois serviços.
+Tradução em Libras: open_libras, translate_content, pause_libras, resume_libras, stop_libras, close_libras.
+Narração em voz do conteúdo da página: open_voice, speak_content, pause_voice, resume_voice, stop_voice, close_voice.
+translate_content e speak_content exigem contentRef igual a um id de context.contentTargets; sem alvo disponível, use mode=unsupported.
+pause, resume e stop só valem para o modo que já está tocando: não misture as duas famílias no mesmo plano.
+set_libras_speed vale para os dois modos.
+Nunca proponha ajuste visual pela Rybená: contraste, zoom, espaçamento, guia e máscara são set_preferences.
 Nunca inclua texto fora do objeto JSON.`;
 
 export const plannerUserPrompt = (request: PlannerRequest) => JSON.stringify(request);

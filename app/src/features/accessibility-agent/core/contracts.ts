@@ -9,7 +9,14 @@ import {
   type PreferencePatch,
 } from './preferences.js';
 
-export const CONTRACT_VERSION = '2.0' as const;
+/**
+ * 2.1 acrescentou as ações de voz. O contrato não tem artefato persistido — as
+ * preferências ficam em `clickbus-a11y-v3`, versionadas à parte —, então a
+ * "migração" é simplesmente rejeitar o que não é desta versão: tanto o servidor
+ * quanto o executor local revalidam `contractVersion` antes de qualquer efeito,
+ * e um plano 2.0 em voo é descartado em vez de aplicado pela metade.
+ */
+export const CONTRACT_VERSION = '2.1' as const;
 
 export type ActionType =
   | 'set_preferences'
@@ -22,7 +29,16 @@ export type ActionType =
   | 'pause_libras'
   | 'resume_libras'
   | 'stop_libras'
-  | 'set_libras_speed';
+  | 'set_libras_speed'
+  // Voz: mesmo player, outro modo. As famílias são separadas para que o
+  // planejador expresse a intenção da pessoa e para que a capacidade de voz
+  // possa faltar sem derrubar Libras.
+  | 'open_voice'
+  | 'close_voice'
+  | 'speak_content'
+  | 'pause_voice'
+  | 'resume_voice'
+  | 'stop_voice';
 
 export type PlanAction =
   | { type: 'set_preferences'; patch: PreferencePatch }
@@ -35,7 +51,13 @@ export type PlanAction =
   | { type: 'pause_libras' }
   | { type: 'resume_libras' }
   | { type: 'stop_libras' }
-  | { type: 'set_libras_speed'; speed: AccessibilityPreferences['librasSpeed'] };
+  | { type: 'set_libras_speed'; speed: AccessibilityPreferences['librasSpeed'] }
+  | { type: 'open_voice' }
+  | { type: 'close_voice' }
+  | { type: 'speak_content'; contentRef: string }
+  | { type: 'pause_voice' }
+  | { type: 'resume_voice' }
+  | { type: 'stop_voice' };
 
 export interface ContentTargetMeta {
   id: string;
@@ -110,7 +132,11 @@ const actionTypes: readonly ActionType[] = [
   'set_preferences', 'apply_comfortable_reading', 'undo_preferences', 'reset_preferences',
   'open_libras', 'close_libras', 'translate_content', 'pause_libras', 'resume_libras',
   'stop_libras', 'set_libras_speed',
+  'open_voice', 'close_voice', 'speak_content', 'pause_voice', 'resume_voice', 'stop_voice',
 ];
+
+/** Ações que exigem um `contentRef` de `context.contentTargets`. */
+export const CONTENT_BOUND_ACTIONS = ['translate_content', 'speak_content'] as const;
 
 const parsePreferences = (value: unknown): AccessibilityPreferences | null => {
   if (!isRecord(value) || Object.keys(value).length !== PREFERENCE_KEYS.length) return null;
@@ -125,9 +151,9 @@ export const parsePlanAction = (value: unknown): PlanAction | null => {
     const patch = parsePreferencePatch(value.patch);
     return patch ? { type: 'set_preferences', patch } : null;
   }
-  if (value.type === 'translate_content') {
+  if (value.type === 'translate_content' || value.type === 'speak_content') {
     return hasOnlyKeys(value, ['type', 'contentRef']) && isShortString(value.contentRef, 100)
-      ? { type: 'translate_content', contentRef: value.contentRef as string } : null;
+      ? { type: value.type, contentRef: value.contentRef as string } as PlanAction : null;
   }
   if (value.type === 'set_libras_speed') {
     return hasOnlyKeys(value, ['type', 'speed']) && LIBRAS_SPEEDS.includes(value.speed as never)
@@ -268,7 +294,7 @@ const planActionJsonSchema = {
     },
     contentRef: {
       type: 'string',
-      description: 'Obrigatório e exclusivo de translate_content. Use um id de context.contentTargets.',
+      description: 'Obrigatório e exclusivo de translate_content e speak_content. Use um id de context.contentTargets.',
     },
     speed: {
       type: 'number',
