@@ -277,6 +277,21 @@ checkout. O responsável optou por manter Libras e Voz em todas as etapas. A
 exclusão de dados de checkout continua valendo para o planejador de IA e para
 as ferramentas de conteúdo, e não alcança essa seleção livre.
 
+### Resultado observado em 19/09/2026 — chat unificado, contrato 2.2
+
+| Caso | Status | Evidência |
+|---|---|---|
+| um chat atende ajuste e dicionário | PASS | quatro casos medidos no navegador com planejador substituído e executor real |
+| termo do glossário responde sem rede | PASS | só `/plan` na aba de rede; origem "Conteúdo revisado deste protótipo" |
+| termo desconhecido cai em `/explain` com origem declarada | PASS | `/plan` e `/explain`; origem "Gerado por IA — confira antes de usar" |
+| simplificação usa a versão revisada local | PASS | só `/plan` |
+| roteamento vem do plano, não de heurística de string | PASS | ações `explain_term` e `simplify_content` no contrato 2.2 |
+| capacidade ausente recusada antes de efeito | PASS | teste |
+| ação de conteúdo não toca no player nem em preferências | PASS | teste |
+| seleção na página restrita a alvos públicos | PASS | hook `usePageSelection`, mesma restrição da superfície anterior |
+| axe, reflow, breakpoints, foco, teclado, jornada, endpoints | PASS | 0 violações, 0 px, 40 testes |
+| qualidade semântica da explicação por IA | NOT RUN | T1.8 segue aberta; por isso o glossário vem primeiro e a origem é declarada |
+
 ## 8. Registro
 
 ```text

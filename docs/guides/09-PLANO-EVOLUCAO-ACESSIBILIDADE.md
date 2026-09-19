@@ -1181,6 +1181,67 @@ código a aplica — capacidades do planejador e alvos públicos registrados —
 | matrizes de correção aumentam a separação | **PASS** — coberto por teste, eficácia verificada por reversão |
 | jornada, guia/máscara, endpoints | **PASS** |
 
+### 7.9 Um chat só, para ajuste e para dicionário — 19/09/2026
+
+Pergunta do responsável: o chat que pede alterações não poderia ser também o
+chat de dicionário? Sim — e a arquitetura já estava quase lá, porque o
+planejador **já recebia `contentTargets`** no contexto. Faltava o contrato
+saber falar de conteúdo.
+
+#### Por que não foi feito com heurística de string
+
+O caminho óbvio seria detectar "o que é…" no cliente e mandar para `/explain`.
+Isso quebraria a regra da T2.4: **o roteamento vem do plano, não de heurística
+de string no cliente**. O contrato subiu para 2.2 com `explain_term { term }` e
+`simplify_content { contentRef }`, e o planejador escolhe.
+
+#### Determinístico antes de rede
+
+O executor tenta o glossário e a simplificação revisada **antes** de qualquer
+chamada. Medido no navegador, com o planejador substituído e o executor real:
+
+| Pedido | Chamadas a `/api/` | Origem declarada |
+|---|---|---|
+| termo do glossário | só `/plan` | Conteúdo revisado deste protótipo |
+| termo fora do glossário | `/plan` e `/explain` | Gerado por IA — confira antes de usar |
+| simplificar trecho | só `/plan` | Conteúdo revisado deste protótipo |
+| ajuste visual | só `/plan` | — aplica, não responde texto |
+
+Isso importa por dois motivos além de velocidade: os nove termos do glossário
+não gastam cota, e a explicação por IA — cuja qualidade semântica segue
+`PARCIAL` pela T1.8 — vira o caminho de exceção, não o padrão. A interface
+declara a origem em cada resposta.
+
+#### O que saiu e o que entrou
+
+`ContentTools.tsx` foi removido. A superfície de Conteúdo não existe mais: a
+grade 2×2 passou a ser **Libras, Voz, Ajustes visuais e Sobre**, e o link
+separado de "Sobre" sumiu junto.
+
+O modo de seleção de texto virou o hook `usePageSelection`, usado pelo chat —
+apontar para um trecho é a única coisa que digitar não resolve. O botão vive ao
+lado do microfone, e a seleção continua **restrita aos alvos públicos
+registrados**, que é o que mantém checkout e dados de passageiro fora das
+ferramentas de conteúdo.
+
+Capacidades enviadas ao planejador: `explain_term` vai sempre, porque o
+glossário responde por termo; `simplify_content` só quando a etapa tem trecho
+público.
+
+#### Validação
+
+| Verificação | Resultado |
+|---|---|
+| typecheck, build, suíte, typecheck de `api/` | **PASS** — 40 testes |
+| chat responde termo do glossário sem tocar na rede | **PASS** |
+| chat cai em `/explain` só para termo desconhecido, declarando a origem | **PASS** |
+| chat simplifica trecho com a versão revisada local | **PASS** |
+| chat continua aplicando ajuste visual | **PASS** |
+| capacidade ausente recusada antes de qualquer efeito | **PASS** — coberto por teste |
+| ação de conteúdo não toca no player nem em preferências | **PASS** — coberto por teste |
+| axe em 5 telas e no painel em 5 larguras | **PASS** — 0 violações |
+| reflow, breakpoints, foco, teclado, jornada | **PASS** — 0 px de overflow, 0 erro de console |
+
 ## 8. Fase 3 — Validação e evidências
 
 ### T3.1 — Regressão integral

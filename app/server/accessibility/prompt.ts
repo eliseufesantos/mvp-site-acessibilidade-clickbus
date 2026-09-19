@@ -19,6 +19,12 @@ translate_content e speak_content exigem contentRef igual a um id de context.con
 pause, resume e stop só valem para o modo que já está tocando: não misture as duas famílias no mesmo plano.
 set_libras_speed vale para os dois modos.
 Nunca proponha ajuste visual pela Rybená: contraste, zoom, espaçamento, guia e máscara são set_preferences.
+
+Perguntas sobre o significado de uma palavra ou sobre um trecho da página também são suas.
+"o que é viação", "não entendi 'embarque'": explain_term com term igual à palavra perguntada, sem aspas.
+"explica isso mais simples", "resume esse texto": simplify_content com contentRef de context.contentTargets.
+Essas duas respondem com texto e não alteram a tela, então use mode=apply: não há o que confirmar.
+Não explique o termo você mesmo na mensagem: emita explain_term e deixe a explicação para a ferramenta.
 Nunca inclua texto fora do objeto JSON.`;
 
 export const plannerUserPrompt = (request: PlannerRequest) => JSON.stringify(request);

@@ -556,6 +556,8 @@ await test('executor validates revision and applies each plan only once', async 
     undoPreferences: () => false,
     resetPreferences: () => false,
     resolveContent: () => null,
+    explainTerm: async () => ({ text: 'nao usado', source: 'local' as const }),
+    simplifyContent: async () => ({ text: 'nao usado', source: 'local' as const }),
     rybena: libras as RybenaAdapter,
     capabilities: ['set_preferences'] as const,
   };
@@ -782,8 +784,8 @@ await test('the planner prompt announces the version the validator enforces', ()
   }
 });
 
-await test('contract 2.1 carries the voice actions and rejects the previous version', () => {
-  assert(CONTRACT_VERSION === '2.1');
+await test('contract 2.2 carries the voice and content actions and rejects the previous version', () => {
+  assert(CONTRACT_VERSION === '2.2');
   for (const type of ['open_voice', 'close_voice', 'speak_content', 'pause_voice', 'resume_voice', 'stop_voice']) {
     assert(ALL_ACTION_TYPES.includes(type as never), `${type} deveria estar no contrato`);
   }
@@ -795,15 +797,23 @@ await test('contract 2.1 carries the voice actions and rejects the previous vers
   assert(parsePlanAction({ type: 'speak_content', contentRef: 'a', extra: 1 }) === null);
   assert(parsePlanAction({ type: 'narrate_everything' }) === null, 'ação inventada é rejeitada');
 
-  // Um plano 2.0 em voo não pode ser aplicado pela metade: é descartado.
-  const legacy = { ...plannerResponseBody('request-legacy'), contractVersion: '2.0' };
-  assert(plannerResponseSchema.safeParse(legacy).success === false, 'plano 2.0 deve ser rejeitado');
+  for (const type of ['explain_term', 'simplify_content']) {
+    assert(ALL_ACTION_TYPES.includes(type as never), `${type} deveria estar no contrato`);
+  }
+  equal(parsePlanAction({ type: 'explain_term', term: 'viação' }), { type: 'explain_term', term: 'viação' });
+  assert(parsePlanAction({ type: 'explain_term' }) === null, 'explain_term sem term é inválido');
+  assert(parsePlanAction({ type: 'explain_term', term: 'x'.repeat(121) }) === null, 'term respeita o teto de explain');
+  equal(parsePlanAction({ type: 'simplify_content', contentRef: 'search-help' }), { type: 'simplify_content', contentRef: 'search-help' });
+
+  // Um plano de versão anterior em voo não pode ser aplicado pela metade.
+  const legacy = { ...plannerResponseBody('request-legacy'), contractVersion: '2.1' };
+  assert(plannerResponseSchema.safeParse(legacy).success === false, 'plano de versão anterior deve ser rejeitado');
   assert(plannerResponseSchema.safeParse(plannerResponseBody('request-current')).success === true);
 
   // O esquema enviado ao provedor deriva das mesmas constantes.
   const schemaTypes = PLANNER_RESPONSE_JSON_SCHEMA.properties.actions.items.properties.type.enum;
   equal([...schemaTypes].sort(), [...ALL_ACTION_TYPES].sort());
-  equal(PLANNER_RESPONSE_JSON_SCHEMA.properties.contractVersion.enum, ['2.1']);
+  equal(PLANNER_RESPONSE_JSON_SCHEMA.properties.contractVersion.enum, ['2.2']);
 });
 
 await test('executor routes voice and Libras to the same player in the right mode', async () => {
@@ -835,6 +845,8 @@ await test('executor routes voice and Libras to the same player in the right mod
     undoPreferences: () => false,
     resetPreferences: () => false,
     resolveContent: (id: string) => resolvePublicContent('search', id),
+    explainTerm: async () => ({ text: 'nao usado', source: 'local' as const }),
+    simplifyContent: async () => ({ text: 'nao usado', source: 'local' as const }),
     rybena: traced,
     capabilities,
   };
@@ -867,6 +879,71 @@ await test('executor routes voice and Libras to the same player in the right mod
   assert(!calls.includes('mode:voz;mode:voz'));
 });
 
+await test('content actions answer with text and prefer the deterministic path', async () => {
+  const chamadas: string[] = [];
+  const base = {
+    requestId: 'request-conteudo',
+    getStateRevision: () => 0,
+    getPageEpoch: () => 1,
+    getPanelSession: () => 1,
+    getPreferences: () => getDefaultPreferences(),
+    applyPreferences: () => false,
+    undoPreferences: () => false,
+    resetPreferences: () => false,
+    resolveContent: (id: string) => resolvePublicContent('search', id),
+    explainTerm: async (term: string) => {
+      const conhecido = explainFromGlossary(term);
+      chamadas.push(conhecido ? 'glossario' : 'rede:explain');
+      return conhecido
+        ? { text: conhecido.explanation, source: 'local' as const }
+        : { text: 'explicacao remota', source: 'service' as const };
+    },
+    simplifyContent: async (content: { id: string; text: string }) => {
+      const local = simplifyPublicContent('search', content.id);
+      chamadas.push(local ? 'local' : 'rede:simplify');
+      return local
+        ? { text: local, source: 'local' as const }
+        : { text: 'simplificacao remota', source: 'service' as const };
+    },
+    rybena: new RybenaDevelopmentAdapter({ delay: async () => undefined, schedule: () => () => undefined }),
+    capabilities: ['explain_term', 'simplify_content'] as const,
+  };
+  const executor = new AccessibilityExecutor();
+  const plano = (planId: string, actions: unknown[]) => executor.execute({
+    ...plannerResponseBody('request-conteudo'), planId, mode: 'apply', actions,
+  }, base);
+
+  // Termo do glossario: responde local, sem tocar na rede.
+  const conhecido = await plano('plan-glossario', [{ type: 'explain_term', term: 'viação' }]);
+  assert(conhecido.status === 'applied');
+  assert(conhecido.actions[0].answer?.source === 'local');
+  assert(conhecido.actions[0].answer?.text.includes('empresa responsável'), conhecido.actions[0].answer?.text);
+
+  // Termo desconhecido: so entao cai na rede, e a origem e declarada.
+  const desconhecido = await plano('plan-rede', [{ type: 'explain_term', term: 'nefelibata' }]);
+  assert(desconhecido.actions[0].answer?.source === 'service');
+  assert(desconhecido.actions[0].message.includes('IA'), desconhecido.actions[0].message);
+
+  // Simplificacao revisada local tem precedencia.
+  const simples = await plano('plan-simples', [{ type: 'simplify_content', contentRef: 'search-help' }]);
+  assert(simples.actions[0].answer?.source === 'local');
+
+  equal(chamadas, ['glossario', 'rede:explain', 'local']);
+
+  // Conteudo nao altera preferencia nem toca no player.
+  assert(base.rybena.getSnapshot().state === 'idle', 'o player não pode ter sido acionado');
+
+  // Sem a capacidade, recusa antes de qualquer efeito.
+  let recusado = false;
+  try {
+    await executor.execute({
+      ...plannerResponseBody('request-conteudo'), planId: 'plan-sem-cap', mode: 'apply',
+      actions: [{ type: 'simplify_content', contentRef: 'search-help' }],
+    }, { ...base, capabilities: ['explain_term'] as const });
+  } catch (error) { recusado = error instanceof PlanExecutionError; }
+  assert(recusado, 'simplify_content sem capacidade deve ser recusado');
+});
+
 await test('executor refuses player actions that are not in the capability list', async () => {
   const player = new RybenaDevelopmentAdapter({ delay: async () => undefined, schedule: () => () => undefined });
   const dependencies = {
@@ -879,6 +956,8 @@ await test('executor refuses player actions that are not in the capability list'
     undoPreferences: () => false,
     resetPreferences: () => false,
     resolveContent: (id: string) => resolvePublicContent('search', id),
+    explainTerm: async () => ({ text: 'nao usado', source: 'local' as const }),
+    simplifyContent: async () => ({ text: 'nao usado', source: 'local' as const }),
     rybena: player,
     // Voz ausente de propósito: é o caso de "capacidade indisponível".
     capabilities: ['open_libras'] as const,
@@ -937,6 +1016,8 @@ await test('the Rybena port never exposes the vendor visual controls to the exec
     undoPreferences: () => false,
     resetPreferences: () => false,
     resolveContent: (id: string) => resolvePublicContent('search', id),
+    explainTerm: async () => ({ text: 'nao usado', source: 'local' as const }),
+    simplifyContent: async () => ({ text: 'nao usado', source: 'local' as const }),
     rybena: adapter,
     capabilities: [
       'set_preferences', 'apply_comfortable_reading', 'open_libras', 'translate_content',

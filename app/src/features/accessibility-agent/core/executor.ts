@@ -14,6 +14,8 @@ export interface ActionReceipt {
   action: ActionType;
   status: ActionReceiptStatus;
   message: string;
+  /** Resposta em texto de `explain_term` e `simplify_content`. */
+  answer?: { text: string; source: 'local' | 'service' };
 }
 
 export interface ExecutionReceipt {
@@ -33,6 +35,10 @@ export interface ExecutorDependencies {
   undoPreferences(): boolean;
   resetPreferences(): boolean;
   resolveContent(id: string): { id: string; text: string } | null;
+  /** Deve tentar o glossário determinístico antes de qualquer rede. */
+  explainTerm(term: string): Promise<{ text: string; source: 'local' | 'service' }>;
+  /** Deve tentar a simplificação revisada local antes de qualquer rede. */
+  simplifyContent(content: { id: string; text: string }): Promise<{ text: string; source: 'local' | 'service' }>;
   rybena: RybenaAdapter;
   capabilities: readonly ActionType[];
 }
@@ -146,7 +152,7 @@ export class AccessibilityExecutor {
     const preparedContent = new Map<string, { id: string; text: string }>();
     for (const action of plan.actions) {
       if (!dependencies.capabilities.includes(action.type)) throw new PlanExecutionError('O plano pediu uma capacidade indisponível.');
-      if (action.type === 'translate_content' || action.type === 'speak_content') {
+      if (action.type === 'translate_content' || action.type === 'speak_content' || action.type === 'simplify_content') {
         const content = dependencies.resolveContent(action.contentRef);
         if (!content || content.text.length > 1500) throw new PlanExecutionError('O trecho não está disponível nesta página.');
         preparedContent.set(action.contentRef, content);
@@ -165,6 +171,30 @@ export class AccessibilityExecutor {
               ? dependencies.undoPreferences()
               : dependencies.resetPreferences();
         actions.push({ action: action.type, status: changed ? 'applied' : 'no_change', message: visualMessage(action, changed) });
+        continue;
+      }
+
+      // Conteúdo responde com texto: não altera a tela e não passa pelo player.
+      if (action.type === 'explain_term' || action.type === 'simplify_content') {
+        try {
+          const answer = action.type === 'explain_term'
+            ? await dependencies.explainTerm(action.term)
+            : await dependencies.simplifyContent(preparedContent.get(action.contentRef)!);
+          actions.push({
+            action: action.type,
+            status: 'applied',
+            message: answer.source === 'local'
+              ? 'Resposta do conteúdo revisado deste protótipo.'
+              : 'Resposta gerada por IA. Confira antes de usar.',
+            answer,
+          });
+        } catch (error) {
+          actions.push({
+            action: action.type,
+            status: 'failed',
+            message: error instanceof Error ? error.message : 'Não foi possível responder agora.',
+          });
+        }
         continue;
       }
 

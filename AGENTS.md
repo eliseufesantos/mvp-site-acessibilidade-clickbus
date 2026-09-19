@@ -35,7 +35,7 @@ Snapshot operacional atualizado em **19/09/2026**:
 - HEAD: `91b8f7d` mais a Fase 2 e T0.3 na árvore de trabalho, ainda **não commitadas**;
 - aplicação React 18 + TypeScript estrito + Vite 6;
 - typecheck do app, typecheck das funções de `api/` pelo tsconfig da raiz e build Vite: aprovados;
-- suíte do agente de acessibilidade: 39 testes aprovados, incluindo contrato do adaptador Gemini com transporte falso, origem, limite de corpo, quota local, handler/URL Rybená, contrato do adaptador com runtime falso, adaptador de desenvolvimento, contrato 2.1 e a garantia de que o executor não toca nos métodos visuais da Rybená;
+- suíte do agente de acessibilidade: 40 testes aprovados, incluindo contrato do adaptador Gemini com transporte falso, origem, limite de corpo, quota local, handler/URL Rybená, contrato do adaptador com runtime falso, adaptador de desenvolvimento, contrato 2.1 e a garantia de que o executor não toca nos métodos visuais da Rybená;
 - adaptador REST nativo do Gemini implementado no servidor com JSON estruturado, chave somente em header, teto de 4.096 tokens de saída (a folga é para os tokens de raciocínio, que contam nesse limite) e `thinkingLevel: 'LOW'` apenas para a família Gemini 3, conforme o enum do discovery v1beta;
 - o esquema de saída real é enviado em `responseJsonSchema`, derivado das mesmas constantes dos validadores; ele orienta o modelo e **não** substitui a revalidação no servidor nem no executor;
 - **retry:** uma única repetição, restrita a HTTP 503 e 429, respeitando `retry-after` com teto de 2 s e abortando junto com o pedido. Esses dois status são recusas anteriores à geração, então repetir não duplica custo. Qualquer outro status não repete. Não introduza retry em 4xx determinístico, nem laço, nem polling;
@@ -54,7 +54,7 @@ Snapshot operacional atualizado em **19/09/2026**:
 - adaptador de desenvolvimento de Libras e voz implementado e exercitado no navegador em 19/09; ele percorre a máquina de estados sem rede, exibe aviso permanente de simulação e está ausente do bundle de produção;
 - painel de acessibilidade reconstruído no padrão **lançador + superfície** em 19/09: acionador circular no header, grade 2×2 de cartões (Libras, Voz, Ajustes visuais, Conteúdo), "Sobre acessibilidade" como link e chat fixo na base. O `tablist` de três abas não existe mais;
 - preferências promovidas a **v4** com saturação, correção de cores e fonte para dislexia, portadas para o executor local em vez de delegadas à Rybená — ver a decisão na seção 7.4 do plano;
-- contrato do agente na versão **2.1**, com as seis ações de voz. O servidor responde `400` a um pedido `2.0` e o executor rejeita um plano `2.0` antes de qualquer efeito;
+- contrato do agente na versão **2.2**, com as seis ações de voz e as duas de conteúdo. O servidor responde `400` a um pedido `2.0` e o executor rejeita um plano `2.0` antes de qualquer efeito;
 - regressão integral de 19/09 com axe-core 4.10.2: **0 violações** em 5 telas e com o painel aberto em 1440, 821, 820, 390 e 320 px; 0 px de overflow, inclusive em 320 px com texto a 150% e alto contraste; jornada completa sem erro de console. A contagem de `passes` caiu de 304 para 295 porque `aria-required-children` e `aria-required-parent` ficaram **inaplicáveis** com a saída do `tablist` — nenhuma regra passou de aprovada a violada;
 - `.tmp-chrome-qa/` está ignorado e não deve voltar a ser versionado.
 
@@ -128,6 +128,8 @@ npx --yes pnpm@10.28.0 --dir app test:accessibility
 - O símbolo do acionador é o pictograma universal de acesso, desenhado em `components/accessibility/UniversalAccessIcon.tsx`. Não troque pelo ícone de cadeira de rodas do Lucide: ele representa mobilidade e comunica menos do que o painel oferece.
 - O contador de ajustes ativos precisa ser estilizado pela classe do próprio acionador (`.accessibility-plugin__trigger-badge`), nunca por um seletor ancorado em `.accessibility-plugin`: o portal tira o botão de dentro do host, e um seletor de ancestral deixa de casar em silêncio.
 - **Libras e Voz não têm superfície intermediária.** Os cartões abrem a aplicação da Rybená, e a seleção do texto acontece na interface dela.
+- **Um único chat atende ajuste e dicionário.** "aumente o texto" e "o que é viação" entram pelo mesmo campo. Quem decide o destino é o **plano**, com as ações `explain_term` e `simplify_content` — nunca heurística de string no cliente. Não recrie uma superfície de Conteúdo separada.
+- O executor tenta o **glossário determinístico e a simplificação revisada antes de qualquer rede**. Um termo conhecido responde na hora, sem gastar cota e sem depender da IA, cuja qualidade semântica segue `PARCIAL`. A origem da resposta é declarada na interface: conteúdo revisado do protótipo ou gerado por IA.
 - O acionador de acessibilidade fica no **`Header`**, no fim da barra, e usa o pictograma universal de acessibilidade. Ele é renderizado pelo `AccessibilityPlugin` e projetado para o encaixe `#accessibility-trigger-slot` por `createPortal`, para que o estado do painel não precise subir para o `App`. Se o encaixe faltar, o acionador é renderizado no próprio host: esse controle nunca pode simplesmente sumir. O `Header` é `position: sticky`, então ele continua alcançável durante a rolagem — se a barra deixar de ser sticky, o acionador precisa voltar a ser fixo.
 - no desktop o painel é uma região não modal ancorada abaixo do header, à direita; no mobile é um diálogo modal em tela cheia.
 - o painel é lançador + superfície: uma superfície ativa por vez, `root` por padrão, e abrir sempre começa na raiz. A raiz é uma grade 2×2 de cartões — Libras, Voz, Ajustes visuais e Conteúdo — com "Sobre acessibilidade" como link logo abaixo. Cartão que navega é `<button>`, **nunca** `role="tab"`; não recrie o `tablist`.
@@ -149,7 +151,7 @@ O núcleo local funciona sem IA e independentemente da Rybená:
 - a correção de cores é aproximação, não simulação clínica, e não substitui contraste adequado nem outro sinal além da cor;
 - preset de leitura confortável, restauração e desfazer de uma transação;
 - contratos runtime fechados e executor local idempotente;
-- glossário determinístico, registro estático de conteúdo público e simplificações locais revisadas para os alvos iniciais;
+- glossário determinístico, registro estático de conteúdo público e simplificações locais revisadas para os alvos iniciais, alcançáveis pelo chat por `explain_term` e `simplify_content`;
 - voz opcional somente após ação explícita, com transcrição editável e `abort()` ao fechar.
 
 ### Planejador por IA
