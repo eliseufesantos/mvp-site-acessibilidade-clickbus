@@ -124,7 +124,10 @@ export class GeminiProvider implements LlmProvider {
   ) {
     this.generateContentUrl = buildGeminiGenerateContentUrl(configuration.endpoint, configuration.model);
     const model = normalizeModel(configuration.model);
-    this.useLowThinking = model === 'gemini-flash-latest' || /^gemini-3(?:[.-]|$)/.test(model);
+    // `thinkingLevel` só é aceito pela família Gemini 3 ou superior; modelos
+    // anteriores respondem com erro. Aliases mutáveis como `gemini-flash-latest`
+    // ficam de fora porque podem resolver para um modelo anterior.
+    this.useLowThinking = /^gemini-3(?:[.-]|$)/.test(model);
   }
 
   async complete(system: string, user: string, signal: AbortSignal): Promise<unknown> {
@@ -141,7 +144,7 @@ export class GeminiProvider implements LlmProvider {
           maxOutputTokens: 1024,
           responseJsonSchema: { type: 'object' },
           responseMimeType: 'application/json',
-          ...(this.useLowThinking ? { thinkingConfig: { thinkingLevel: 'low' } } : {}),
+          ...(this.useLowThinking ? { thinkingConfig: { thinkingLevel: 'LOW' } } : {}),
         },
         store: false,
       }),

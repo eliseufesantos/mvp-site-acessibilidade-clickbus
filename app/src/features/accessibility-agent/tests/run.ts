@@ -195,7 +195,7 @@ await test('Gemini provider sends a native structured request and parses split J
     assert(payload.generationConfig.maxOutputTokens === 1024);
     assert(payload.generationConfig.candidateCount === undefined);
     assert(payload.generationConfig.temperature === undefined);
-    assert(payload.generationConfig.thinkingConfig.thinkingLevel === 'low');
+    assert(payload.generationConfig.thinkingConfig === undefined);
     assert(payload.store === false);
     assert(init?.signal === controller.signal);
     return new Response(JSON.stringify({
@@ -208,6 +208,38 @@ await test('Gemini provider sends a native structured request and parses split J
 
   equal(await provider.complete('system', 'user', controller.signal), { ok: true });
   assert(calls === 1);
+});
+
+await test('Gemini thinkingLevel uses the documented enum and only for the Gemini 3 family', async () => {
+  const signal = new AbortController().signal;
+  const thinkingConfigFor = async (model: string) => {
+    let captured: Record<string, any> | undefined;
+    const provider = new GeminiProvider({
+      endpoint: 'https://generativelanguage.googleapis.com/v1beta',
+      model,
+      apiKey: 'test-only-key',
+    }, async (_input, init) => {
+      captured = JSON.parse(String(init?.body)) as Record<string, any>;
+      return new Response(JSON.stringify({
+        candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '{"ok":true}' }] } }],
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    });
+    await provider.complete('system', 'user', signal);
+    return captured?.generationConfig?.thinkingConfig;
+  };
+
+  // O discovery document de v1beta declara o enum em maiúsculas:
+  // THINKING_LEVEL_UNSPECIFIED | MINIMAL | LOW | MEDIUM | HIGH.
+  for (const model of ['gemini-3', 'gemini-3-pro', 'gemini-3.5-flash']) {
+    const thinkingConfig = await thinkingConfigFor(model);
+    assert(thinkingConfig?.thinkingLevel === 'LOW');
+  }
+
+  // A spec avisa que o campo com modelos anteriores ao Gemini 3 resulta em erro.
+  // `gemini-flash-latest` é alias mutável e por isso fica de fora.
+  for (const model of ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-30-legacy']) {
+    assert(await thinkingConfigFor(model) === undefined);
+  }
 });
 
 await test('Gemini provider fails closed on blocked, incomplete and malformed responses without retry', async () => {
