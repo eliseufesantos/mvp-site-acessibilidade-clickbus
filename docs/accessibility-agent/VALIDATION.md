@@ -68,7 +68,7 @@ Executar três rodadas por caso e acrescentar paráfrases não usadas no prompt.
 
 A aprovação local automática cobre:
 
-- contrato `LibrasAdapter`;
+- contrato `RybenaAdapter`;
 - isolamento do fornecedor;
 - estados `idle`, `loading`, `ready`, `translating`, `paused` e `failed`;
 - UI e atribuição;
@@ -199,6 +199,8 @@ servida em `127.0.0.1:4175`; onde indicado, servidor de desenvolvimento em
 | aviso permanente de simulação | PASS | visível em todas as superfícies com a flag ligada; o double não reivindica o crédito de tradução real |
 | guia e máscara não interceptam ponteiro | PASS | `pointer-events: none` nas quatro camadas; `elementFromPoint` devolve o botão |
 | anúncio de filtragem | PASS | um anúncio atômico: "2 opções encontradas para 26 de setembro." |
+| versão do contrato citada no prompt do planejador | PASS após correção | o prompt dizia "contrato 2.0" com `CONTRACT_VERSION = 2.1`; passou a ser interpolada da constante, com teste que falha se divergir — eficácia conferida invertendo o prompt |
+| trocar de modo só ao iniciar, nunca ao visualizar | PASS após correção | `PlayerSurface` trocava o modo na montagem; reproduzido com Libras em andamento, abrir o cartão Voz habilitava o transporte de voz e furava o guard de modo do executor. Corrigido e verificado nos três momentos |
 | pictograma do acionador visível de 320 a 1440 px | PASS após correção | duas regras de `components.css` do acionador antigo do `Header` escondiam o ícone abaixo de 360 px; removidas. Verificado em 1440, 821, 820, 480, 390, 360 e 320 px |
 | captura de evidência em 320 px | PASS | três PNG regenerados e revisados em `docs/accessibility-agent/evidence/`, **não versionados** |
 | tradução real em Libras | BLOCKED | token preso ao domínio autorizado; localhost é recusado pelo fornecedor |

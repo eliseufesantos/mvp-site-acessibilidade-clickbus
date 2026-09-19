@@ -788,6 +788,17 @@
   min-width: 0;
 }
 
+.accessibility-plugin .player-busy-note {
+  margin: 13px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--cb-warning-border);
+  border-radius: 0 9px 9px 0;
+  background: var(--cb-warning-surface);
+  color: var(--a11y-text);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
 .accessibility-plugin .rybena-status {
   color: var(--a11y-muted);
   line-height: 1.45;

@@ -163,26 +163,57 @@ Seleção do mouse/toque só é aceita no modo explícito, entre 2 e 120 caracte
 
 ## 7. Libras e Rybená
 
-Contrato estável:
+Contrato estável. Libras e voz **não** são dois serviços: são dois modos do
+mesmo player da Rybená, que compartilham `translate`, `play`, `pause`, `stop` e
+`setSpeed`. Por isso existe um único port com `setMode`. Um port separado para
+voz duplicaria o ciclo de vida e criaria dois players disputando o mesmo
+runtime.
 
 ```ts
-type LibrasState =
+type RybenaMode = 'libras' | 'voz';
+
+type RybenaState =
   | 'idle' | 'unavailable_pending_provider_configuration'
   | 'loading' | 'ready' | 'translating' | 'paused' | 'failed';
 
-interface LibrasAdapter {
-  getSnapshot(): LibrasSnapshot;
-  initialize(): Promise<LibrasReceipt>;
-  open(): Promise<LibrasReceipt>;
-  close(): Promise<LibrasReceipt>;
-  translate(content: PublicContent): Promise<LibrasReceipt>;
-  pause(): Promise<LibrasReceipt>;
-  resume(): Promise<LibrasReceipt>;
-  stop(): Promise<LibrasReceipt>;
-  setSpeed(speed: LibrasSpeed): Promise<LibrasReceipt>;
+interface RybenaSnapshot {
+  state: RybenaState;
+  mode: RybenaMode;
+  message: string;
+  attribution: string;
+  attributionUrl: string;
+  simulated: boolean;
+}
+
+interface RybenaAdapter {
+  getSnapshot(): RybenaSnapshot;
+  initialize(): Promise<RybenaReceipt>;
+  setMode(mode: RybenaMode): Promise<RybenaReceipt>;
+  open(): Promise<RybenaReceipt>;
+  close(): Promise<RybenaReceipt>;
+  translate(content: PublicContent): Promise<RybenaReceipt>;
+  pause(): Promise<RybenaReceipt>;
+  resume(): Promise<RybenaReceipt>;
+  stop(): Promise<RybenaReceipt>;
+  setSpeed(speed: LibrasSpeed): Promise<RybenaReceipt>;
   subscribe(listener: () => void): () => void;
 }
 ```
+
+O port **não declara nenhum método visual da Rybená** — `toggleZoom`,
+`toggleDarkContrast`, `toggleReadingMask` e semelhantes. Os ajustes visuais são
+responsabilidade exclusiva do executor local; se os dois aplicarem, os efeitos
+somam e quebram. Não acrescente esses métodos aqui.
+
+**Quem pode trocar o modo.** O modo muda quando a pessoa inicia ou abre aquele
+modo, nunca ao apenas visualizar a superfície correspondente. Trocar o modo na
+montagem de uma superfície comutaria um player em andamento e, pior, furaria o
+guard do executor, que decide a legitimidade de uma ação de transporte olhando
+`getSnapshot().mode`. No executor, as ações de entrada (`open_*`,
+`translate_content`, `speak_content`) trocam o modo antes de agir; as de
+transporte (`pause_*`, `resume_*`, `stop_*`) só agem quando o player já está no
+modo pedido, e recusam com mensagem honesta caso contrário. Fechar vale para os
+dois modos.
 
 Em produção, `RybenaBrowserAdapter` solicita a configuração same-origin somente após ação explícita. `GET /api/accessibility/rybena` lê `RYBENA_ACCESS_TOKEN` apenas no servidor, valida seu formato e responde `no-store`, `Cross-Origin-Resource-Policy: same-origin` e `nosniff` com uma URL do host e caminho fixos da Rybená, contendo `token`, `mode=api` e `doNotTrack=true`; sem configuração válida, retorna `503` finito. Com credencial, o handler aceita somente HTTPS no hostname exato `mvp-site-acessibilidade-clickbus-lovat.vercel.app`; HTTP, localhost e aliases/previews/outros hostnames retornam `403`.
 
@@ -192,7 +223,30 @@ O token não pode ser versionado, embutido no bundle estático, persistido ou in
 
 O token temporário aplicável já foi recebido. Antes de declarar tradução real, ainda é necessário configurar `RYBENA_ACCESS_TOKEN` no projeto/ambiente Vercel que atende o domínio autorizado, executar deploy e smoke controlado e registrar os resultados sem expor a URL completa. Localhost pode continuar recusado. A qualidade linguística permanece pendente de homologação com pessoas surdas sinalizantes.
 
-Doubles de Libras ficam exclusivamente em testes, nomeados `TestLibrasAdapter`, sem importação pelo bundle de produção.
+Existem três implementações do port. `RybenaBrowserAdapter` é a de produção.
+`RybenaUnavailableAdapter` permanece como fallback determinístico e apoio a
+testes. `RybenaDevelopmentAdapter` é um double de **desenvolvimento**, e não
+apenas de teste: ele percorre a máquina de estados sem rede para que Libras e
+voz possam ser exercitadas fora do domínio autorizado, onde o fornecedor recusa
+a origem.
+
+A escolha entre elas fica em `adapters/libras/selection.ts` e é tratada como
+código de segurança, porque um double vazado para produção viraria alegação
+falsa de tradução em Libras. São duas barreiras independentes:
+
+1. `import.meta.env.DEV` aparece **literalmente** no ternário da seleção. O
+   empacotador o substitui por `false` na build de produção, dobra o `&&` e
+   remove a referência à classe, que deixa de existir no bundle. Extrair essa
+   checagem para dentro da função pura quebraria a dobra estática;
+2. `shouldSimulateLibras` — pura e coberta por teste — exige, além de
+   desenvolvimento, o valor exato da variável de ativação
+   `VITE_A11Y_LIBRAS_SIMULATION`. A flag não é segredo e nunca carrega
+   credencial.
+
+Enquanto `RybenaSnapshot.simulated` for verdadeiro, a interface é obrigada a
+exibir aviso permanente de simulação, e o double nunca reivindica o crédito de
+tradução real. Ao mexer nessa área, refaça a busca literal por
+`RybenaDevelopment` em `app/dist/assets/index-*.js` depois de um build limpo.
 
 ## 8. Planejador e infraestrutura
 

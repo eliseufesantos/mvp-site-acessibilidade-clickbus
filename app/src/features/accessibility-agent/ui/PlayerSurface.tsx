@@ -26,6 +26,7 @@ const COPY = {
     stopLabel: 'Parar a tradução',
     empty: 'Esta etapa não oferece um trecho público para tradução.',
     transportLabel: 'Controles da tradução',
+    takeOver: 'Pedir a tradução em Libras vai substituí-la.',
   },
   voz: {
     titleId: 'voice-title',
@@ -38,6 +39,7 @@ const COPY = {
     stopLabel: 'Parar a narração',
     empty: 'Esta etapa não oferece um trecho público para narração.',
     transportLabel: 'Controles da narração',
+    takeOver: 'Pedir a narração vai substituí-la.',
   },
 } as const;
 
@@ -54,10 +56,16 @@ export function PlayerSurface({ mode, playerSpeed, onSpeedChange, page }: Player
   const selected = resolvePublicContent(page, contentRef) ?? targets[0] ?? null;
   const player = useSyncExternalStore(librasAdapter.subscribe, librasAdapter.getSnapshot, librasAdapter.getSnapshot);
 
-  // Entrar na superfície declara o modo. Sem isso, os controles de transporte
-  // agiriam sobre o modo anterior do player.
+  // Só limpa o texto de retorno. **Não** troque o modo aqui.
+  //
+  // Ver uma superfície não é usá-la. Trocar o modo na montagem fazia com que
+  // abrir o cartão Voz durante uma tradução em Libras chamasse `switchToVoz()`
+  // no player em andamento, e ainda deixava a interface anunciar a narração
+  // como ativa, habilitando os controles de transporte de voz sobre o que era
+  // uma tradução. Pior: o executor decide se uma ação de transporte é legítima
+  // olhando `getSnapshot().mode`, então apenas visualizar a superfície furava
+  // esse guard. O modo passa a mudar só quando a pessoa inicia a reprodução.
   useEffect(() => {
-    void librasAdapter.setMode(mode);
     setFeedback('');
   }, [mode]);
 
@@ -85,6 +93,10 @@ export function PlayerSurface({ mode, playerSpeed, onSpeedChange, page }: Player
   const loaded = player.state === 'ready' || player.state === 'translating' || player.state === 'paused';
   const playing = player.mode === mode && player.state === 'translating';
   const paused = player.mode === mode && player.state === 'paused';
+  // O player é um só. Se o outro modo está ocupando, diga isso em vez de
+  // deixar a pessoa achar que os controles daqui valem para o que está tocando.
+  const busyInOtherMode = player.mode !== mode
+    && (player.state === 'translating' || player.state === 'paused');
   const Icon = mode === 'voz' ? Volume2 : Languages;
 
   return (
@@ -108,6 +120,15 @@ export function PlayerSurface({ mode, playerSpeed, onSpeedChange, page }: Player
       <select id={`player-speed-${mode}`} value={playerSpeed} onChange={(event) => void changeSpeed(event.target.value)}>
         {LIBRAS_SPEEDS.map((speed) => <option key={speed} value={speed}>{speed === 1 ? 'Normal' : `${speed}×`}</option>)}
       </select>
+
+      {busyInOtherMode ? (
+        <p className="player-busy-note">
+          {player.mode === 'voz'
+            ? 'O player está ocupado com uma narração em voz.'
+            : 'O player está ocupado com uma tradução em Libras.'}{' '}
+          {copy.takeOver}
+        </p>
+      ) : null}
 
       <Button fullWidth onClick={() => void start()} disabled={!selected || player.state === 'loading'}>
         <Icon aria-hidden="true" /> {player.state === 'loading' ? copy.loading : copy.action}

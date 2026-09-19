@@ -52,6 +52,7 @@ import {
   MAX_ACCESSIBILITY_REQUEST_BYTES,
   type AccessibilityRequestQuota,
 } from '../../../../server/accessibility/handler';
+import { PLANNER_SYSTEM_PROMPT } from '../../../../server/accessibility/prompt';
 import {
   buildGeminiGenerateContentUrl,
   GeminiProvider,
@@ -659,6 +660,21 @@ await test('only the development adapter declares itself simulated', () => {
   assert(new RybenaDevelopmentAdapter().getSnapshot().simulated === true);
   assert(new RybenaUnavailableAdapter().getSnapshot().simulated === false);
   assert(new RybenaBrowserAdapter(async () => { throw new Error('sem runtime'); }).getSnapshot().simulated === false);
+});
+
+await test('the planner prompt announces the version the validator enforces', () => {
+  // A versao do prompt ja ficou para tras de CONTRACT_VERSION uma vez. Instruir
+  // o modelo a devolver uma versao que o servidor rejeita quebra pedidos
+  // validos, e o enum do esquema estruturado nao garante sozinho a correcao.
+  assert(PLANNER_SYSTEM_PROMPT.includes(`contrato ${CONTRACT_VERSION} recebido`),
+    'o prompt precisa citar a versao vigente do contrato');
+  const outras = PLANNER_SYSTEM_PROMPT.match(/contrato \d+\.\d+/g) ?? [];
+  equal([...new Set(outras)], [`contrato ${CONTRACT_VERSION}`]);
+
+  // As acoes de voz precisam estar descritas, senao o planejador nunca as usa.
+  for (const acao of ['open_voice', 'speak_content', 'pause_voice', 'resume_voice', 'stop_voice', 'close_voice']) {
+    assert(PLANNER_SYSTEM_PROMPT.includes(acao), `${acao} deveria aparecer no prompt`);
+  }
 });
 
 await test('contract 2.1 carries the voice actions and rejects the previous version', () => {

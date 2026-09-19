@@ -922,6 +922,38 @@ figurar entre as aprovadas em três execuções.
 Comparação feita por identificador de regra, não por contagem: a linha de base
 foi recapturada no `HEAD` `91b8f7d` com o mesmo script e o mesmo axe 4.10.2.
 
+#### Três defeitos encontrados na revisão do PR e corrigidos
+
+1. **O prompt do planejador ficou preso no contrato 2.0.** `CONTRACT_VERSION`
+   subiu para 2.1, mas `PLANNER_SYSTEM_PROMPT` mandava, em texto, responder "no
+   contrato 2.0 recebido". O enum de `responseJsonSchema` empurra 2.1, mas a
+   instrução textual conflitante podia fazer o modelo emitir 2.0 — que o
+   validador do servidor rejeita — ou brigar com o esquema. A versão passou a
+   ser interpolada de `CONTRACT_VERSION`, e um teste novo falha se o prompt
+   citar qualquer outra versão. A eficácia do teste foi conferida invertendo o
+   prompt de propósito: ele acusou.
+
+2. **Ver a superfície de Voz trocava o modo do player.** `PlayerSurface`
+   chamava `setMode(mode)` na montagem. Reproduzido no navegador: com uma
+   tradução em Libras em andamento, abrir o cartão Voz mudava o status para
+   "Simulação em modo de voz." e **habilitava** "Pausar" e "Parar a narração"
+   sobre o que era uma tradução; no adaptador real, `switchToVoz()` seria
+   chamado no player em andamento. Pior, o executor decide a legitimidade de um
+   transporte olhando `getSnapshot().mode`, então apenas visualizar a superfície
+   furava esse guard. O `setMode` saiu da montagem — o modo agora muda só ao
+   iniciar a reprodução — e a superfície do outro modo passa a exibir nota
+   honesta: "O player está ocupado com uma tradução em Libras. Pedir a narração
+   vai substituí-la." Verificado nos três momentos: traduzindo, ao abrir Voz
+   (transporte desabilitado, nota visível) e ao iniciar a narração.
+
+3. **O SDD ficou materialmente falso.** Como arquitetura normativa, ele ainda
+   definia `LibrasAdapter` sem `setMode` nem voz, e afirmava que doubles de
+   Libras ficam "exclusivamente em testes, nomeados `TestLibrasAdapter`".
+   Quem seguisse o documento desfaria o desenho de player compartilhado ou
+   removeria a seleção do adaptador de desenvolvimento. Atualizado com
+   `RybenaAdapter`, a regra de quem pode trocar o modo, a proibição dos métodos
+   visuais e as duas barreiras da seleção em produção.
+
 **Defeito encontrado e corrigido na revisão da evidência.** O acionador
 circular aparecia **sem pictograma** abaixo de 360 px: duas regras de
 `components.css` escritas para o acionador antigo do `Header`
