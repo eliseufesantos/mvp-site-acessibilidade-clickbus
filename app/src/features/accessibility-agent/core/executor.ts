@@ -47,8 +47,23 @@ const visualMessage = (action: PlanAction, changed: boolean) => {
   return 'Aparência padrão restaurada.';
 };
 
+// A idempotência só precisa alcançar planos recentes: um plano antigo não
+// sobrevive à mudança de `stateRevision`, `pageEpoch` ou `panelSession`, que é
+// revalidada antes de qualquer efeito. Sem teto, o mapa crescia por toda a
+// sessão, um registro por plano.
+const MAX_REMEMBERED_RECEIPTS = 50;
+
 export class AccessibilityExecutor {
   private receipts = new Map<string, ExecutionReceipt>();
+
+  private remember(planId: string, receipt: ExecutionReceipt) {
+    this.receipts.set(planId, receipt);
+    while (this.receipts.size > MAX_REMEMBERED_RECEIPTS) {
+      const oldest = this.receipts.keys().next();
+      if (oldest.done) break;
+      this.receipts.delete(oldest.value);
+    }
+  }
 
   async execute(value: unknown, dependencies: ExecutorDependencies): Promise<ExecutionReceipt> {
     const parsed = plannerResponseSchema.safeParse(value);
@@ -110,7 +125,7 @@ export class AccessibilityExecutor {
       actions,
       finalStateRevision: dependencies.getStateRevision(),
     };
-    this.receipts.set(plan.planId, receipt);
+    this.remember(plan.planId, receipt);
     return receipt;
   }
 }

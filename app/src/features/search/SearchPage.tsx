@@ -6,6 +6,7 @@ import { isKnownLocation } from '../../data/trips';
 import type { SearchValues } from '../../types';
 import { getTodayIso } from '../../utils/date';
 import { LocationCombobox } from './LocationCombobox';
+import { focusAfterRender } from '../../utils/focus';
 
 interface SearchPageProps {
   initialValues: SearchValues;
@@ -36,7 +37,7 @@ export function SearchPage({ initialValues, onSearch }: SearchPageProps) {
 
   const chooseOffer = (origin: string, destination: string) => {
     setValues((current) => ({ ...current, origin, destination }));
-    window.requestAnimationFrame(() => document.getElementById('travel-date')?.focus());
+    focusAfterRender(() => document.getElementById('travel-date'));
     window.scrollTo({ top: 180, behavior: 'smooth' });
   };
 

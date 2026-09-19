@@ -10,6 +10,7 @@ import { SeatSelectionPage } from '../features/seats/SeatSelectionPage';
 import { useAccessibilityPreferences } from '../hooks/useAccessibilityPreferences';
 import type { JourneyStep, SearchValues, Trip } from '../types';
 import { getDefaultTravelDate } from '../utils/date';
+import { focusAfterRender } from '../utils/focus';
 
 const initialSearch: SearchValues = {
   origin: 'São Paulo (SP)',
@@ -48,7 +49,7 @@ export function App() {
     document.title = `${titles[step]} | ClickBus Acessível`;
     setPageEpoch((current) => current + 1);
     window.scrollTo({ top: 0, behavior: 'auto' });
-    window.requestAnimationFrame(() => mainRef.current?.focus({ preventScroll: true }));
+    focusAfterRender(() => mainRef.current, { preventScroll: true });
   }, [step]);
 
   const restart = () => {

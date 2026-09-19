@@ -10,7 +10,7 @@ import {
   type PlannerRequest,
   type SimplifyRequest,
 } from '../../src/features/accessibility-agent/core/contracts.js';
-import { getConfiguredProvider, type LlmProvider } from './provider.js';
+import { getConfiguredProvider, resolveConfiguredProvider, type LlmProvider } from './provider.js';
 import {
   EXPLAIN_SYSTEM_PROMPT,
   PLANNER_SYSTEM_PROMPT,
@@ -198,7 +198,15 @@ export const handleAccessibilityRequest = async (
       : simplifyRequestSchema.safeParse(body);
   if (parsed.success === false) return json({ error: parsed.error }, 400);
   if (!provider) {
-    return json({ error: 'O provedor de IA ainda não foi configurado. Os ajustes manuais continuam disponíveis.' }, 503);
+    // Configuração presente porém inválida não pode se passar por ausente: quem
+    // definiu as variáveis ficaria procurando a que "faltou".
+    const invalid = resolveConfiguredProvider().status === 'invalid';
+    return json({
+      error: invalid
+        ? 'A configuração do provedor de IA é inválida. Os ajustes manuais continuam disponíveis.'
+        : 'O provedor de IA ainda não foi configurado. Os ajustes manuais continuam disponíveis.',
+      code: invalid ? 'provider_configuration_invalid' : 'provider_unconfigured',
+    }, 503);
   }
 
   const quotaResult = quota.consume(request);

@@ -4,6 +4,7 @@ import type { PreferencePatch } from '../../features/accessibility-agent/core/pr
 import { getActivePreferenceLabels } from '../../features/accessibility-agent/core/preferences';
 import type { AccessibilityPreferences, JourneyStep } from '../../types';
 import { AccessibilityPanel } from './AccessibilityPanel';
+import { focusAfterRender } from '../../utils/focus';
 
 interface AccessibilityPluginProps {
   canUndo: boolean;
@@ -35,7 +36,7 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
   const closePanel = useCallback((restoreFocus = true) => {
     setIsSelectingPage(false);
     setIsPanelOpen(false);
-    if (restoreFocus) window.requestAnimationFrame(() => triggerRef.current?.focus());
+    if (restoreFocus) focusAfterRender(() => triggerRef.current);
   }, []);
 
   const openPanel = useCallback(() => {
@@ -63,14 +64,14 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
 
   useEffect(() => {
     if (!isPanelOpen) return;
-    window.requestAnimationFrame(() => document.getElementById('a11y-tab-conversation')?.focus());
+    focusAfterRender(() => document.getElementById('a11y-tab-conversation'));
   }, [isPanelOpen]);
 
   useEffect(() => {
     if (!isPanelOpen || isSelectingPage || !isMobile) return;
     const surface = surfaceRef.current;
     if (surface?.contains(document.activeElement)) return;
-    window.requestAnimationFrame(() => surface?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.focus());
+    focusAfterRender(() => surface?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]'));
   }, [isMobile, isPanelOpen, isSelectingPage]);
 
   useEffect(() => {
@@ -80,12 +81,12 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
     }
     if (isSelectingPage) {
       wasSelectingPageRef.current = true;
-      window.requestAnimationFrame(() => document.getElementById('main-content')?.focus({ preventScroll: true }));
+      focusAfterRender(() => document.getElementById('main-content'), { preventScroll: true });
       return;
     }
     if (wasSelectingPageRef.current) {
       wasSelectingPageRef.current = false;
-      window.requestAnimationFrame(() => document.getElementById('term-to-explain')?.focus({ preventScroll: true }));
+      focusAfterRender(() => document.getElementById('term-to-explain'), { preventScroll: true });
     }
   }, [isPanelOpen, isSelectingPage]);
 

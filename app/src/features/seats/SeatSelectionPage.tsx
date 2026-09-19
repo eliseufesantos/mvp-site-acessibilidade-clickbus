@@ -81,7 +81,7 @@ export function SeatSelectionPage({
                 <h1 id="seat-title">Escolha seu assento</h1>
                 <p>{availableCount} lugares livres nesta viagem</p>
               </div>
-              <div className="seat-legend" aria-label="Legenda">
+              <div className="seat-legend" role="group" aria-label="Legenda">
                 <span><i className="legend-free" /> Livre</span>
                 <span><i className="legend-selected" /> Selecionado</span>
                 <span><i className="legend-occupied" /> Ocupado</span>

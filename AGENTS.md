@@ -29,14 +29,13 @@ Não há consulta comercial real, emissão de bilhete, reserva, cancelamento ou 
 
 ## 3. Estado verificado
 
-Snapshot operacional atualizado em **18/09/2026**:
+Snapshot operacional atualizado em **19/09/2026**:
 
 - branch: `main`;
-- HEAD: `d0777cc` (`Integrate Rybená Libras controls and update accessibility documentation`), sincronizado com `origin/main` antes das alterações locais desta iteração;
-- working tree contém a implementação local ainda não commitada do adaptador Gemini, das proteções dos endpoints, das rotas Vercel e da configuração sob demanda da Rybená; não descarte essas mudanças;
+- HEAD: `825b38c`, árvore limpa e sincronizada com `origin/main`;
 - aplicação React 18 + TypeScript estrito + Vite 6;
-- typecheck e build Vite: aprovados, com 1.616 módulos transformados;
-- suíte do agente de acessibilidade: 24 testes aprovados, incluindo contrato do adaptador Gemini com transporte falso, origem, limite de corpo, quota local, handler/URL Rybená e contrato do adaptador com runtime falso;
+- typecheck do app, typecheck das funções de `api/` pelo tsconfig da raiz e build Vite: aprovados;
+- suíte do agente de acessibilidade: 27 testes aprovados, incluindo contrato do adaptador Gemini com transporte falso, origem, limite de corpo, quota local, handler/URL Rybená e contrato do adaptador com runtime falso;
 - adaptador REST nativo do Gemini implementado no servidor com JSON estruturado, chave somente em header, teto de 4.096 tokens de saída (a folga é para os tokens de raciocínio, que contam nesse limite) e `thinkingLevel: 'LOW'` apenas para a família Gemini 3, conforme o enum do discovery v1beta;
 - o esquema de saída real é enviado em `responseJsonSchema`, derivado das mesmas constantes dos validadores; ele orienta o modelo e **não** substitui a revalidação no servidor nem no executor;
 - **retry:** uma única repetição, restrita a HTTP 503 e 429, respeitando `retry-after` com teto de 2 s e abortando junto com o pedido. Esses dois status são recusas anteriores à geração, então repetir não duplica custo. Qualquer outro status não repete. Não introduza retry em 4xx determinístico, nem laço, nem polling;
@@ -44,8 +43,10 @@ Snapshot operacional atualizado em **18/09/2026**:
 - conectividade real do Gemini: **verificada em 19/09/2026** no domínio autorizado, com respostas 200 dentro do contrato;
 - disponibilidade depende fortemente do modelo. Medido no mesmo dia, no mesmo endpoint: `gemini-3.8-flash` 2 sucessos em 10 (3 × HTTP 503, 5 × HTTP 429); `gemini-3.5-flash` 4 em 4; `gemini-2.5-flash` 0 em 6, sempre HTTP 404, porque está listado em `models.list` mas não atende `generateContent`. Modelo em uso: `gemini-3.5-flash`;
 - **qualidade semântica: `PARCIAL`, não aprovada.** Em 4 explicações do mesmo termo, duas ficaram corretas, uma ficou vaga e uma ficou factualmente errada, ancorando no contexto em vez de explicar o termo. A sonda usou um contexto propositalmente pobre, então não é conclusivo — mas basta para proibir qualquer alegação de que a explicação por IA é confiável. Avaliar com entradas realistas e revisão humana antes de usar na apresentação;
-- smoke local sem segredo: SPA `200 text/html`, API same-origin `503 application/json` e origem indevida `403 application/json`; deployment remoto não foi executado;
-- um token temporário da Rybená, vinculado ao domínio autorizado da demonstração, foi recebido fora do repositório; handler, URL e contrato do adaptador foram validados localmente, e a rota sem token respondeu `503`/`405`; `RYBENA_ACCESS_TOKEN` ainda não foi configurada na Vercel, e o caminho navegador → tag → CDN → player, deploy e smoke real permanecem `NOT RUN`;
+- smoke em produção no domínio autorizado, 19/09/2026: `GET` nas quatro rotas devolve o nosso `405 application/json`, `POST` sem `Origin` devolve `403`, `text/plain` devolve `415`, corpo acima de 16 KiB devolve `413`, e nenhuma resposta traz `X-Vercel-Error`;
+- as funções ficaram quebradas em produção até 19/09 com `FUNCTION_INVOCATION_FAILED`, porque o `.vercelignore` começava com `*` e não re-incluía o `package.json` da raiz — sem o `"type": "module"` a saída carregava como CommonJS e o `import` falhava na carga. **Ao editar o `.vercelignore`, preserve `!package.json` e `!tsconfig.json`;**
+- `RYBENA_ACCESS_TOKEN` está configurada no ambiente de produção do domínio autorizado, e `GET /api/accessibility/rybena` responde `200` com a URL do CDN. O player foi aberto no navegador em 19/09; a evidência formal ainda não foi registrada, e a homologação linguística com pessoas surdas sinalizantes permanece `NOT RUN`;
+- o token da Rybená é de exceção acadêmica: o parâmetro `token` na URL do script **não** consta na documentação pública e foi confirmado por e-mail do fornecedor. O formato atual é 64 hexadecimais, o que o código valida — mas esse formato nunca foi especificado e pode mudar numa rotação;
 - fluxo de conteúdo validado em navegador: seleção real de termo na página, explicação pelo glossário e simplificação determinística com original preservado;
 - reflow da nova UI validado em 1440×900, 390×844 e 320×844 CSS px; escala de texto a 150% em 320 px e alto contraste em mobile também permaneceram sem overflow horizontal;
 - breakpoint validado nos limites: 820 px usa diálogo modal com backdrop e bloqueio do body; 821 px usa região não modal, sem backdrop e com a página rolável;
@@ -64,8 +65,7 @@ Este snapshot não prova que um deployment remoto posterior continua saudável. 
 ├── vercel.json                       # build/deploy a partir da raiz
 ├── tsconfig.json                     # compilação das funções Vercel em api/
 ├── api/accessibility/                # funções Vercel de plan/explain/simplify na raiz canônica
-├── app/
-│   ├── api/accessibility/            # entradas HTTP de plan/explain/simplify
+├── app/                              # não recrie `app/api/`: os wrappers ficam só em `api/` na raiz
 │   ├── server/accessibility/         # handler, prompts e provedor LLM
 │   ├── scripts/                      # testes e captura de evidências
 │   └── src/

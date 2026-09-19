@@ -17,6 +17,7 @@ import { getActivePreferenceLabels, type PreferencePatch } from '../core/prefere
 import { ContentTools } from './ContentTools';
 import { PreferenceControls } from './PreferenceControls';
 import { useVoiceInput } from './useVoiceInput';
+import { focusAfterRender } from '../../../utils/focus';
 
 type PanelTab = 'conversation' | 'settings' | 'content';
 
@@ -161,7 +162,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
     event.preventDefault();
     const nextTab = PANEL_TABS[nextIndex];
     selectTab(nextTab.id);
-    window.requestAnimationFrame(() => document.getElementById(`a11y-tab-${nextTab.id}`)?.focus());
+    focusAfterRender(() => document.getElementById(`a11y-tab-${nextTab.id}`));
   };
 
   return (

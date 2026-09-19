@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { useEffect, useRef, type ReactNode } from 'react';
+import { focusAfterRender } from '../../utils/focus';
 
 interface DialogProps {
   children: ReactNode;
@@ -18,7 +19,7 @@ export function Dialog({ children, label, onClose }: DialogProps) {
     previousFocusRef.current = document.activeElement as HTMLElement | null;
     const dialog = dialogRef.current;
     const firstFocusable = dialog?.querySelector<HTMLElement>(focusableSelector);
-    window.requestAnimationFrame(() => firstFocusable?.focus());
+    focusAfterRender(() => firstFocusable);
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -45,7 +46,7 @@ export function Dialog({ children, label, onClose }: DialogProps) {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.classList.remove('dialog-open');
-      window.requestAnimationFrame(() => previousFocusRef.current?.focus());
+      focusAfterRender(() => previousFocusRef.current);
     };
   }, [onClose]);
 

@@ -133,7 +133,7 @@ export function ResultsPage({ onBack, onChangeDate, onSelectTrip, preferences, s
           <div className="route-summary__date"><span className="route-summary__label">Data</span><strong>{formatTravelDate(search.date)}</strong></div>
         </section>
 
-        <div className="date-strip" aria-label="Escolher data de ida">
+        <div className="date-strip" role="group" aria-label="Escolher data de ida">
           {dateOptions.map((date) => (
             <button key={date} type="button" className={date === search.date ? 'date-strip__item date-strip__item--active' : 'date-strip__item'} onClick={() => onChangeDate(date)}>
               <CalendarDays aria-hidden="true" /> {formatTravelDate(date, { weekday: 'short', day: '2-digit', month: 'short' })}
@@ -144,7 +144,20 @@ export function ResultsPage({ onBack, onChangeDate, onSelectTrip, preferences, s
         <div className="results-heading">
           <div>
             <h1>Passagens disponíveis</h1>
-            <p>{visibleTrips.length} {visibleTrips.length === 1 ? 'opção encontrada' : 'opções encontradas'} para {formatTravelDate(search.date)}. <span data-a11y-content-id="results-help">Compare horários, embarque e comodidades antes de escolher.</span></p>
+            {/*
+              A contagem é a região viva, não a lista. Filtrar remove nós, e
+              `aria-relevant` só anuncia adições por padrão: com a região na
+              lista, reduzir de 6 para 2 resultados não produzia anúncio nenhum.
+              `aria-atomic` faz a frase inteira ser lida, em vez de fragmentos.
+              O texto de apoio fica fora da região para não ser repetido a cada
+              mudança de filtro.
+            */}
+            <p>
+              <span role="status" aria-atomic="true">
+                {visibleTrips.length} {visibleTrips.length === 1 ? 'opção encontrada' : 'opções encontradas'} para {formatTravelDate(search.date)}.
+              </span>{' '}
+              <span data-a11y-content-id="results-help">Compare horários, embarque e comodidades antes de escolher.</span>
+            </p>
           </div>
           <Button className="mobile-filter-button" variant="secondary" onClick={() => setMobileFiltersOpen(true)}>
             <SlidersHorizontal aria-hidden="true" /> Filtros {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}
@@ -152,7 +165,7 @@ export function ResultsPage({ onBack, onChangeDate, onSelectTrip, preferences, s
         </div>
 
         {activeFilterCount > 0 ? (
-          <div className="active-filters" aria-label="Filtros ativos">
+          <div className="active-filters" role="group" aria-label="Filtros ativos">
             {sort === 'price' ? <span>Menor preço</span> : null}
             {period !== 'all' ? <span>{period === 'morning' ? 'Manhã' : period === 'afternoon' ? 'Tarde' : 'Noite'}</span> : null}
             {classFilter !== 'all' ? <span>{classFilter === 'sleeping' ? 'Leito e leito-cama' : classFilter}</span> : null}
@@ -168,7 +181,7 @@ export function ResultsPage({ onBack, onChangeDate, onSelectTrip, preferences, s
             {activeFilterCount > 0 ? <button className="filter-clear" type="button" onClick={clearFilters}>Limpar filtros</button> : null}
           </aside>
 
-          <section className="trip-list" aria-label="Viagens disponíveis" aria-live="polite">
+          <section className="trip-list" aria-label="Viagens disponíveis">
             {visibleTrips.map((trip) => (
               <article className="trip-card" key={trip.id}>
                 <div className="trip-card__company">
@@ -177,13 +190,13 @@ export function ResultsPage({ onBack, onChangeDate, onSelectTrip, preferences, s
                   {trip.badge ? <span className="status-badge">{trip.badge}</span> : null}
                 </div>
 
-                <div className="trip-card__schedule" aria-label={`Saída ${trip.departure}, chegada ${trip.arrival}${trip.arrivesNextDay ? ' no dia seguinte' : ''}`}>
+                <div className="trip-card__schedule" role="group" aria-label={`Saída ${trip.departure}, chegada ${trip.arrival}${trip.arrivesNextDay ? ' no dia seguinte' : ''}`}>
                   <div><strong>{trip.departure}</strong><span><MapPin aria-hidden="true" size={16} /> {trip.originTerminal}</span></div>
                   <div className="trip-card__duration"><span><Clock3 aria-hidden="true" size={16} /> {trip.duration}</span><i aria-hidden="true" /><span>Direto</span></div>
                   <div><strong>{trip.arrival}{trip.arrivesNextDay ? <sup>+1</sup> : null}</strong><span><MapPin aria-hidden="true" size={16} /> {trip.destinationTerminal}</span></div>
                 </div>
 
-                <div className="trip-card__amenities" aria-label="Comodidades">
+                <div className="trip-card__amenities" role="group" aria-label="Comodidades">
                   <span><Wifi aria-hidden="true" /> {trip.amenities[0]}</span>
                   <span><Smartphone aria-hidden="true" /> Passagem digital</span>
                   <button type="button" onClick={() => setDetailsTrip(trip)}><Route aria-hidden="true" /> Ver itinerário</button>

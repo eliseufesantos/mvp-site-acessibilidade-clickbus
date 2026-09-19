@@ -245,18 +245,43 @@ export class GeminiProvider implements LlmProvider {
   }
 }
 
+export type ProviderResolution =
+  | { status: 'ready'; provider: LlmProvider }
+  | { status: 'unconfigured' }
+  | { status: 'invalid' };
+
+/**
+ * Distingue "nenhuma variável definida" de "variáveis definidas mas inválidas".
+ *
+ * Antes as duas situações colapsavam em `null`, e o handler respondia
+ * "o provedor ainda não foi configurado" nos dois casos — mandando quem
+ * configurou procurar uma variável ausente que na verdade estava presente e
+ * malformada. A distinção fica no servidor; a resposta ao cliente nunca revela
+ * endpoint, modelo ou chave.
+ */
+export const resolveConfiguredProvider = (
+  environment: Environment = typeof process === 'undefined' ? {} : process.env,
+  fetchImplementation: FetchImplementation = fetch,
+): ProviderResolution => {
+  const configuration = readConfiguration(environment);
+  if (!configuration) return { status: 'unconfigured' };
+  try {
+    const endpoint = new URL(configuration.endpoint);
+    return {
+      status: 'ready',
+      provider: endpoint.hostname === GEMINI_API_HOST
+        ? new GeminiProvider(configuration, fetchImplementation)
+        : new OpenAiCompatibleProvider(configuration, fetchImplementation),
+    };
+  } catch {
+    return { status: 'invalid' };
+  }
+};
+
 export const getConfiguredProvider = (
   environment: Environment = typeof process === 'undefined' ? {} : process.env,
   fetchImplementation: FetchImplementation = fetch,
 ): LlmProvider | null => {
-  const configuration = readConfiguration(environment);
-  if (!configuration) return null;
-  try {
-    const endpoint = new URL(configuration.endpoint);
-    return endpoint.hostname === GEMINI_API_HOST
-      ? new GeminiProvider(configuration, fetchImplementation)
-      : new OpenAiCompatibleProvider(configuration, fetchImplementation);
-  } catch {
-    return null;
-  }
+  const resolution = resolveConfiguredProvider(environment, fetchImplementation);
+  return resolution.status === 'ready' ? resolution.provider : null;
 };

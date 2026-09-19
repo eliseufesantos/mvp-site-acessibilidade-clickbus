@@ -19,6 +19,7 @@ import { StepProgress } from '../../components/ui/StepProgress';
 import { formatCurrency } from '../../data/trips';
 import type { AccessibilityPreferences, SearchValues, Trip } from '../../types';
 import { formatTravelDate } from '../../utils/date';
+import { focusAfterRender } from '../../utils/focus';
 
 interface CheckoutPageProps {
   onBack: () => void;
@@ -77,7 +78,7 @@ export function CheckoutPage({ onBack, onComplete, preferences, search, seat, tr
     const nextErrors = validate();
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
-      window.requestAnimationFrame(() => errorSummaryRef.current?.focus());
+      focusAfterRender(() => errorSummaryRef.current);
       return;
     }
     onComplete();
@@ -152,6 +153,7 @@ export function CheckoutPage({ onBack, onComplete, preferences, search, seat, tr
                   id="passenger-birth"
                   type="text"
                   inputMode="numeric"
+                  autoComplete="off"
                   maxLength={10}
                   value={values.birthDate}
                   aria-invalid={Boolean(errors.birthDate)}
