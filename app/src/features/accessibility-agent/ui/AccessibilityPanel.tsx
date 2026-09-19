@@ -179,6 +179,16 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
     setBusy(false);
   }, [props.stateRevision]);
 
+  // O painel agora continua aberto ao trocar de etapa. Uma proposta feita na
+  // etapa anterior seria recusada pelo executor, porque `pageEpoch` mudou:
+  // melhor recolhê-la do que oferecer um botão que vai falhar.
+  useEffect(() => {
+    setProposal(null);
+    setAnswer(null);
+    setUndoOffered(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.pageEpoch]);
+
   // Troca de superfície: foco vai para o "Voltar" ao entrar e volta para o
   // cartão de origem ao sair. O foco da primeira abertura é do host.
   useEffect(() => {
@@ -474,7 +484,10 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
         ) : null}
 
         <form className="a11y-chat__form" onSubmit={askAssistant}>
-          <label htmlFor="accessibility-request"><Bot aria-hidden="true" /> Peça um ajuste ou pergunte o significado</label>
+          <label htmlFor="accessibility-request"><Bot aria-hidden="true" /> Fale com o assistente</label>
+          <p className="a11y-chat__hint">
+            Escreva com suas palavras o que você precisa nesta página, ou pergunte o que uma palavra significa.
+          </p>
           <div className="a11y-chat__suggestions" role="group" aria-label="Sugestões de pedido">
             {SUGGESTIONS.map((suggestion) => (
               <button
@@ -494,7 +507,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
               value={request}
               onChange={(event) => setRequest(event.target.value)}
               maxLength={1000}
-              rows={2}
+              rows={4}
               placeholder="Ex.: aumente o texto, ou: o que é embarque?"
             />
             <div className="a11y-chat__buttons">
@@ -520,12 +533,11 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
                 </button>
               ) : null}
               <button
-                className="a11y-chat__icon-button a11y-chat__icon-button--send"
+                className="a11y-chat__send"
                 type="submit"
-                aria-label={busy ? 'Analisando o pedido' : 'Enviar pedido ao assistente'}
                 disabled={busy || request.trim().length === 0}
               >
-                <Sparkles aria-hidden="true" />
+                <Sparkles aria-hidden="true" /> {busy ? 'Analisando…' : 'Enviar'}
               </button>
             </div>
           </div>

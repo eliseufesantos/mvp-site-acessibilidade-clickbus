@@ -94,14 +94,16 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
     }
     if (isSelectingPage) {
       wasSelectingPageRef.current = true;
-      focusAfterRender(() => document.getElementById('main-content'), { preventScroll: true });
+      // No desktop o painel continua visível e o foco fica onde está; mover
+      // para o conteúdo só faz sentido quando o painel se recolhe.
+      if (isMobile) focusAfterRender(() => document.getElementById('main-content'), { preventScroll: true });
       return;
     }
     if (wasSelectingPageRef.current) {
       wasSelectingPageRef.current = false;
-      focusAfterRender(() => document.getElementById('term-to-explain'), { preventScroll: true });
+      focusAfterRender(() => document.getElementById('accessibility-request'), { preventScroll: true });
     }
-  }, [isPanelOpen, isSelectingPage]);
+  }, [isMobile, isPanelOpen, isSelectingPage]);
 
   useEffect(() => {
     if (!isPanelOpen || isSelectingPage) return undefined;
@@ -135,8 +137,10 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
   }, [isMobile, isPanelOpen, isSelectingPage]);
 
   useEffect(() => {
-    if (isPanelOpen) closePanel(false);
-    // A troca de etapa invalida planos pendentes e desmonta o painel.
+    // Só o modo de seleção termina: os alvos públicos são outros nesta etapa.
+    // O painel permanece aberto, e o executor continua recusando qualquer plano
+    // pendente porque `pageEpoch` mudou.
+    setIsSelectingPage(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.pageEpoch]);
 
@@ -182,7 +186,7 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
             className="accessibility-plugin__surface accessibility-menu__popover"
             role={isMobile ? 'dialog' : 'region'}
             aria-modal={isMobile && !isSelectingPage ? true : undefined}
-            aria-hidden={isSelectingPage ? true : undefined}
+            aria-hidden={isSelectingPage && isMobile ? true : undefined}
             aria-label="Painel de acessibilidade"
             ref={surfaceRef}
           >

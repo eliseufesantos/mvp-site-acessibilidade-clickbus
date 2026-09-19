@@ -1242,6 +1242,47 @@ público.
 | axe em 5 telas e no painel em 5 larguras | **PASS** — 0 violações |
 | reflow, breakpoints, foco, teclado, jornada | **PASS** — 0 px de overflow, 0 erro de console |
 
+### 7.10 Seleção sem perder o painel, e o chat como protagonista — 19/09/2026
+
+Três defeitos e um ajuste de hierarquia visual, a partir do uso real.
+
+**O painel fechava ao entrar no modo de seleção.** Era herança da gaveta
+lateral, que cobria a página e precisava sair da frente. O painel de hoje é um
+popover compacto ancorado no header: no desktop ele não atrapalha e passa a
+permanecer aberto. No **mobile** ele continua se recolhendo, porque ali é um
+diálogo de tela cheia e a pessoa não conseguiria alcançar o texto. O
+`aria-hidden` passou a acompanhar essa condição — num painel visível ele seria
+violação de `aria-hidden-focus`.
+
+**O painel fechava ao trocar de etapa.** O `closePanel` no `pageEpoch` também
+era efeito colateral da gaveta. A proteção contra plano velho nunca foi fechar
+o painel: é o executor comparando `pageEpoch` e recusando. Agora o painel
+sobrevive à navegação, o modo de seleção se encerra — os alvos públicos são
+outros — e propostas pendentes são recolhidas, porque seriam recusadas ao
+confirmar.
+
+**O foco não voltava a lugar nenhum depois da seleção.** `AccessibilityPlugin`
+devolvia o foco para `#term-to-explain`, campo que deixou de existir quando
+`ContentTools` foi removido na unificação do chat. Regressão silenciosa:
+nenhuma exceção, o foco simplesmente caía no `body`. Agora volta para
+`#accessibility-request`.
+
+Medido no navegador, nos dois tamanhos:
+
+| | painel durante a seleção | `aria-hidden` | foco após selecionar |
+|---|---|---|---|
+| desktop 1440 | visível | ausente | `accessibility-request` |
+| mobile 390 | recolhido | `true` | `accessibility-request` |
+
+E a troca de etapa com o painel aberto: `search → results`, painel segue no DOM
+e visível.
+
+**O chat não parecia o lugar de agir.** Era uma faixa apagada no rodapé, com
+campo estreito dividindo a linha com três botões de ícone. Virou um cartão
+elevado, com borda de acento no topo, título "Fale com o assistente", uma linha
+explicando o que dá para escrever, campo em largura total e mais alto, e o
+envio com **rótulo visível** em vez de só um ícone.
+
 ## 8. Fase 3 — Validação e evidências
 
 ### T3.1 — Regressão integral

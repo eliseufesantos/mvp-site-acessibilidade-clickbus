@@ -292,6 +292,18 @@ as ferramentas de conteúdo, e não alcança essa seleção livre.
 | axe, reflow, breakpoints, foco, teclado, jornada, endpoints | PASS | 0 violações, 0 px, 40 testes |
 | qualidade semântica da explicação por IA | NOT RUN | T1.8 segue aberta; por isso o glossário vem primeiro e a origem é declarada |
 
+### Resultado observado em 19/09/2026 — seleção, persistência e chat
+
+| Caso | Status | Evidência |
+|---|---|---|
+| painel permanece aberto durante a seleção no desktop | **FAIL corrigido** | fechava por herança da gaveta lateral; agora só se recolhe no mobile |
+| `aria-hidden` só quando o painel está oculto | PASS | ausente no desktop, `true` no mobile; axe segue sem `aria-hidden-focus` |
+| painel sobrevive à troca de etapa | **FAIL corrigido** | `search → results` com o painel no DOM e visível; proposta pendente é recolhida |
+| foco volta ao campo do chat após a seleção | **FAIL corrigido** | apontava para `term-to-explain`, removido com o `ContentTools`; o foco caía no `body` sem erro |
+| termo selecionado chega ao campo | PASS | `o que significa "…"?`, pronto para revisão antes do envio |
+| chat como ação principal | PASS | cartão elevado, título, campo maior e botão de envio rotulado |
+| axe, reflow, breakpoints, foco, teclado, jornada | PASS | 0 violações, 0 px, 40 testes, 0 erro de console |
+
 ## 8. Registro
 
 ```text

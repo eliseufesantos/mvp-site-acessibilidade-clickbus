@@ -354,10 +354,14 @@
 }
 
 /* Faixa fixa do chat na base, visivel em todas as superficies. */
+/* O chat é a porta de entrada do assistente e precisa parecer isso. Antes ele
+   se confundia com um rodapé: faixa apagada, campo estreito e botão só de
+   ícone. Agora é um cartão elevado, com contorno de acento e ação rotulada. */
 .accessibility-plugin .a11y-chat {
-  padding: 13px 16px 15px;
-  border-top: 1px solid var(--a11y-border);
+  padding: 15px 16px 16px;
+  border-top: 3px solid var(--a11y-accent);
   background: var(--a11y-soft);
+  box-shadow: 0 -10px 22px -18px rgba(43, 3, 68, 0.55);
 }
 
 /* O painel é um MVP didático: ver o pedido e a resposta lado a lado explica o
@@ -408,23 +412,31 @@
 .accessibility-plugin .a11y-chat__form > label {
   display: flex;
   align-items: center;
-  margin-bottom: 7px;
+  margin-bottom: 3px;
   color: var(--a11y-text);
-  font-size: 0.78rem;
-  font-weight: 650;
-  gap: 6px;
+  font-size: 0.97rem;
+  font-weight: 700;
+  gap: 7px;
+  letter-spacing: -0.01em;
 }
 
 .accessibility-plugin .a11y-chat__form > label svg {
-  width: 16px;
-  height: 16px;
+  width: 19px;
+  height: 19px;
   color: var(--a11y-accent-strong);
+}
+
+.accessibility-plugin .a11y-chat__hint {
+  margin: 0 0 10px;
+  color: var(--a11y-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
 }
 
 .accessibility-plugin .a11y-chat__suggestions {
   display: flex;
   flex-wrap: wrap;
-  margin-bottom: 8px;
+  margin-bottom: 9px;
   gap: 6px;
 }
 
@@ -446,21 +458,21 @@
 
 .accessibility-plugin .a11y-chat__row {
   display: grid;
-  align-items: end;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px;
 }
 
 .accessibility-plugin .a11y-chat__row textarea {
   width: 100%;
   min-width: 0;
-  min-height: 84px;
-  padding: 11px 12px;
-  border: 1px solid var(--a11y-border);
-  border-radius: 11px;
+  min-height: 108px;
+  padding: 12px 13px;
+  border: 2px solid color-mix(in srgb, var(--a11y-accent) 38%, var(--a11y-border));
+  border-radius: 12px;
   background: var(--cb-surface);
   color: var(--a11y-text);
-  font-size: 0.85rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
   resize: vertical;
 }
 
@@ -472,7 +484,39 @@
 
 .accessibility-plugin .a11y-chat__buttons {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 7px;
+}
+
+/* O envio é a ação principal: fica rotulado e ocupa o resto da linha. */
+.accessibility-plugin .a11y-chat__send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--a11y-accent);
+  color: #ffffff;
+  font-size: 0.87rem;
+  font-weight: 700;
+  gap: 8px;
+  flex: 1 1 auto;
+}
+
+.accessibility-plugin .a11y-chat__send svg {
+  width: 18px;
+  height: 18px;
+}
+
+.accessibility-plugin .a11y-chat__send:hover:not(:disabled) {
+  background: var(--a11y-accent-strong);
+}
+
+.accessibility-plugin .a11y-chat__send:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .accessibility-plugin .a11y-chat__icon-button {
@@ -1058,12 +1102,6 @@
   line-height: 1.4;
 }
 
-.accessibility-plugin--selecting .accessibility-plugin__surface {
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-}
-
 html[data-contrast='high'] .accessibility-plugin__trigger,
 html[data-contrast='high'] .accessibility-plugin .segmented-control button[aria-pressed='true'] {
   color: #080808;
@@ -1101,6 +1139,14 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
     left: 8px;
     width: auto;
     max-height: none;
+  }
+
+  /* No mobile o painel cobre a tela inteira: precisa sair da frente para a
+     pessoa conseguir selecionar o texto. No desktop ele fica ao lado. */
+  .accessibility-plugin--selecting .accessibility-plugin__surface {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
   }
 
   .accessibility-plugin .accessibility-panel {
@@ -1146,13 +1192,18 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
   }
 
   .accessibility-plugin .a11y-chat__row textarea {
-    min-height: 46px;
+    min-height: 84px;
   }
 
   .accessibility-plugin .a11y-chat__icon-button {
-    width: 44px;
-    min-width: 44px;
+    width: 46px;
+    min-width: 46px;
     height: 46px;
+  }
+
+  .accessibility-plugin .a11y-chat__send {
+    min-height: 46px;
+    padding-inline: 14px;
   }
 
   .accessibility-plugin .content-tools__actions {
