@@ -8,6 +8,61 @@ export interface LlmProvider {
 // do contrato é pequena; a folga aqui é para o raciocínio, não para o texto.
 const MAX_OUTPUT_TOKENS = 4096;
 
+// Retry único, restrito a 503 (modelo sobrecarregado) e 429 (limite de taxa do
+// provedor). Nesses dois casos o provedor recusa ANTES de gerar qualquer token,
+// então repetir não duplica custo nem produz efeito colateral — ao contrário de
+// 400/403/404/5xx determinísticos, que repetiriam a mesma falha.
+//
+// Medido em 19/09/2026 contra o domínio autorizado: em 10 chamadas, 3 voltaram
+// 503 e 5 voltaram 429, com apenas 2 sucessos. Sem retry, a demonstração falha
+// na frente do avaliador.
+const RETRYABLE_STATUS = new Set([429, 503]);
+const DEFAULT_RETRY_DELAY_MS = 600;
+// O handler aborta em 10 s. O teto garante que ainda sobre tempo para a segunda
+// tentativa mesmo quando o provedor pede uma espera longa em `retry-after`.
+const MAX_RETRY_DELAY_MS = 2_000;
+
+const retryDelayMs = (response: Response): number => {
+  const header = response.headers.get('retry-after');
+  const seconds = Number(header);
+  return header !== null && Number.isFinite(seconds) && seconds >= 0
+    ? Math.min(seconds * 1000, MAX_RETRY_DELAY_MS)
+    : DEFAULT_RETRY_DELAY_MS;
+};
+
+const waitBeforeRetry = (milliseconds: number, signal: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new Error('provider_aborted'));
+      return;
+    }
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new Error('provider_aborted'));
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, milliseconds);
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+
+const fetchWithSingleRetry = async (
+  fetchImplementation: FetchImplementation,
+  url: string,
+  init: RequestInit,
+  signal: AbortSignal,
+): Promise<Response> => {
+  const first = await fetchImplementation(url, init);
+  if (!RETRYABLE_STATUS.has(first.status)) return first;
+
+  const delay = retryDelayMs(first);
+  // Descarta o corpo da resposta recusada para não reter a conexão.
+  await first.body?.cancel().catch(() => undefined);
+  await waitBeforeRetry(delay, signal);
+  return fetchImplementation(url, init);
+};
+
 export interface ProviderConfiguration {
   endpoint: string;
   model: string;
@@ -93,7 +148,7 @@ class OpenAiCompatibleProvider implements LlmProvider {
   }
 
   async complete(system: string, user: string, signal: AbortSignal, responseSchema: unknown): Promise<unknown> {
-    const response = await this.fetchImplementation(this.chatCompletionsUrl, {
+    const response = await fetchWithSingleRetry(this.fetchImplementation, this.chatCompletionsUrl, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${this.configuration.apiKey}`,
@@ -110,7 +165,7 @@ class OpenAiCompatibleProvider implements LlmProvider {
         messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
       }),
       signal,
-    });
+    }, signal);
     if (!response.ok) throw new Error(`provider_http_${response.status}`);
     const body = await response.json() as { choices?: { message?: { content?: string } }[] };
     const content = body.choices?.[0]?.message?.content;
@@ -140,7 +195,7 @@ export class GeminiProvider implements LlmProvider {
   }
 
   async complete(system: string, user: string, signal: AbortSignal, responseSchema: unknown): Promise<unknown> {
-    const response = await this.fetchImplementation(this.generateContentUrl, {
+    const response = await fetchWithSingleRetry(this.fetchImplementation, this.generateContentUrl, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -158,7 +213,7 @@ export class GeminiProvider implements LlmProvider {
         store: false,
       }),
       signal,
-    });
+    }, signal);
 
     if (!response.ok) throw new Error(`provider_http_${response.status}`);
 

@@ -11,6 +11,9 @@ import {
   type TextResponse,
 } from './contracts';
 
+// Códigos que significam "tente de novo daqui a pouco", não "está quebrado".
+const BUSY_PROVIDER_CODES = new Set(['provider_http_429', 'provider_http_503', 'provider_timeout']);
+
 export class AccessibilityServiceError extends Error {
   constructor(message: string, readonly status?: number) {
     super(message);
@@ -41,8 +44,17 @@ const postJson = async <Request, Response>(
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
-    const body = await response.json().catch(() => null) as { error?: string } | null;
+    const body = await response.json().catch(() => null) as { error?: string; code?: string } | null;
     if (!response.ok) {
+      // Sobrecarga e limite de taxa do provedor não são defeito: o servidor já
+      // tentou uma segunda vez. Dizer "não conseguiu responder" faria a pessoa
+      // desistir, quando esperar alguns segundos resolve.
+      if (body?.code && BUSY_PROVIDER_CODES.has(body.code)) {
+        throw new AccessibilityServiceError(
+          'O serviço de IA está ocupado agora. Aguarde alguns segundos e peça novamente — os ajustes manuais continuam disponíveis.',
+          response.status,
+        );
+      }
       const fallback = response.status === 503
         ? 'O planejamento por IA ainda não foi configurado. Os ajustes manuais continuam disponíveis.'
         : 'O assistente não conseguiu responder agora. Tente novamente ou use os ajustes manuais.';
