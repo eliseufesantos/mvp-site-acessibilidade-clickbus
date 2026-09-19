@@ -6,7 +6,7 @@
 
 O ClickBus Acessível é um MVP acadêmico que reproduz, com dados fictícios, uma jornada de compra de passagem rodoviária: busca, resultados, escolha de assento, dados do passageiro e confirmação simulada. O principal diferencial é um plugin lateral de acessibilidade que permite adaptar a leitura e a apresentação da interface sem alterar o fluxo principal.
 
-A solução funciona localmente por meio de controles manuais, preferências persistentes, glossário e simplificações revisadas. O adaptador servidor para Gemini também está implementado e testado sem credencial real; conectividade e qualidade do modelo continuam pendentes de um smoke com segredo apenas no runtime. A integração demonstrativa Rybená foi implementada, mas a tradução real ainda depende da autorização do domínio/token pelo fornecedor.
+A solução funciona localmente por meio de controles manuais, preferências persistentes, glossário e simplificações revisadas. O adaptador servidor para Gemini também está implementado e testado sem credencial real; conectividade e qualidade do modelo continuam pendentes de um smoke com segredo apenas no runtime. Para a Rybená, um token temporário vinculado ao domínio autorizado foi recebido; handler, URL e contrato do adaptador foram validados localmente, enquanto configuração na Vercel e o caminho navegador/CDN/player ainda estão `NOT RUN`.
 
 ## Estrutura sugerida para a apresentação
 
@@ -78,11 +78,13 @@ Nesta versão, o caminho técnico usa o endpoint REST nativo do Gemini, resposta
 ### 7. Libras e Rybená
 
 - A autorização de uso gratuito da Rybená foi confirmada.
+- Um token temporário vinculado ao domínio autorizado foi recebido fora do repositório.
 - O projeto já possui um contrato de integração e uma área de atribuição na interface.
-- O CDN e a API documentada estão integrados sob demanda, com `doNotTrack` ativo.
-- O teste local recebeu “Token Rybená não autorizado”; por transparência, o MVP informa a falha e não simula tradução.
+- Sob ação explícita, o loader consulta `GET /api/accessibility/rybena`; o endpoint lê `RYBENA_ACCESS_TOKEN` somente no servidor e responde `no-store` com a URL validada do CDN em `mode=api` e `doNotTrack=true`.
+- O endpoint aceita somente HTTPS no hostname autorizado; aliases e previews são recusados. A requisição de configuração expira em 10 s, e download/preparação do player em 15 s por etapa.
+- A credencial ainda não foi configurada na Vercel e nenhum deploy/smoke foi executado. O teste histórico em localhost foi recusado e pode continuar assim por não ser o domínio vinculado.
 
-**Estado correto:** arquitetura preparada, integração real bloqueada e ainda não validada.
+**Estado correto:** handler, URL e contrato do adaptador validados localmente; fetch no navegador, injeção da tag, CDN/player no domínio autorizado ainda `NOT RUN`; qualidade linguística não homologada.
 
 ### 8. Arquitetura e tecnologias
 
@@ -100,7 +102,7 @@ O núcleo de acessibilidade é determinístico, reversível e independente da di
 Estado documentado em 17 de setembro de 2026:
 
 - TypeScript e build de produção aprovados.
-- 22 testes locais do núcleo de acessibilidade aprovados, incluindo adaptador Gemini e proteções do endpoint com doubles explícitos.
+- 24 testes locais do núcleo de acessibilidade aprovados, incluindo adaptador Gemini, handler/URL Rybená e contrato do adaptador com doubles explícitos; eles não exercitam injeção DOM nem player real.
 - Interface verificada em 1440×900, 390×844 e 320×844 pixels CSS.
 - Texto a 150% e alto contraste sem rolagem horizontal em mobile.
 - Comportamento modal e não modal validado no limite entre 820 e 821 pixels.
@@ -115,7 +117,7 @@ Limitações atuais:
 
 - adaptador Gemini implementado, mas chave ausente do runtime e smoke/avaliação real ainda não executados;
 - quota/budget do Google e rate limit persistente/WAF ainda precisam ser configurados antes de exposição pública;
-- integração Rybená aguardando autorização do domínio/token e homologação;
+- configuração de `RYBENA_ACCESS_TOKEN` na Vercel, deploy e smoke Rybená ainda `NOT RUN`; homologação com pessoas surdas sinalizantes permanece pendente;
 - voz real ainda não validada nesta rodada;
 - testes com NVDA/VoiceOver, pessoas usuárias, Safari/iOS e zoom de 200% pendentes.
 
@@ -123,7 +125,7 @@ Próximos passos:
 
 - configurar o segredo Gemini somente no runtime do projeto Vercel escolhido, com quota e alerta de custo;
 - executar um smoke e validar o planejador com a matriz de pedidos reais;
-- liberar o domínio/token da demonstração e homologar a Rybená;
+- configurar a credencial temporária somente no projeto/ambiente Vercel do domínio autorizado, executar smoke sem registrar a URL tokenizada, remover/rotacionar ao expirar e homologar a Rybená;
 - realizar testes com leitores de tela e pessoas usuárias, incluindo pessoas surdas sinalizantes;
 - repetir a regressão completa da jornada após novas integrações.
 

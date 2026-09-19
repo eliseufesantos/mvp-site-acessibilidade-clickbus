@@ -1,6 +1,6 @@
 # SDD — Acessibilidade Assistida por IA
 
-Versão 2.2 · 17 de setembro de 2026 · Documento normativo de engenharia.
+Versão 2.3 · 18 de setembro de 2026 · Documento normativo de engenharia.
 
 ## 1. Estado inspecionado
 
@@ -9,13 +9,15 @@ A aplicação usa React 18, TypeScript e Vite. A réplica possui a jornada `sear
 Classificação da auditoria Rybená:
 
 - integração demonstrativa: adaptador real carregado sob demanda a partir do CDN público;
+- configuração local: handler, construção/validação da URL e contrato do adaptador com runtime falso validados por typecheck, build e suíte de 24 testes; fetch no navegador, injeção DOM e player não foram exercitados;
 - métodos confirmados: `openPlayer`, `closePlayer`, `switchToLibras`, `translate`, `pause`, `play`, `stop`, `setSpeed`, `handleLoaded` e `handleTranslate`;
 - mock/double: nenhum em produção;
-- autorização real: `127.0.0.1` recusado pelo fornecedor com “Token Rybená não autorizado”;
-- limites atuais: URL `master/latest` não versionada, domínio/token pendente e tradução não homologada;
+- acesso técnico: token temporário vinculado ao domínio autorizado recebido fora do repositório; configuração de `RYBENA_ACCESS_TOKEN` na Vercel ainda `NOT RUN`;
+- teste histórico: `127.0.0.1` foi recusado pelo fornecedor e pode continuar não autorizado por não ser o domínio vinculado ao token;
+- limites atuais: URL `master/latest` não versionada, credencial temporária, deploy/smoke real pendentes e tradução não homologada;
 - legado VLibras: removido da árvore atual; existia no `HEAD` e incluía helper não documentado.
 
-Nenhum VLibras é carregado. O script Rybená só entra após clique explícito em “Traduzir trecho em Libras”; não há polling nem retry automático.
+Nenhum VLibras é carregado. O script Rybená só entra após clique explícito em “Traduzir trecho em Libras”; nesse momento o loader consulta `GET /api/accessibility/rybena`, sem polling ou retry automático.
 
 ## 2. Arquitetura
 
@@ -29,7 +31,9 @@ Plugin lateral fixo (fora do Header)
                                       ↓
                             executor determinístico
                                       ├─ store v3 → adaptador ClickBus → tokens
-                                      └─ LibrasPort → RybenaBrowserAdapter sob demanda
+                                      └─ LibrasPort → GET /api/accessibility/rybena
+                                                        ↓
+                                              RybenaBrowserAdapter sob demanda
 ```
 
 O núcleo não importa dados comerciais nem executa navegação. Contratos de planejamento, explicação e simplificação são distintos. Falhas de IA e Rybená são independentes.
@@ -54,7 +58,8 @@ app/src/styles/accessibility-plugin.css
 app/server/accessibility/handler.ts
 app/server/accessibility/provider.ts
 app/server/accessibility/prompt.ts
-api/accessibility/{plan,explain,simplify}.ts
+app/server/accessibility/rybena.ts
+api/accessibility/{plan,explain,simplify,rybena}.ts
 ```
 
 ## 3. Estado canônico
@@ -179,9 +184,13 @@ interface LibrasAdapter {
 }
 ```
 
-Em produção, `RybenaBrowserAdapter` injeta uma única vez `rybena.js?mode=api`, define `doNotTrack="true"`, chama o carregador documentado com `hidden` e só então acessa `RybenaApi`. As operações mapeiam o contrato para os métodos oficiais. Timeout e `script.onerror` são finitos; não há polling nem retry automático. `RybenaUnavailableAdapter` permanece como fallback determinístico e apoio a testes.
+Em produção, `RybenaBrowserAdapter` solicita a configuração same-origin somente após ação explícita. `GET /api/accessibility/rybena` lê `RYBENA_ACCESS_TOKEN` apenas no servidor, valida seu formato e responde `no-store`, `Cross-Origin-Resource-Policy: same-origin` e `nosniff` com uma URL do host e caminho fixos da Rybená, contendo `token`, `mode=api` e `doNotTrack=true`; sem configuração válida, retorna `503` finito. Com credencial, o handler aceita somente HTTPS no hostname exato `mvp-site-acessibilidade-clickbus-lovat.vercel.app`; HTTP, localhost e aliases/previews/outros hostnames retornam `403`.
 
-Para tradução real, a Rybená ainda precisa autorizar o domínio da demonstração ou fornecer o token aplicável. Depois disso devem ser registrados limites, versão, procedimento de teste e homologação com pessoas surdas sinalizantes.
+O cliente revalida origem, caminho e parâmetros antes de injetar uma tag no `<head>`, também com atributo `doNotTrack="true"` e política de referência restrita. O fetch da configuração é abortado após 10 s. Download do script, `getRybenaScripts('hidden')` e espera de `handleLoaded` têm limite independente de 15 s. Erro/timeout remove a tag; se ela carregar sem disponibilizar `RybenaDOM` ou `RybenaApi`, também é removida para permitir nova tentativa manual. Não há retry automático.
+
+O token não pode ser versionado, embutido no bundle estático, persistido ou incluído em logs/evidências. Como o protocolo do fornecedor exige a URL tokenizada no navegador, ela fica observável na rede somente depois da ação da pessoa usuária; a proteção operacional depende do vínculo ao domínio e da validade curta. `RybenaUnavailableAdapter` permanece como fallback determinístico e apoio a testes.
+
+O token temporário aplicável já foi recebido. Antes de declarar tradução real, ainda é necessário configurar `RYBENA_ACCESS_TOKEN` no projeto/ambiente Vercel que atende o domínio autorizado, executar deploy e smoke controlado e registrar os resultados sem expor a URL completa. Localhost pode continuar recusado. A qualidade linguística permanece pendente de homologação com pessoas surdas sinalizantes.
 
 Doubles de Libras ficam exclusivamente em testes, nomeados `TestLibrasAdapter`, sem importação pelo bundle de produção.
 
@@ -208,9 +217,9 @@ O adaptador de voz usa `SpeechRecognition`/`webkitSpeechRecognition` somente ap�
 ## 10. Segurança e acessibilidade
 
 - mensagens renderizadas como texto;
-- JavaScript remoto da Rybená só é executado após ação explícita na ferramenta de Libras;
+- JavaScript remoto da Rybená e a consulta à URL tokenizada só ocorrem após ação explícita na ferramenta de Libras;
 - nenhum DOM completo, screenshot ou formulário sai da página;
-- não há credenciais no frontend ou em variáveis `VITE_*`;
+- não há credenciais versionadas, em variáveis `VITE_*` ou embutidas no bundle estático; `RYBENA_ACCESS_TOKEN` existe somente no runtime do servidor e sua URL de uso não entra em logs/evidências;
 - foco não é movido a cada mensagem; região viva anuncia apenas resumo;
 - acionador fixo à esquerda e fora do header; desktop não modal; mobile modal com foco, Escape e retorno;
 - no modo de seleção, o painel recolhe, deixa de bloquear a página e retorna com foco no campo do termo após captura ou cancelamento;
@@ -220,6 +229,6 @@ O adaptador de voz usa `SpeechRecognition`/`webkitSpeechRecognition` somente ap�
 
 ## 11. Critério técnico Rybená
 
-Podem passar nesta entrega: contrato, isolamento, carregamento sob demanda, mapeamento dos métodos, atribuição, ausência de retries, falha de autorização explícita e independência do núcleo.
+Passam localmente: contrato, isolamento, handler desativado sem configuração, método, host HTTPS exato, headers de segurança, construção/validação estrita da URL, mapeamento dos métodos com runtime falso, atribuição, falha explícita e independência do núcleo.
 
-O CDN e a falha real do serviço foram exercitados. Permanecem **BLOCKED / NOT VALIDATED — provider domain or token not authorized**: envio aceito, tradução, player, pause/resume/stop, velocidade, eventos de conclusão e qualidade linguística.
+A rota local sem token teve smoke `503`/`405`. Fetch pelo navegador, injeção DOM, download do CDN, globals do fornecedor, preparação e player real permanecem **NOT RUN** até configurar a Vercel e executar o smoke no hostname autorizado. Envio aceito, tradução, pause/resume/stop, velocidade e eventos de conclusão continuam não validados; qualidade linguística requer homologação com pessoas surdas sinalizantes.

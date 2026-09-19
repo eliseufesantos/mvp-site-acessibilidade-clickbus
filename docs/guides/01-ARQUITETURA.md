@@ -63,6 +63,6 @@ Não foi adicionado React Router porque o MVP tem uma única jornada linear e is
 - O host Gemini usa `generateContent` somente no servidor; chave, prompt e resposta bruta não entram no bundle ou nos logs.
 - O middleware Vite e as funções Vercel da raiz compartilham o mesmo handler protegido por origem, tamanho e quota local.
 - Conteúdo autorizado é um registro estático por etapa; checkout e confirmação não são alvos.
-- O `RybenaBrowserAdapter` carrega o fornecedor sob demanda; falha de domínio/token não bloqueia o núcleo. O adaptador indisponível permanece para fallback/testes.
+- O `RybenaBrowserAdapter` consulta `GET /api/accessibility/rybena` e carrega o fornecedor somente sob demanda. A função lê `RYBENA_ACCESS_TOKEN` no servidor e responde `no-store`; configuração ausente ou recusa do fornecedor não bloqueiam o núcleo. O adaptador indisponível permanece para fallback/testes.
 
 Para incluir uma nova etapa, atualize `JourneyStep` em `types.ts`, o mapa de títulos e a composição em `App.tsx`.

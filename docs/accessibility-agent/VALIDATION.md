@@ -1,12 +1,12 @@
 # Validação — Acessibilidade Assistida por IA
 
-Versão 2.2 · 17 de setembro de 2026.
+Versão 2.3 · 18 de setembro de 2026.
 
 ## 1. Regra de evidência
 
 Testes automatizados, navegador, integrações reais e avaliação humana são registrados separadamente. Doubles validam contratos e falhas, não inferência ou tradução reais. `PASS` só descreve comportamento efetivamente observado.
 
-Estado Rybená: CDN e recusa real observados; **BLOCKED / NOT VALIDATED — provider domain or token not authorized** para tradução e reprodução.
+Estado Rybená: token temporário vinculado ao domínio autorizado recebido; handler, construção/validação da URL e contrato do adaptador com runtime falso passaram localmente. Fetch no navegador, injeção da tag, download, globals, preparação e player permanecem **NOT RUN**, assim como configuração na Vercel e deploy.
 
 ## 2. Matriz funcional
 
@@ -35,15 +35,16 @@ Estado Rybená: CDN e recusa real observados; **BLOCKED / NOT VALIDATED — prov
 | T21 | Simplificar conteúdo proibido/injeção | recusa; nenhuma ação visual |
 | T22 | Voz suportada | iniciar/parar, indicador, edição e confirmação |
 | T23 | Voz não suportada/fechar capturando | mensagem estável; captura abortada |
-| T24 | Rybená não autorizada | carregamento sob demanda; mensagem e atribuição; sem retry automático; núcleo preservado |
+| T24 | Rybená sem configuração ou recusada | rota `GET` retorna `503`, método indevido `405`; falha finita, atribuição e núcleo preservados |
 | T25 | Jornada completa com preferências | busca/viagem/assento/passageiro preservados |
 | T26 | 390×844, 320 px, texto 150% e zoom | sem overflow geral ou controles cortados |
-| T27 | Chaves/bundle/logs | nenhum segredo ou conteúdo privado |
+| T27 | Chaves/bundle/logs | nenhuma credencial em Git, bundle estático, logs ou evidências; URL tokenizada não registrada |
 | T28 | Fechar painel durante requisição/proposta | preferências mantidas; operação invalidada |
 | T29 | Adaptador Gemini com transporte falso | URL/headers/payload nativos; JSON válido; bloqueio/truncamento/malformação falham sem retry |
 | T30 | Proteção do endpoint | origem, JSON e 16 KiB exigidos; quota retorna 429 antes de nova chamada paga |
+| T31 | Contrato Rybená | handler exige HTTPS no hostname exato, recusa aliases, responde `no-store`/CORP; builder/parser rejeitam token, origem ou parâmetros inválidos; adapter mapeia controles com runtime falso |
 
-T13–T17, T21, T24, T25, T27, T29 e T30 são bloqueadores do núcleo.
+T13–T17, T21, T24, T25, T27 e T29–T31 são bloqueadores do núcleo.
 
 ## 3. Avaliação do planejador
 
@@ -65,22 +66,27 @@ Executar três rodadas por caso e acrescentar paráfrases não usadas no prompt.
 
 ## 4. Rybená nesta entrega
 
-Podem ser aprovados:
+A aprovação local automática cobre:
 
 - contrato `LibrasAdapter`;
 - isolamento do fornecedor;
 - estados `idle`, `loading`, `ready`, `translating`, `paused` e `failed`;
 - UI e atribuição;
-- carregamento do script somente após ação explícita;
+- endpoint `GET /api/accessibility/rybena` desativado sem `RYBENA_ACCESS_TOKEN`, com resposta `no-store`;
+- método, HTTPS e hostname exato `mvp-site-acessibilidade-clickbus-lovat.vercel.app`; aliases/previews/outros hosts recusados;
+- `Cross-Origin-Resource-Policy: same-origin`, `nosniff`, validação do caminho, formato do token e parâmetros;
 - ausência de polling e retry automático;
-- mapeamento determinístico dos métodos documentados;
-- erro real de domínio/token não autorizado;
+- mapeamento determinístico dos métodos documentados com runtime falso;
+- falha segura quando a configuração está ausente ou o fornecedor recusa a origem;
 - doubles exclusivos dos testes;
 - funcionamento independente do núcleo.
 
-Permanecem bloqueados:
+Permanecem `NOT RUN` ou não validados:
 
-- autorização de domínio/token bem-sucedida;
+- configuração de `RYBENA_ACCESS_TOKEN` no projeto/ambiente Vercel que atende o domínio autorizado;
+- deploy e smoke no domínio autorizado;
+- fetch da configuração no navegador, injeção da tag, download do CDN e presença dos globals;
+- preparação do player e timeouts reais de 10 s/15 s;
 - envio/retorno real de texto;
 - tradução e reprodução;
 - abrir/fechar player real;
@@ -88,7 +94,7 @@ Permanecem bloqueados:
 - eventos e falhas reais do fornecedor;
 - avaliação linguística com pessoas surdas sinalizantes.
 
-Marcação obrigatória: **BLOCKED / NOT VALIDATED — provider domain or token not authorized**.
+Marcação obrigatória até o smoke: **NOT RUN — Vercel configuration, deployment and authorized-domain smoke pending**. Mesmo após funcionamento técnico, qualidade linguística permanece não homologada até avaliação com pessoas surdas sinalizantes.
 
 ## 5. Acessibilidade e regressão visual
 
@@ -126,7 +132,7 @@ Não alegar conformidade integral apenas por esses testes.
 - [x] atribuição Rybená visível;
 - [x] reflow e ausência de overflow validados em viewport CSS exato de 320×844;
 - [ ] teclado completo, zoom 200% e regressão integral da jornada;
-- [x] segredo ausente do bundle/logs;
+- [x] credenciais ausentes do repositório, bundle estático e logs no baseline inspecionado;
 - [x] documentação e evidências refletem o estado real;
 - [x] pesquisa humana marcada como realizada ou pendente, nunca presumida.
 
@@ -134,11 +140,11 @@ Não alegar conformidade integral apenas por esses testes.
 
 | Grupo | Resultado | Evidência |
 | --- | --- | --- |
-| contratos/store/executor | PASS | 22 testes locais; adaptadores Gemini/Rybená cobertos com transporte/runtime falso; ação desconhecida e revisão obsoleta rejeitadas; `planId` idempotente |
-| TypeScript | PASS | `tsc --noEmit -p tsconfig.app.json --pretty false` |
+| contratos/store/executor | PASS | 24 testes locais; adaptadores Gemini/Rybená, handler e URL cobertos com transporte/runtime falso; ação desconhecida e revisão obsoleta rejeitadas; `planId` idempotente |
+| TypeScript | PASS | `pnpm --dir app typecheck` |
 | build | PASS | Vite 6.4.3, 1.616 módulos |
-| funções Vercel | PASS local | três wrappers da raiz compilados por `tsc`; deployment/smoke remoto ainda `NOT RUN` |
-| API local sem segredo | PASS | `vite preview`: SPA `200 text/html`, POST same-origin `503 application/json` e origem indevida `403 application/json` |
+| funções Vercel | PASS local | quatro wrappers da raiz compilados por `tsc`, incluindo `GET /api/accessibility/rybena`; deployment/smoke remoto ainda `NOT RUN` |
+| API local sem segredo | PASS | `vite preview`: SPA `200`; planejador same-origin `503` e origem indevida `403`; rota Rybená sem token `GET 503` e método indevido `405` |
 | painel desktop | PASS | 1440×900; acionador fixo à esquerda permaneceu na posição durante scroll e nas etapas busca, resultados e assentos; drawer não modal, Escape e retorno de foco |
 | painel mobile | PASS | 390×844 modal; em 320×844, documento e painel com `scrollWidth=clientWidth=320`; escala de texto a 150% e alto contraste sem overflow horizontal |
 | breakpoint 820/821 | PASS | 820 px: diálogo, backdrop, `aria-modal="true"` e `body` bloqueado; 821 px: região não modal, sem backdrop e `body` rolável; sem overflow nos dois casos |
@@ -149,7 +155,8 @@ Não alegar conformidade integral apenas por esses testes.
 | simplificação local | PASS | versão revisada exibida separadamente e texto original preservado |
 | simplificação por LLM | NOT RUN | adaptador existe, mas conectividade/qualidade do modelo real não foram exercitadas |
 | voz real | NOT RUN | permissão de microfone não concedida nesta rodada |
-| Rybená real | BLOCKED / NOT VALIDATED | CDN carregou; fornecedor exibiu “Token Rybená não autorizado” em `127.0.0.1` |
+| handler/URL/contrato Rybená | PASS local | `503`/`405`/`403`/`200`, host HTTPS exato, CORP, construção/parser da URL e controles com runtime falso; sem credencial real |
+| caminho navegador/CDN/player Rybená | NOT RUN | fetch, injeção DOM, download, globals, preparação e player não foram exercitados; `RYBENA_ACCESS_TOKEN` ainda não configurada na Vercel e deploy/smoke não executados |
 | ausência de legado | PASS | zero recursos VLibras; Rybená somente após ação explícita |
 | leitor de tela/pesquisa humana | NOT RUN | requer NVDA/VoiceOver e participantes adequados |
 

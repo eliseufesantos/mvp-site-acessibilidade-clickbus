@@ -5,11 +5,26 @@ import {
   MAX_ACCESSIBILITY_REQUEST_BYTES,
   type AccessibilityEndpoint,
 } from './server/accessibility/handler';
+import { handleRybenaRequest } from './server/accessibility/rybena';
 
 type MiddlewareServer = { middlewares: { use(handler: (request: any, response: any, next: () => void) => void): void } };
 
 const attachAccessibilityApi = (server: MiddlewareServer) => {
   server.middlewares.use(async (request, response, next) => {
+      const rybenaMatch = request.url?.match(/^\/api\/accessibility\/rybena(?:\?|$)/);
+      if (rybenaMatch) {
+        const host = request.headers.host || '127.0.0.1:4173';
+        const webRequest = new Request(`http://${host}${request.url}`, {
+          method: request.method,
+          headers: request.headers as HeadersInit,
+        });
+        const result = handleRybenaRequest(webRequest);
+        response.statusCode = result.status;
+        result.headers.forEach((value, key) => response.setHeader(key, value));
+        response.end(Buffer.from(await result.arrayBuffer()));
+        return;
+      }
+
       const match = request.url?.match(/^\/api\/accessibility\/(plan|explain|simplify)(?:\?|$)/);
       if (!match) { next(); return; }
       const chunks: Uint8Array[] = [];

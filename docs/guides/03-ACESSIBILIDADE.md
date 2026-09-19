@@ -52,9 +52,9 @@ O reconhecimento de voz depende do navegador, começa e termina apenas por açã
 
 ## Libras e Rybená
 
-A autorização gratuita da Rybená está confirmada e o crédito/link são obrigatórios. A documentação pública fornece CDN, modo API, métodos e eventos básicos. Ainda faltam domínio/token autorizado e homologação.
+A autorização gratuita da Rybená está confirmada, o crédito/link são obrigatórios e um token temporário vinculado ao domínio autorizado foi recebido fora do repositório. Configuração na Vercel, deploy, smoke real e homologação permanecem pendentes.
 
-Nesta entrega, `RybenaBrowserAdapter` carrega a API somente ao solicitar tradução, com `doNotTrack="true"`, e oferece abrir/fechar, pausar, retomar, parar e velocidade. O teste local recebeu “Token Rybená não autorizado”. Não existe polling, retry automático, VLibras ou tradução simulada.
+Nesta entrega, `RybenaBrowserAdapter` consulta `GET /api/accessibility/rybena` somente ao solicitar tradução. O endpoint lê `RYBENA_ACCESS_TOKEN` no servidor e responde `no-store` com a URL validada em `mode=api` e `doNotTrack=true`. A recusa histórica em localhost pode continuar porque o token é vinculado ao domínio autorizado. Não existe polling, retry automático, VLibras ou tradução simulada; qualidade linguística só pode ser afirmada após homologação com pessoas surdas sinalizantes.
 
 ## Navegação e semântica
 

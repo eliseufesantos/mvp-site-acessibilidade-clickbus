@@ -1,6 +1,15 @@
 import type { AccessibilityPreferences } from '../../../types';
+import {
+  buildRybenaScriptUrl,
+  handleRybenaRequest,
+  RYBENA_AUTHORIZED_HOST,
+} from '../../../../server/accessibility/rybena';
 import type { LibrasAdapter } from '../adapters/libras/contracts';
-import { RybenaBrowserAdapter, type RybenaRuntime } from '../adapters/libras/rybenaBrowser';
+import {
+  parseRybenaScriptUrl,
+  RybenaBrowserAdapter,
+  type RybenaRuntime,
+} from '../adapters/libras/rybenaBrowser';
 import { RybenaUnavailableAdapter, RYBENA_UNAVAILABLE_MESSAGE } from '../adapters/libras/rybenaUnavailable';
 import {
   clearRememberedApprovedPageSelection,
@@ -290,6 +299,64 @@ await test('Rybená adapter stays unavailable without network behavior', async (
   const adapter: LibrasAdapter = new RybenaUnavailableAdapter();
   const receipt = await adapter.translate({ id: 'search-help', text: 'Ajuda' });
   assert(receipt.status === 'unavailable' && receipt.message === RYBENA_UNAVAILABLE_MESSAGE);
+});
+
+await test('Rybená accepts only the expected tokenized API script URL', () => {
+  const testToken = 'a'.repeat(64);
+  const expected = `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=api&doNotTrack=true`;
+  assert(parseRybenaScriptUrl(expected) === expected);
+
+  for (const invalid of [
+    `https://attacker.example/dom/master/latest/rybena.js?token=${testToken}&mode=api&doNotTrack=true`,
+    'https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=short&mode=api&doNotTrack=true',
+    `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=full&doNotTrack=true`,
+    `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=api&doNotTrack=false`,
+    `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=api&doNotTrack=true&extra=value`,
+    `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&token=${testToken}&mode=api&doNotTrack=true`,
+    `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=api&doNotTrack=true#unexpected`,
+  ]) {
+    let rejected = false;
+    try { parseRybenaScriptUrl(invalid); } catch { rejected = true; }
+    assert(rejected, 'unexpected Rybená script URL should be rejected');
+  }
+});
+
+await test('Rybená runtime configuration is server-sourced and fails closed', async () => {
+  const testToken = 'b'.repeat(64);
+  const scriptUrl = buildRybenaScriptUrl(testToken);
+  assert(scriptUrl !== null && parseRybenaScriptUrl(scriptUrl) === scriptUrl);
+  assert(buildRybenaScriptUrl('invalid') === null);
+
+  const missing = handleRybenaRequest(new Request('http://local/api/accessibility/rybena'), {});
+  assert(missing.status === 503 && missing.headers.get('cache-control') === 'no-store');
+  assert(!(await missing.text()).includes(testToken));
+
+  const wrongMethod = handleRybenaRequest(new Request('http://local/api/accessibility/rybena', {
+    method: 'POST',
+  }), { RYBENA_ACCESS_TOKEN: testToken });
+  assert(wrongMethod.status === 405 && wrongMethod.headers.get('allow') === 'GET');
+
+  const wrongHost = handleRybenaRequest(
+    new Request('https://preview.example/api/accessibility/rybena'),
+    { RYBENA_ACCESS_TOKEN: testToken },
+  );
+  assert(wrongHost.status === 403);
+  const insecureOrigin = handleRybenaRequest(
+    new Request(`http://${RYBENA_AUTHORIZED_HOST}/api/accessibility/rybena`),
+    { RYBENA_ACCESS_TOKEN: testToken },
+  );
+  assert(insecureOrigin.status === 403);
+
+  const configured = handleRybenaRequest(
+    new Request(`https://${RYBENA_AUTHORIZED_HOST}/api/accessibility/rybena`),
+    { RYBENA_ACCESS_TOKEN: testToken },
+  );
+  assert(configured.status === 200);
+  assert(configured.headers.get('cache-control') === 'no-store');
+  assert(configured.headers.get('cross-origin-resource-policy') === 'same-origin');
+  assert(configured.headers.get('x-content-type-options') === 'nosniff');
+  const payload = await configured.json() as { scriptUrl?: unknown };
+  assert(parseRybenaScriptUrl(payload.scriptUrl) === scriptUrl);
 });
 
 await test('content adapter excludes checkout and confirmation', () => {

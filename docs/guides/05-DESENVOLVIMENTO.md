@@ -42,7 +42,7 @@ O material atual para apresentação está em `docs/RESUMO-PARA-APRESENTACAO.md`
 - tokens visuais em `styles/tokens.css`;
 - ícones de interface via Lucide;
 - sem dados reais nem chamadas de negócio externas;
-- nenhum VLibras; Rybená somente após ação explícita, com falha segura quando domínio/token não estiver autorizado;
+- nenhum VLibras; Rybená somente após ação explícita via `GET /api/accessibility/rybena`, com `RYBENA_ACCESS_TOKEN` apenas no servidor e falha segura quando a configuração estiver ausente ou o fornecedor recusar a origem;
 - IA somente pelo backend e somente com endpoint, modelo e chave explicitamente configurados no processo ou cofre do host;
 - para Gemini, usar a base `https://generativelanguage.googleapis.com/v1beta`; nunca gravar a chave em `.env*`, comando versionado, log ou bundle do frontend;
 - chamadas de IA exigem origem autorizada, JSON até 16 KiB e respeitam quota local; um deployment público ainda requer quota/budget do Google e limitação persistente no host.

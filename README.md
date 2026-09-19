@@ -4,7 +4,7 @@ Projeto acadêmico que simula a jornada principal da ClickBus com melhorias de a
 
 O MVP inclui busca, resultados, seleção de assento, formulário de passageiro e confirmação simulada. A evolução **Acessibilidade Assistida por IA** acrescenta controles visuais e de leitura independentes, persistência/migração, desfazer, glossário, simplificação preparada, voz opcional e um planejador tipado no servidor, com adaptador REST nativo para Gemini já implementado.
 
-Não é necessário instalar ou implementar uma LLM local. Sem credenciais no runtime, os recursos manuais e locais continuam funcionando e os endpoints de IA retornam indisponibilidade controlada. A integração demonstrativa da Rybená também está implementada; a tradução real permanece bloqueada enquanto o fornecedor não autorizar o domínio ou token da demonstração.
+Não é necessário instalar ou implementar uma LLM local. Sem credenciais no runtime, os recursos manuais e locais continuam funcionando e os endpoints externos retornam indisponibilidade controlada. Na integração Rybená, handler, URL e contrato do adaptador foram validados localmente; o token temporário vinculado ao domínio autorizado foi recebido, mas configuração na Vercel e o caminho navegador/CDN/player ainda estão `NOT RUN`.
 
 ## Estrutura
 
@@ -35,7 +35,7 @@ A aplicação ficará disponível em [http://127.0.0.1:4173/](http://127.0.0.1:4
 
 Nenhuma variável de ambiente é necessária para executar a jornada simulada, os controles manuais, o glossário e as simplificações locais. O adaptador Gemini já faz parte do servidor; não há modelo local, serviço adicional ou implementação de provedor a configurar no computador de desenvolvimento.
 
-Credenciais são necessárias somente para habilitar chamadas reais ao Gemini no runtime escolhido. Elas devem permanecer no servidor ou no cofre da Vercel, nunca em variáveis `VITE_*`, no código ou na documentação. A configuração de hospedagem, segurança, quota e orçamento está descrita em [`docs/guides/08-DEPLOY-VERCEL.md`](docs/guides/08-DEPLOY-VERCEL.md).
+Credenciais são necessárias somente para habilitar Gemini ou Rybená reais no runtime escolhido. As variáveis devem ficar no servidor ou no cofre da Vercel, nunca em `VITE_*`, no código ou na documentação. Para a Rybená, `RYBENA_ACCESS_TOKEN` alimenta `GET /api/accessibility/rybena`, que retorna uma URL de CDN `no-store` somente quando o loader é acionado; por exigência do fornecedor, o valor fica observável nessa URL no navegador. A configuração de hospedagem, segurança, expiração, quota e orçamento está descrita em [`docs/guides/08-DEPLOY-VERCEL.md`](docs/guides/08-DEPLOY-VERCEL.md).
 
 ## Validação local
 

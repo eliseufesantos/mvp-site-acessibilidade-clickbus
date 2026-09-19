@@ -2,10 +2,18 @@ import type { AccessibilityPreferences } from '../../../../types';
 import type { LibrasAdapter, LibrasContent, LibrasReceipt, LibrasSnapshot, LibrasState } from './contracts';
 
 const RYBENA_SCRIPT_ID = 'rybena-api-script';
-const RYBENA_SCRIPT_URL = 'https://cdn.rybena.com.br/dom/master/latest/rybena.js?mode=api';
+const RYBENA_CONFIG_URL = '/api/accessibility/rybena';
+const RYBENA_SCRIPT_ORIGIN = 'https://cdn.rybena.com.br';
+const RYBENA_SCRIPT_PATH = '/dom/master/latest/rybena.js';
+const RYBENA_TOKEN_PATTERN = /^[a-f0-9]{64}$/i;
+const RYBENA_CONFIG_TIMEOUT_MS = 10_000;
 const RYBENA_LOAD_TIMEOUT_MS = 15_000;
 const RYBENA_ATTRIBUTION = 'Tradução em Libras por Rybená';
 const RYBENA_ATTRIBUTION_URL = 'https://www.rybena.com.br/';
+
+interface RybenaConfiguration {
+  scriptUrl?: unknown;
+}
 
 export interface RybenaRuntime {
   closePlayer(): void;
@@ -46,6 +54,90 @@ const getScriptLoader = () => {
   return (window as RybenaWindow).RybenaDOM?.getInstance() ?? null;
 };
 
+export const parseRybenaScriptUrl = (value: unknown): string => {
+  if (typeof value !== 'string') throw new Error('A configuração da Rybená é inválida.');
+
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error('A configuração da Rybená é inválida.');
+  }
+
+  const allowedParameters = new Set(['token', 'mode', 'doNotTrack']);
+  const hasUnexpectedParameter = Array.from(url.searchParams.keys())
+    .some((parameter) => !allowedParameters.has(parameter));
+  const token = url.searchParams.get('token') ?? '';
+  if (
+    url.origin !== RYBENA_SCRIPT_ORIGIN
+    || url.pathname !== RYBENA_SCRIPT_PATH
+    || url.username !== ''
+    || url.password !== ''
+    || url.hash !== ''
+    || hasUnexpectedParameter
+    || url.searchParams.size !== 3
+    || url.searchParams.getAll('token').length !== 1
+    || url.searchParams.getAll('mode').length !== 1
+    || url.searchParams.getAll('doNotTrack').length !== 1
+    || !RYBENA_TOKEN_PATTERN.test(token)
+    || url.searchParams.get('mode') !== 'api'
+    || url.searchParams.get('doNotTrack') !== 'true'
+  ) {
+    throw new Error('A configuração da Rybená é inválida.');
+  }
+
+  return url.toString();
+};
+
+const fetchRybenaScriptUrl = async (): Promise<string> => {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), RYBENA_CONFIG_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch(RYBENA_CONFIG_URL, {
+      method: 'GET',
+      headers: { accept: 'application/json' },
+      cache: 'no-store',
+      credentials: 'same-origin',
+      referrerPolicy: 'no-referrer',
+      signal: controller.signal,
+    });
+  } catch {
+    throw new Error('Não foi possível carregar a configuração da Rybená.');
+  } finally {
+    window.clearTimeout(timeout);
+  }
+
+  if (response.status === 503) {
+    throw new Error('A Rybená ainda não foi configurada neste ambiente.');
+  }
+  if (!response.ok) {
+    throw new Error('Não foi possível carregar a configuração da Rybená.');
+  }
+
+  let configuration: RybenaConfiguration;
+  try {
+    configuration = await response.json() as RybenaConfiguration;
+  } catch {
+    throw new Error('A configuração da Rybená é inválida.');
+  }
+  return parseRybenaScriptUrl(configuration.scriptUrl);
+};
+
+const withProviderTimeout = <T>(operation: Promise<T>, message: string): Promise<T> => new Promise((resolve, reject) => {
+  const timeout = window.setTimeout(() => reject(new Error(message)), RYBENA_LOAD_TIMEOUT_MS);
+  operation.then(
+    (value) => {
+      window.clearTimeout(timeout);
+      resolve(value);
+    },
+    (error: unknown) => {
+      window.clearTimeout(timeout);
+      reject(error);
+    },
+  );
+});
+
 const waitUntilReady = (runtime: RybenaRuntime): Promise<RybenaRuntime> => new Promise((resolve, reject) => {
   const timeout = window.setTimeout(() => {
     reject(new Error('A Rybená demorou para responder. Tente novamente.'));
@@ -82,7 +174,10 @@ const loadRybenaRuntime: RuntimeLoader = () => {
 
         const scriptLoader = getScriptLoader();
         if (!scriptLoader) throw new Error('O carregador da API Rybená não ficou disponível.');
-        await scriptLoader.getRybenaScripts('hidden');
+        await withProviderTimeout(
+          scriptLoader.getRybenaScripts('hidden'),
+          'A Rybená demorou para preparar o player. Tente novamente.',
+        );
         const runtime = getRuntime();
         if (!runtime) {
           throw new Error('A Rybená não autorizou este endereço. Solicite a liberação do domínio ou um token de demonstração.');
@@ -90,6 +185,9 @@ const loadRybenaRuntime: RuntimeLoader = () => {
         await waitUntilReady(runtime);
         resolve(runtime);
       } catch (error) {
+        if (!getRuntime() && !getScriptLoader()) {
+          document.getElementById(RYBENA_SCRIPT_ID)?.remove();
+        }
         reject(error);
       }
     };
@@ -101,22 +199,51 @@ const loadRybenaRuntime: RuntimeLoader = () => {
     }
 
     if (existing) {
-      existing.addEventListener('load', finish, { once: true });
-      existing.addEventListener('error', () => reject(new Error('Não foi possível baixar o script da Rybená.')), { once: true });
-      return;
+      if (existing.dataset.rybenaState !== 'loaded') {
+        const timeout = window.setTimeout(() => {
+          existing.remove();
+          reject(new Error('A Rybená demorou para carregar. Tente novamente.'));
+        }, RYBENA_LOAD_TIMEOUT_MS);
+        existing.addEventListener('load', () => {
+          window.clearTimeout(timeout);
+          existing.dataset.rybenaState = 'loaded';
+          void finish();
+        }, { once: true });
+        existing.addEventListener('error', () => {
+          window.clearTimeout(timeout);
+          existing.remove();
+          reject(new Error('Não foi possível baixar o script da Rybená.'));
+        }, { once: true });
+        return;
+      }
+      existing.remove();
     }
 
-    const script = document.createElement('script');
-    script.id = RYBENA_SCRIPT_ID;
-    script.src = RYBENA_SCRIPT_URL;
-    script.async = true;
-    script.setAttribute('doNotTrack', 'true');
-    script.addEventListener('load', finish, { once: true });
-    script.addEventListener('error', () => {
-      script.remove();
-      reject(new Error('Não foi possível baixar o script da Rybená.'));
-    }, { once: true });
-    document.head.appendChild(script);
+    void fetchRybenaScriptUrl()
+      .then((scriptUrl) => {
+        const script = document.createElement('script');
+        script.id = RYBENA_SCRIPT_ID;
+        script.src = scriptUrl;
+        script.async = true;
+        script.referrerPolicy = 'no-referrer';
+        script.setAttribute('doNotTrack', 'true');
+        const timeout = window.setTimeout(() => {
+          script.remove();
+          reject(new Error('A Rybená demorou para carregar. Tente novamente.'));
+        }, RYBENA_LOAD_TIMEOUT_MS);
+        script.addEventListener('load', () => {
+          window.clearTimeout(timeout);
+          script.dataset.rybenaState = 'loaded';
+          void finish();
+        }, { once: true });
+        script.addEventListener('error', () => {
+          window.clearTimeout(timeout);
+          script.remove();
+          reject(new Error('Não foi possível baixar o script da Rybená.'));
+        }, { once: true });
+        document.head.appendChild(script);
+      })
+      .catch(reject);
   }).catch((error: unknown) => {
     providerLoadPromise = null;
     throw error;

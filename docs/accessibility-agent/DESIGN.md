@@ -37,7 +37,7 @@ Não adicionar nome de produto novo, badge, métrica, selo, promessa de conformi
 - conteúdo: glossário/explicação, modo explícito de seleção, simplificação local revisada com original preservado e controles Rybená sob demanda;
 - seleção: ao acionar “Selecionar na página”, o painel recolhe, a página fica selecionável e uma instrução curta permanece visível; ao concluir ou cancelar, o painel retorna com foco no campo do termo;
 - voz: indisponível, ociosa, ouvindo, transcrição pronta e erro;
-- Rybená: `idle`, carregando, pronta, traduzindo, pausada ou falha; domínio/token recusado deve permanecer explícito.
+- Rybená: `idle`, carregando, pronta, traduzindo, pausada ou falha; configuração ausente ou recusa do fornecedor devem permanecer explícitas.
 
 ## Media e continuidade
 

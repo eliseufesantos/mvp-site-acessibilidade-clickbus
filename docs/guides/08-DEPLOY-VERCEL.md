@@ -9,7 +9,7 @@ Ao importar o repositório na Vercel:
 - mantenha **Root Directory** vazio, apontando para a raiz do repositório;
 - use a branch `main` como **Production Branch**;
 - deixe os comandos do projeto serem lidos do `vercel.json`;
-- não são necessárias variáveis para a jornada fictícia nem para os controles locais; Gemini só é ativado quando as três variáveis de servidor abaixo existem.
+- não são necessárias variáveis para a jornada fictícia nem para os controles locais; Gemini e Rybená reais só são ativados quando suas variáveis de servidor abaixo existem.
 
 O build configurado equivale a:
 
@@ -20,7 +20,30 @@ npx --yes pnpm@10.28.0 --dir app build
 
 A versão do pnpm está fixada porque comandos de instalação personalizados sem uma versão explícita podem fazer a Vercel selecionar um pnpm antigo. O lockfile deste projeto usa o formato 9, compatível com pnpm 9 e 10.
 
-A saída publicada é `app/dist`. As funções Vercel canônicas ficam em `api/accessibility/` na raiz e compartilham o handler de `app/server/accessibility/`. A regra de `rewrites` exclui `/api/` e direciona somente as demais URLs para `index.html`.
+A saída publicada é `app/dist`. As funções Vercel canônicas ficam em `api/accessibility/` na raiz e compartilham os handlers de `app/server/accessibility/`. A regra de `rewrites` exclui `/api/` e direciona somente as demais URLs para `index.html`.
+
+## Rybená sob demanda
+
+Um token temporário vinculado ao domínio autorizado da demonstração foi recebido fora do repositório. A implementação usa somente esta variável no servidor:
+
+```text
+RYBENA_ACCESS_TOKEN=<credencial temporária>
+```
+
+Configure-a em **Settings > Environment Variables** apenas no projeto Vercel que atende `mvp-site-acessibilidade-clickbus-lovat.vercel.app` e somente no ambiente necessário. O handler aceita exclusivamente HTTPS nesse hostname exato; localhost, domínios padrão dos projetos, aliases e previews são recusados. Não use prefixo `VITE_`, não grave o valor em `.env*`, código, documentação, comandos compartilhados ou logs. Remova ou rotacione a variável quando a credencial expirar.
+
+O frontend não lê a variável. Após a pessoa solicitar uma tradução, o loader chama `GET /api/accessibility/rybena`; a função valida `RYBENA_ACCESS_TOKEN` e responde `no-store`, `Cross-Origin-Resource-Policy: same-origin` e `nosniff` com a URL fixa do CDN contendo `token`, `mode=api` e `doNotTrack=true`. Sem configuração válida, retorna `503`; método diferente de `GET` retorna `405`. O fetch expira em 10 s. Download do script, preparação e espera do runtime expiram em 15 s por etapa; erro, timeout ou tag sem os globals esperados removem a tag para permitir nova tentativa manual, sem retry automático.
+
+O protocolo do fornecedor torna a URL tokenizada observável na rede do navegador após a ação explícita. Por isso, não salve HAR, prints de rede ou logs com a URL completa; a proteção operacional depende do vínculo ao domínio e da validade curta, não de sigilo no navegador. `127.0.0.1` pode continuar não autorizado.
+
+Estado atual: handler, URL e contrato do adaptador com runtime falso passaram localmente; a rota sem token teve smoke `503`/`405`. Fetch no navegador, injeção da tag, download do CDN, globals, preparação e player permanecem `NOT RUN`, assim como configuração de `RYBENA_ACCESS_TOKEN` na Vercel, deploy e smoke no domínio autorizado. Após o deploy, registre sem expor a URL:
+
+1. nenhuma requisição à Rybená ocorre antes da ação explícita;
+2. sem a variável, o endpoint retorna JSON `503` com `cache-control: no-store`;
+3. com a variável e no hostname exato, exercite fetch, injeção, download e preparação; o runtime/player deve ficar disponível ou a falha finita deve ser informada sem quebrar o núcleo;
+4. tradução de um alvo público e controles de abrir/fechar, pausa, retomada, parada e velocidade refletem o estado real;
+5. nenhuma credencial aparece no repositório, bundle estático, logs ou evidências;
+6. funcionamento técnico não é apresentado como homologação linguística; a avaliação com pessoas surdas sinalizantes permanece pendente.
 
 ## Gemini no servidor
 
@@ -84,4 +107,4 @@ pnpm --dir app typecheck
 pnpm --dir app build
 ```
 
-Após o deploy, valide busca, seleção de viagem, assento, checkout e os modos de alto contraste e idoso no endereço aberto pelo botão **Visit**.
+Após o deploy, valide busca, seleção de viagem, assento, checkout e os modos de alto contraste e idoso no endereço aberto pelo botão **Visit**. Quando `RYBENA_ACCESS_TOKEN` estiver configurada, execute também o smoke controlado acima no domínio autorizado, sem capturar a URL tokenizada.

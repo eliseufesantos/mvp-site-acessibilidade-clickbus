@@ -13,7 +13,8 @@ A réplica e sua identidade visual são a aplicação hospedeira e devem ser pre
 - A parceria e a autorização de uso gratuito estão confirmadas, condicionadas à divulgação da parceria.
 - A documentação pública passou a fornecer o script CDN, o modo `api` e os métodos de player, tradução, reprodução, velocidade e eventos.
 - A entrega possui um `RybenaBrowserAdapter` isolado, carregado somente após ação explícita e configurado com `doNotTrack="true"`.
-- O teste real em `127.0.0.1` carregou o fornecedor, mas a Rybená recusou a origem com **“Token Rybená não autorizado”**; tradução e reprodução continuam não validadas.
+- Um token temporário vinculado ao domínio autorizado foi recebido fora do repositório. O loader obtém a URL por `GET /api/accessibility/rybena`, alimentado por `RYBENA_ACCESS_TOKEN` somente no servidor.
+- Configuração na Vercel, deploy, tradução e reprodução reais permanecem `NOT RUN`. A recusa histórica em `127.0.0.1` pode continuar porque localhost não é o domínio vinculado.
 - O estado inicial é `idle`; carregamento autorizado pode avançar para `ready`, enquanto domínio/token recusado termina em `failed` com mensagem explícita.
 
 A falha de autorização não gera polling ou retry automático e não bloqueia as ferramentas próprias, o painel, a persistência, a IA, a explicação, a simplificação ou a voz.
@@ -133,7 +134,7 @@ Não há escuta contínua, palavra de ativação ou gravação automática. Em n
 - Ajustes locais perceptíveis em até 200 ms no ambiente de referência.
 - Mensagem até 1.000 caracteres, corpo HTTP até 16 KiB, uma requisição ativa, timeout de 10 s no provedor/12 s no cliente e nenhuma repetição paga automática.
 - Preferências são a única informação persistida; conversa, voz, seleção e conteúdo não são persistidos.
-- Chaves somente no servidor, nunca em `VITE_*`, bundle, respostas ou logs.
+- Chaves Gemini somente no servidor, nunca em `VITE_*`, bundle, respostas ou logs. `RYBENA_ACCESS_TOKEN` existe apenas como variável server-side; sob ação explícita, seu valor aparece somente na URL tokenizada `no-store` exigida pelo fornecedor e nunca é registrado em logs/evidências.
 - Endpoint de inferência fica desabilitado em hospedagem pública até existir proteção de abuso/quota adequada.
 
 ## 11. Fora da entrega
@@ -150,6 +151,6 @@ Pode ser concluído quando ferramentas, store, executor, painel, explicação, s
 
 ### Rybená
 
-Nesta entrega só pode ser descrita como: **“Integração demonstrativa implementada; domínio/token e tradução real ainda não validados.”**
+Nesta entrega só pode ser descrita como: **“Token temporário vinculado ao domínio autorizado recebido; handler, URL e contrato do adaptador validados localmente; fetch no navegador, injeção da tag, deploy, smoke e tradução real ainda não validados.”**
 
-O carregamento do script e a recusa real de autorização foram observados. Envio aceito, tradução, player, pausa, retomada, parada, velocidade e eventos permanecem **BLOCKED / NOT VALIDATED — provider domain or token not authorized**.
+O carregamento do CDN e uma recusa histórica em localhost foram observados. Configuração de `RYBENA_ACCESS_TOKEN` na Vercel, deploy, envio aceito, tradução, player, pausa, retomada, parada, velocidade e eventos permanecem **NOT RUN**. Qualidade linguística depende de homologação com pessoas surdas sinalizantes.

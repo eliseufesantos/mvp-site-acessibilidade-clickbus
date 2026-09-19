@@ -1,6 +1,6 @@
 # Plano de implementação — Acessibilidade Assistida por IA
 
-Versão 2.1 · 14 de setembro de 2026.
+Versão 2.2 · 18 de setembro de 2026.
 
 ## 1. Regras
 
@@ -8,9 +8,9 @@ Versão 2.1 · 14 de setembro de 2026.
 2. Implementar funções discretas; a LLM não gera CSS/JS nem recebe ferramentas de navegador.
 3. Controles manuais funcionam sem IA ou Rybená.
 4. Doubles existem apenas nos testes e nunca produzem tradução aparente na demonstração.
-5. Não reabrir autorização comercial Rybená. Registrar somente configuração técnica ausente.
+5. Não reabrir autorização comercial Rybená. O token temporário vinculado ao domínio autorizado já foi recebido; registrar separadamente configuração, deploy, smoke e homologação.
 6. Não adicionar compra, reserva, pagamento, cancelamento ou navegação comercial ao agente.
-7. Segredos ficam no servidor; endpoint pago permanece desativado sem proteção.
+7. Segredos Gemini ficam no servidor. A variável `RYBENA_ACCESS_TOKEN` não entra no Git, bundle estático, logs ou evidências; seu valor só é entregue na URL de runtime exigida pelo fornecedor, e endpoints sem configuração falham fechados.
 8. Atualizar evidências com resultados reais; não marcar bloqueios externos como `PASS`.
 9. Não fazer deploy ou commit sem solicitação.
 
@@ -50,12 +50,15 @@ Aceite: schema inválido, ação desconhecida, revisão obsoleta, duplicação, 
 ### D — Rybená demonstrativa
 
 - manter `LibrasAdapter` independente do fornecedor;
-- carregar `rybena.js?mode=api` somente após ação explícita, com `doNotTrack="true"`;
+- ler `RYBENA_ACCESS_TOKEN` somente no servidor e expor `GET /api/accessibility/rybena` com `no-store`, CORP same-origin, `503` quando não configurado e `405` para outro método;
+- com credencial, aceitar somente HTTPS em `mvp-site-acessibilidade-clickbus-lovat.vercel.app` e recusar localhost, aliases e previews;
+- consultar o endpoint somente após ação explícita e carregar a URL validada do CDN com `mode=api` e `doNotTrack=true`;
+- limitar fetch de configuração a 10 s e download/preparação/espera do runtime a 15 s por etapa; remover a tag em erro, timeout ou ausência dos globals para permitir retry manual;
 - mapear somente métodos publicados e preservar crédito/link;
 - não fazer polling ou retry automático;
-- tratar domínio/token recusado como `failed`, sem quebrar as ferramentas locais.
+- tratar configuração ausente ou recusa do fornecedor como `failed`, sem quebrar as ferramentas locais.
 
-Aceite: nenhuma requisição antes do clique; CDN/erro real observáveis; UI informa limitação sem quebrar o painel; nenhum VLibras.
+Aceite automático local: handler, método, host HTTPS exato, headers de segurança, URL/parâmetros e contrato do adaptador com runtime falso. Aceite no smoke remoto: nenhuma requisição antes do clique, fetch/injeção/download/preparação finitos, CDN/erro real observáveis sem registrar a URL completa e UI preservada; nenhum VLibras.
 
 ### E — Explicação e simplificação
 
@@ -92,20 +95,19 @@ Aceite: navegador sem suporte não quebra; fechamento impede envio tardio.
 | A | Concluída | leitura e auditoria; `tsc`/Vite diretos passam | scripts `pnpm` tentam reinstalar sem TTY/rede |
 | B | Concluída | store v3, ferramentas, conteúdo e adaptador; testes | — |
 | C | Adaptador Gemini concluído no escopo local | contratos, cliente, funções Vercel na raiz, endpoint protegido e transporte Gemini testados | segredo ausente do runtime; conectividade e avaliação real `NOT RUN` |
-| D | Integração demonstrativa concluída | porta genérica, adaptador real, carregamento sob demanda, controles e crédito | `127.0.0.1` recusado: domínio/token não autorizado; tradução real `BLOCKED` |
+| D | Contratos e hardening concluídos localmente | handler/URL, host exato, headers e contrato de controles com runtime falso; rota local sem token em `503`/`405` | fetch no navegador, injeção DOM, CDN/globals, preparação e player real `NOT RUN`; configuração Vercel, deploy, smoke e homologação pendentes |
 | E | Concluída no escopo local | seleção real na página, glossário e simplificação local aprovados; original preservado | explicação fora do glossário e fallback remoto `NOT RUN`, pois o segredo não está configurado no runtime |
 | F | Implementada | detecção, captura explícita, edição e abort no fechamento | permissão/microfone real não executados |
-| G | Concluída para o escopo local automatizado | TypeScript, build e 22 testes aprovados; navegador e falha real Rybená exercitados | smoke Gemini real, domínio autorizado, NVDA, zoom 200% e pesquisa humana devem permanecer separados conforme evidência |
+| G | Concluída para o escopo local automatizado | TypeScript, build com 1.616 módulos e 24 testes aprovados; handler/URL Rybená e contrato do adaptador cobertos | caminho navegador → tag → CDN → player, smoke Gemini/Rybená reais, NVDA, zoom 200% e pesquisa humana permanecem separados conforme evidência |
 
 ### Baseline registrado
 
 - Node `v22.22.0`; pnpm `11.12.0`.
-- `npx --yes pnpm@10.28.0 ...`: falha ambiental antes dos scripts ao tentar acessar o registry (`EACCES`); nenhum teste foi contado a partir dessa tentativa.
-- `node_modules/.bin/tsc --noEmit -p tsconfig.app.json`: PASS.
-- `node_modules/.bin/vite build --configLoader runner`: PASS, 1.616 módulos.
-- `tsc` direto sobre `api/accessibility/{plan,explain,simplify}.ts`: PASS para os wrappers Vercel na raiz.
-- `node scripts/run-accessibility-tests.mjs`: PASS, 22 testes, incluindo adaptador Gemini e proteções do handler com doubles explícitos.
-- smoke em `vite preview`: raiz `200 text/html`; `/api/accessibility/plan` same-origin sem segredo `503 application/json`; origem indevida `403 application/json`.
+- `npx --yes pnpm@10.28.0 --dir app typecheck`: PASS.
+- `npx --yes pnpm@10.28.0 --dir app build`: PASS, 1.616 módulos.
+- `tsc` direto sobre `api/accessibility/{plan,explain,simplify,rybena}.ts`: PASS para os wrappers Vercel na raiz.
+- `npx --yes pnpm@10.28.0 --dir app test:accessibility`: PASS, 24 testes, incluindo adaptador Gemini, handler/URL Rybená e contrato do adaptador com doubles explícitos; sem fetch/DOM/CDN real.
+- smoke em `vite preview`: raiz `200 text/html`; `/api/accessibility/plan` same-origin sem segredo `503 application/json`; origem indevida `403 application/json`; `/api/accessibility/rybena` sem token `503` em `GET` e `405` em método indevido.
 - navegador integrado: PASS em 1440×900 e 390×844; acionador lateral fixo preservado na busca, nos resultados e nos assentos, drawer desktop não modal, diálogo mobile e ausência de erros/warnings no console.
 - fluxo de Conteúdo no navegador: PASS para recolher o painel, selecionar termo em `search-help`, retornar com o campo preenchido/focado, explicar “viação” pelo glossário e simplificar localmente com o original preservado; no mobile 390×844, o bloqueio modal foi restaurado após a seleção.
 - reflow da nova UI: PASS em 320×844, com `scrollWidth=clientWidth=320` no documento e no painel; a escala de texto a 150% permaneceu legível e sem overflow horizontal; o alto contraste também foi exercitado em mobile sem overflow.
@@ -130,7 +132,7 @@ Aceite: navegador sem suporte não quebra; fechamento impede envio tardio.
 4. Só demonstrar o Gemini real após configurar o segredo no runtime escolhido e registrar o smoke; caso contrário, identificar claramente qualquer double de teste.
 5. Na aba Conteúdo, acionar “Selecionar na página”, marcar um termo em alvo identificado, revisar o campo preenchido, explicar pelo glossário e simplificar um trecho público localmente, mantendo o original.
 6. Demonstrar voz somente após consentimento de microfone; editar antes de enviar.
-7. Abrir área Rybená, solicitar tradução e observar player autorizado ou erro explícito de domínio/token, sem tradução simulada.
+7. Abrir a área Rybená. Só demonstrar player/tradução real depois de configurar `RYBENA_ACCESS_TOKEN` na Vercel e registrar o smoke no domínio autorizado; caso contrário, mostrar a indisponibilidade explícita, sem tradução simulada.
 8. Percorrer busca → resultados → assento e confirmar que preferências não mudam o estado comercial.
 
 Não encenar integração LLM ou Rybená real sem configuração e evidência.

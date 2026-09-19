@@ -33,12 +33,13 @@ Snapshot operacional atualizado em **18/09/2026**:
 
 - branch: `main`;
 - HEAD: `d0777cc` (`Integrate Rybená Libras controls and update accessibility documentation`), sincronizado com `origin/main` antes das alterações locais desta iteração;
-- working tree contém a implementação local ainda não commitada do adaptador Gemini, das proteções do endpoint e das rotas Vercel; não descarte essas mudanças;
+- working tree contém a implementação local ainda não commitada do adaptador Gemini, das proteções dos endpoints, das rotas Vercel e da configuração sob demanda da Rybená; não descarte essas mudanças;
 - aplicação React 18 + TypeScript estrito + Vite 6;
-- build Vite: aprovado, 1.616 módulos transformados;
-- suíte do agente de acessibilidade: 22 testes aprovados, incluindo contrato do adaptador Gemini com transporte falso, origem, limite de corpo e quota local;
+- typecheck e build Vite: aprovados, com 1.616 módulos transformados;
+- suíte do agente de acessibilidade: 24 testes aprovados, incluindo contrato do adaptador Gemini com transporte falso, origem, limite de corpo, quota local, handler/URL Rybená e contrato do adaptador com runtime falso;
 - adaptador REST nativo do Gemini implementado no servidor com JSON estruturado, chave somente em header, limite de 1.024 tokens, raciocínio `low` para Gemini 3/alias Flash e nenhum retry; conectividade real e avaliação semântica permanecem `NOT RUN` porque nenhum segredo foi gravado no workspace;
 - smoke local sem segredo: SPA `200 text/html`, API same-origin `503 application/json` e origem indevida `403 application/json`; deployment remoto não foi executado;
+- um token temporário da Rybená, vinculado ao domínio autorizado da demonstração, foi recebido fora do repositório; handler, URL e contrato do adaptador foram validados localmente, e a rota sem token respondeu `503`/`405`; `RYBENA_ACCESS_TOKEN` ainda não foi configurada na Vercel, e o caminho navegador → tag → CDN → player, deploy e smoke real permanecem `NOT RUN`;
 - fluxo de conteúdo validado em navegador: seleção real de termo na página, explicação pelo glossário e simplificação determinística com original preservado;
 - reflow da nova UI validado em 1440×900, 390×844 e 320×844 CSS px; escala de texto a 150% em 320 px e alto contraste em mobile também permaneceram sem overflow horizontal;
 - breakpoint validado nos limites: 820 px usa diálogo modal com backdrop e bloqueio do body; 821 px usa região não modal, sem backdrop e com a página rolável;
@@ -145,11 +146,15 @@ Nunca use variáveis `VITE_*` para segredos. Sem as três variáveis, o servidor
 ### Rybená
 
 - autorização gratuita de uso: confirmada;
+- token temporário vinculado ao domínio autorizado: recebido fora do repositório, com configuração na Vercel ainda `NOT RUN`;
 - CDN, modo API e métodos de player/tradução: documentados e integrados sob demanda;
-- teste em `127.0.0.1`: script carregado, mas fornecedor exibiu “Token Rybená não autorizado”;
-- tradução real: **BLOCKED / NOT VALIDATED — provider domain or token not authorized**.
+- endpoint autorizado somente em `https://mvp-site-acessibilidade-clickbus-lovat.vercel.app`; HTTP, localhost e qualquer alias/preview/outro hostname são recusados quando a credencial está configurada;
+- teste histórico em `127.0.0.1`: script carregado, mas o fornecedor recusou a origem; localhost pode continuar não autorizado porque o token é vinculado ao domínio da demonstração;
+- tradução real no domínio autorizado: **NOT RUN — Vercel configuration, deployment and smoke pending**.
 
-Carregue o script somente após ação explícita, com `mode=api` e `doNotTrack="true"`; não faça polling/retry automático nem invente métodos. Não use VLibras como substituto e não simule tradução. Preserve o crédito “Tradução em Libras por Rybená”. Só declare operação após domínio/token autorizado e homologação com pessoas surdas sinalizantes.
+Mantenha `RYBENA_ACCESS_TOKEN` somente no runtime do servidor. O loader deve consultar `GET /api/accessibility/rybena` apenas após ação explícita; a resposta `no-store`, `Cross-Origin-Resource-Policy: same-origin` e `nosniff` fornece a URL fixa do CDN com `mode=api` e `doNotTrack=true`. O fetch de configuração expira em 10 s; download do script, preparação do player e espera do runtime expiram em 15 s cada. Se a tag carregar sem disponibilizar os globals esperados, ela é removida para permitir nova tentativa manual. Não versione, embuta no bundle ou registre o token/URL completa em logs ou evidências. Não faça polling/retry automático, não invente métodos, não use VLibras como substituto e não simule tradução. Preserve o crédito “Tradução em Libras por Rybená”.
+
+A cobertura automática comprova handler, construção/validação da URL e contrato do adaptador com runtime falso. Fetch pelo navegador, injeção DOM, download remoto, presença dos globals, preparação e player real permanecem `NOT RUN` até o smoke no domínio autorizado; qualidade linguística exige homologação com pessoas surdas sinalizantes.
 
 ## 8. Testes e evidência
 
@@ -185,7 +190,7 @@ O projeto é um repositório com aplicação em subpasta. A configuração canô
 - instalação: `npx --yes pnpm@10.28.0 --dir app install --frozen-lockfile`;
 - build: `npx --yes pnpm@10.28.0 --dir app build`;
 - saída: `app/dist`;
-- funções: wrappers canônicos em `api/accessibility/`, compartilhando o handler de `app/server/accessibility/`;
+- funções: wrappers canônicos em `api/accessibility/`, compartilhando os handlers de `app/server/accessibility/`, inclusive a configuração Rybená sob demanda;
 - rewrite SPA exclui `/api/` e envia as demais rotas a `/index.html`.
 
 O deploy do commit `6e579c7` falhou porque `provider.ts` usava `process.env` sem declarar `@types/node`. A correção está no commit `99575af`: dependência e lockfile explícitos, `types: ["node"]` e `typeRoots` local. O mesmo comando de build da Vercel passou localmente após a correção.
@@ -233,7 +238,7 @@ Se duas fontes divergirem, preserve a opção mais segura, confirme o comportame
 - configurar o segredo somente no runtime escolhido, executar smoke real do Gemini e avaliar a matriz semântica; o adaptador testado com transporte falso não prova conectividade;
 - fixar um modelo estável para a apresentação ou registrar que `gemini-flash-latest` é um alias mutável;
 - configurar quota/budget do Gemini e rate limit persistente/WAF antes de habilitar chamadas pagas em hospedagem pública;
-- obter liberação do domínio/token de demonstração e homologar a Rybená;
+- configurar `RYBENA_ACCESS_TOKEN` somente no projeto/ambiente Vercel do domínio autorizado, executar deploy e smoke sem registrar a URL tokenizada, remover/rotacionar a credencial ao expirar e homologar a Rybená com pessoas surdas sinalizantes;
 - validar com NVDA/VoiceOver e pessoas usuárias;
 - testar Safari/iOS real e zoom de 200%;
 - repetir a regressão integral da jornada após mudanças futuras;
