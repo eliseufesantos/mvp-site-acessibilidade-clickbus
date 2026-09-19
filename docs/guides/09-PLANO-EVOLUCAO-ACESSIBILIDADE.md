@@ -36,8 +36,8 @@ Para tarefas que tocam funções de `api/`, adicionalmente:
 
 | ID | Tarefa | Fase | Status |
 |----|--------|------|--------|
-| **T0.0** | **Corrigir `.vercelignore` — funções quebradas em produção** | **0** | **código aplicado 19/09 — aguardando deploy para confirmar** |
-| T0.1 | Corrigir enum `thinkingLevel` do Gemini | 0 | concluída 19/09 — suíte 25/25 |
+| **T0.0** | **Corrigir `.vercelignore` — funções quebradas em produção** | **0** | **PASS 19/09 — verificado em produção, ver 5.1** |
+| T0.1 | Corrigir enum `thinkingLevel` do Gemini | 0 | código concluído 19/09, suíte 25/25 — smoke real pendente (T0.2) |
 | T0.2 | Credenciais locais e smoke real do Gemini | 0 | pendente |
 | T0.3 | Adaptador Libras de desenvolvimento (fake) | 0 | pendente |
 | T0.4 | Deploy e smoke real da Rybená no domínio autorizado | 0 | pendente |
@@ -276,6 +276,25 @@ curl -s -o /dev/null -w '%{http_code} %{content_type}\n' "$B/api/accessibility/p
 **Se ainda der 500 depois disso**, a causa era outra. Próximos passos de investigação, em ordem: (a) obter o log de runtime na Vercel, que mostra a exceção exata de carga do módulo; (b) verificar se a resolução do import `../../app/server/accessibility/handler.js` sobrevive ao empacotamento das funções. **Não** parta para tentativa e erro sem antes ler o log.
 
 **Risco:** baixo na edição, alto no impacto. É uma mudança de duas linhas que desbloqueia todo o resto.
+
+#### 5.1 Resultado: PASS, verificado em produção em 19/09/2026
+
+Aplicada no commit `17d9948` e confirmada no domínio autorizado após o deploy:
+
+```text
+GET  /api/accessibility/plan                 405 application/json   (antes: 500 text/plain)
+GET  /api/accessibility/rybena               200 application/json
+POST /api/accessibility/plan sem Origin      403 application/json
+POST /api/accessibility/plan origem alheia   403 application/json
+POST /api/accessibility/plan text/plain      415 application/json
+X-Vercel-Error                               ausente em todas
+```
+
+A hipótese da seção 4.0 se confirmou: o `package.json` da raiz era mesmo o que faltava. As quatro funções executam o nosso código, e o endpoint da Rybená passou a servir a URL do CDN com 200.
+
+**Armadilha de diagnóstico observada.** Na primeira sondagem após o push, `rybena` já respondia 200 enquanto `plan` ainda devolvia 500 — o deploy estava propagando e as duas funções serviam versões diferentes. Isso quase levou à conclusão errada de que a cadeia de imports para `app/src/` era um segundo defeito. **Espere a propagação terminar e sonde todas as rotas antes de concluir qualquer coisa** a partir de resultados divergentes entre funções.
+
+**Estado imediatamente após T0.0:** o Gemini passou a responder `503 "O provedor de IA ainda não foi configurado"` com payload válido, que é o caminho de falha honesta correto, porque nenhuma das três variáveis `ACCESSIBILITY_LLM_*` existe no projeto. Esse é o próximo bloqueio, tratado em T0.2.
 
 **Nota de escopo:** ao listar os projetos da Vercel em 19/09/2026 apareceu **apenas** `mvp-site-acessibilidade-clickbus`. O segundo projeto (`-5xk5`) mencionado no `AGENTS.md` não consta mais. Confirme com o responsável e atualize a pendência correspondente.
 
