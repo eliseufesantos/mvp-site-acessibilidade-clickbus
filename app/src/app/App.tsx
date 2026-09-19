@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityPlugin } from '../components/accessibility/AccessibilityPlugin';
+import { ColorFilters } from '../components/accessibility/ColorFilters';
 import { ReadingAids } from '../components/accessibility/ReadingGuide';
 import { Header } from '../components/layout/Header';
 import { CheckoutPage } from '../features/checkout/CheckoutPage';
@@ -140,6 +141,7 @@ export function App() {
           <span>Protótipo acadêmico — não realiza compras</span>
         </div>
       </footer>
+      <ColorFilters colorFilter={preferences.colorFilter} saturation={preferences.saturation} />
       {preferences.readingGuide || preferences.readingMask ? <ReadingAids guide={preferences.readingGuide} mask={preferences.readingMask} /> : null}
     </div>
   );

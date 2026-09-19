@@ -1,8 +1,10 @@
 import type { AccessibilityPreferences } from '../../../types.js';
 import {
+  COLOR_FILTERS,
   LIBRAS_SPEEDS,
   LINE_HEIGHTS,
   PREFERENCE_KEYS,
+  SATURATIONS,
   TEXT_ALIGNS,
   TEXT_SCALES,
   parsePreferencePatch,
@@ -279,6 +281,9 @@ const preferencePatchJsonSchema = {
     readingGuide: { type: 'boolean' },
     readingMask: { type: 'boolean' },
     reducedMotion: { type: 'boolean' },
+    saturation: { type: 'string', enum: [...SATURATIONS] },
+    colorFilter: { type: 'string', enum: [...COLOR_FILTERS] },
+    dyslexiaFont: { type: 'boolean' },
     librasSpeed: { type: 'number', enum: [...LIBRAS_SPEEDS] },
   },
   additionalProperties: false,

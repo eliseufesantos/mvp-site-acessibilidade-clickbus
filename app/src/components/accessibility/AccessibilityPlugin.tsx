@@ -1,9 +1,11 @@
 import { Accessibility, MousePointer2 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { PreferencePatch } from '../../features/accessibility-agent/core/preferences';
 import { getActivePreferenceLabels } from '../../features/accessibility-agent/core/preferences';
 import type { AccessibilityPreferences, JourneyStep } from '../../types';
 import { AccessibilityPanel } from './AccessibilityPanel';
+import { ACCESSIBILITY_SLOT_ID } from '../layout/Header';
 import { focusAfterRender } from '../../utils/focus';
 
 interface AccessibilityPluginProps {
@@ -28,6 +30,7 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
   const [isSelectingPage, setIsSelectingPage] = useState(false);
   const [panelSession, setPanelSession] = useState(0);
   const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_QUERY).matches);
+  const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
   const wasSelectingPageRef = useRef(false);
@@ -42,6 +45,13 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
   const openPanel = useCallback(() => {
     setPanelSession((current) => current + 1);
     setIsPanelOpen(true);
+  }, []);
+
+  // `useLayoutEffect` para o acionador já nascer no header, sem um quadro no
+  // lugar de reserva. Se o encaixe faltar, ele ainda é renderizado no host:
+  // o controle de acessibilidade nunca pode simplesmente sumir.
+  useLayoutEffect(() => {
+    setHeaderSlot(document.getElementById(ACCESSIBILITY_SLOT_ID));
   }, []);
 
   useEffect(() => {
@@ -135,20 +145,27 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
 
   const triggerLabel = `${isSelectingPage ? 'Cancelar seleção e fechar' : isPanelOpen ? 'Fechar' : 'Abrir'} acessibilidade${activeModes > 0 ? `, ${activeModes} ${activeModes === 1 ? 'ajuste ativo' : 'ajustes ativos'}` : ''}`;
 
-  return (
-    <aside className={`accessibility-plugin${isPanelOpen ? ' accessibility-plugin--open' : ''}${isSelectingPage ? ' accessibility-plugin--selecting' : ''}`} aria-label="Recursos de acessibilidade">
-      <button
-        className="accessibility-plugin__trigger accessibility-trigger"
-        type="button"
-        aria-label={triggerLabel}
-        aria-expanded={isPanelOpen}
-        aria-controls="accessibility-panel"
-        ref={triggerRef}
-        onClick={() => (isPanelOpen ? closePanel() : openPanel())}
-      >
+  const trigger = (
+    <button
+      className="accessibility-plugin__trigger accessibility-trigger"
+      type="button"
+      aria-label={triggerLabel}
+      aria-expanded={isPanelOpen}
+      aria-controls="accessibility-panel"
+      ref={triggerRef}
+      onClick={() => (isPanelOpen ? closePanel() : openPanel())}
+    >
+      <span className="accessibility-plugin__trigger-text" aria-hidden="true">Acessibilidade</span>
+      <span className="accessibility-plugin__trigger-badge">
         <Accessibility className="accessibility-plugin__trigger-icon" aria-hidden="true" />
         {activeModes > 0 ? <span className="mode-count" aria-hidden="true">{activeModes}</span> : null}
-      </button>
+      </span>
+    </button>
+  );
+
+  return (
+    <aside className={`accessibility-plugin${isPanelOpen ? ' accessibility-plugin--open' : ''}${isSelectingPage ? ' accessibility-plugin--selecting' : ''}`} aria-label="Recursos de acessibilidade">
+      {headerSlot ? createPortal(trigger, headerSlot) : trigger}
 
       {isPanelOpen ? (
         <>

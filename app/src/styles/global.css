@@ -228,6 +228,58 @@ html[data-cursor='large'] :is(a, button, select, [role='button'], [role='switch'
   cursor: url('/cursor-large-pointer.svg') 7 2, pointer !important;
 }
 
+/* Saturacao e correcao de cores.
+
+   `filter` num ancestral torna esse elemento bloco de contencao para
+   descendentes `position: fixed` — o painel, os dialogos e a mascara de leitura
+   parariam de se posicionar pela viewport. Por isso o efeito vem de uma camada
+   fixa com `backdrop-filter`, que filtra tudo que esta pintado atras dela sem
+   mexer no posicionamento de ninguem.
+
+   z-index 898 deixa o painel (950), o guia (900) e a mascara (899) por cima:
+   os proprios controles de acessibilidade continuam legiveis. */
+.color-filter-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 898;
+  pointer-events: none;
+}
+
+html[data-saturation='high'] .color-filter-layer { backdrop-filter: saturate(1.6); }
+html[data-saturation='low'] .color-filter-layer { backdrop-filter: saturate(0.5); }
+html[data-saturation='grayscale'] .color-filter-layer { backdrop-filter: grayscale(1); }
+
+html[data-color-filter='protanopia'] .color-filter-layer { backdrop-filter: url('#a11y-protanopia'); }
+html[data-color-filter='deuteranopia'] .color-filter-layer { backdrop-filter: url('#a11y-deuteranopia'); }
+html[data-color-filter='tritanopia'] .color-filter-layer { backdrop-filter: url('#a11y-tritanopia'); }
+
+/* Saturacao e correcao combinadas numa unica declaracao, porque duas regras
+   `backdrop-filter` no mesmo elemento nao se somam: a ultima vence. */
+html[data-saturation='high'][data-color-filter='protanopia'] .color-filter-layer { backdrop-filter: saturate(1.6) url('#a11y-protanopia'); }
+html[data-saturation='high'][data-color-filter='deuteranopia'] .color-filter-layer { backdrop-filter: saturate(1.6) url('#a11y-deuteranopia'); }
+html[data-saturation='high'][data-color-filter='tritanopia'] .color-filter-layer { backdrop-filter: saturate(1.6) url('#a11y-tritanopia'); }
+html[data-saturation='low'][data-color-filter='protanopia'] .color-filter-layer { backdrop-filter: saturate(0.5) url('#a11y-protanopia'); }
+html[data-saturation='low'][data-color-filter='deuteranopia'] .color-filter-layer { backdrop-filter: saturate(0.5) url('#a11y-deuteranopia'); }
+html[data-saturation='low'][data-color-filter='tritanopia'] .color-filter-layer { backdrop-filter: saturate(0.5) url('#a11y-tritanopia'); }
+html[data-saturation='grayscale'][data-color-filter='protanopia'] .color-filter-layer,
+html[data-saturation='grayscale'][data-color-filter='deuteranopia'] .color-filter-layer,
+html[data-saturation='grayscale'][data-color-filter='tritanopia'] .color-filter-layer { backdrop-filter: grayscale(1); }
+
+/* Fonte para dislexia. Sem baixar arquivo: usa famílias já instaladas em
+   Windows, macOS e Linux, com fallback para a pilha do sistema. O ganho vem
+   principalmente do espaçamento e do peso, aplicados junto. */
+html[data-dyslexia-font='true'] main,
+html[data-dyslexia-font='true'] .site-header,
+html[data-dyslexia-font='true'] .site-footer {
+  font-family: 'Comic Sans MS', 'Trebuchet MS', Verdana, Tahoma, sans-serif;
+  letter-spacing: 0.035em;
+  word-spacing: 0.12em;
+}
+
+html[data-dyslexia-font='true'] main :is(p, li, label, td, th) {
+  line-height: 1.75;
+}
+
 .reading-guide {
   position: fixed;
   left: 0;

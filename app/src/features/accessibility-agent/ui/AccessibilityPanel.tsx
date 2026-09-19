@@ -280,19 +280,21 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       label: 'Libras',
       description: 'Traduzir um trecho público desta tela em Libras.',
       icon: Languages,
-      note: librasSimulated ? 'Simulação ativa' : player.mode === 'libras' && player.state === 'translating' ? 'Traduzindo agora' : undefined,
+      note: librasSimulated ? 'Simulação' : player.mode === 'libras' && player.state === 'translating' ? 'Traduzindo' : undefined,
     },
     {
       id: 'voice',
       label: 'Voz',
       description: 'Ouvir a narração de um trecho público desta tela.',
       icon: Volume2,
-      note: librasSimulated ? 'Simulação ativa' : player.mode === 'voz' && player.state === 'translating' ? 'Narrando agora' : undefined,
+      note: librasSimulated ? 'Simulação' : player.mode === 'voz' && player.state === 'translating' ? 'Narrando' : undefined,
     },
-    { id: 'settings', label: 'Ajustes visuais', description: 'Contraste, tamanho do texto, espaçamento, guia e máscara.', icon: SlidersHorizontal },
+    { id: 'settings', label: 'Ajustes visuais', description: 'Contraste, tamanho do texto, cores, espaçamento, guia e máscara.', icon: SlidersHorizontal },
     { id: 'content', label: 'Conteúdo', description: 'Explicar um termo ou simplificar um trecho desta tela.', icon: BookOpenText },
-    { id: 'about', label: 'Sobre acessibilidade', description: 'O que este painel faz, seus limites e os créditos.', icon: Info },
   ];
+
+  // Sugestões do chat. Só preenchem o campo: nada é enviado sem ação explícita.
+  const SUGGESTIONS = ['Aumentar o texto', 'Mais contraste', 'Ler isto em Libras'];
 
   return (
     <section
@@ -325,12 +327,17 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
         {surface === 'root' ? (
           <>
             <FeatureGrid cards={cards} onOpen={openSurface} />
-            <div className="active-preferences">
-              <div><strong>Agora na página</strong><span>Revisão {props.stateRevision}</span></div>
-              {activeLabels.length > 0
-                ? <div className="preference-chips">{activeLabels.map((label) => <span key={label}><Check aria-hidden="true" />{label}</span>)}</div>
-                : <p>Nenhum ajuste visual adicional está ativo.</p>}
-            </div>
+
+            <button id="a11y-card-about" className="a11y-about-link" type="button" onClick={() => openSurface('about')}>
+              <Info aria-hidden="true" /> Sobre acessibilidade
+            </button>
+
+            {activeLabels.length > 0 ? (
+              <div className="active-preferences">
+                <div><strong>Agora na página</strong><span>Revisão {props.stateRevision}</span></div>
+                <div className="preference-chips">{activeLabels.map((label) => <span key={label}><Check aria-hidden="true" />{label}</span>)}</div>
+              </div>
+            ) : null}
             {!props.storageAvailable ? <p className="storage-warning" role="status">As preferências funcionam nesta sessão, mas este navegador bloqueou o salvamento local.</p> : null}
           </>
         ) : (
@@ -374,6 +381,19 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       <div className="a11y-chat">
         <form className="a11y-chat__form" onSubmit={askAssistant}>
           <label htmlFor="accessibility-request"><Bot aria-hidden="true" /> Peça uma adaptação</label>
+          <div className="a11y-chat__suggestions" role="group" aria-label="Sugestões de pedido">
+            {SUGGESTIONS.map((suggestion) => (
+              <button
+                key={suggestion}
+                className="a11y-chat__suggestion"
+                type="button"
+                onClick={() => setRequest(suggestion.toLowerCase())}
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+
           <div className="a11y-chat__row">
             <textarea
               id="accessibility-request"

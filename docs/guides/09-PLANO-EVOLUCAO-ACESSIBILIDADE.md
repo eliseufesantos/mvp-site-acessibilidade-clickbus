@@ -973,6 +973,123 @@ painel de acessibilidade". E as seções internas das superfícies desceram de
 `h3` para `h4`, porque o título da superfície agora ocupa o `h3` — a hierarquia
 do painel é `h2` (painel) → `h3` (superfície) → `h4` (seção).
 
+### 7.7 Revisão do padrão visual e portabilidade de recursos — 19/09/2026
+
+Decisão do responsável depois de comparar com o portal de referência.
+
+#### O acionador sai da lateral e vai para o header
+
+Ele passa a ficar no fim da barra, com o pictograma universal de acessibilidade
+e o rótulo "ACESSIBILIDADE", como na referência. O `Header` é
+`position: sticky`, então a alcançabilidade não piora — **essa é a condição que
+sustenta a mudança**. Se a barra deixar de ser sticky, o acionador precisa
+voltar a ser fixo, ou a pessoa terá de rolar até o topo para achar os controles
+de acessibilidade.
+
+Mecanismo: o `AccessibilityPlugin` continua dono de todo o estado e projeta o
+botão para `#accessibility-trigger-slot` com `createPortal`. Assim o estado do
+painel não precisa subir para o `App`. Se o encaixe faltar, o botão é
+renderizado no próprio host — um controle de acessibilidade não pode
+simplesmente desaparecer por causa de um seletor que não casou.
+
+**Isto revoga uma invariante do `AGENTS.md`**, que dizia que o acionador
+pertence ao host fixo lateral, fora do `Header`. O documento foi atualizado.
+
+#### A raiz fica mais enxuta
+
+Grade 2×2 de cartões quadrados — Libras, Voz, Ajustes visuais, Conteúdo — com
+"Sobre acessibilidade" como link abaixo. A referência usa um cartão "Mais
+Ferramentas" que enterra o resto um nível mais fundo; 2×2 fica igualmente
+simples e mais raso. O cartão mostra só o rótulo, e a descrição vai em
+`aria-describedby`, então quem usa leitor de tela continua ouvindo o que cada
+recurso faz antes de entrar.
+
+O chat ganhou três chips de sugestão. Um campo vazio não comunica o que ele
+aceita. Os chips **apenas preenchem** o campo — verificado no navegador:
+clicar num chip deixa o campo com o texto e a região de estado vazia, sem
+nenhuma chamada ao planejador.
+
+**Propriedade intelectual.** O pictograma de acessibilidade é símbolo padrão e
+foi copiado deliberadamente. A paleta, os ícones e os textos do portal de
+referência **não** foram: valem os tokens de `tokens.css` e os ícones Lucide,
+como manda a seção 7.1.
+
+#### Recursos da Rybená portados para o executor local, não delegados
+
+Surgiu a ideia de usar a LLM para acionar as ferramentas visuais da Rybená e
+assim aproveitar a lista inteira do fornecedor. **Tecnicamente é possível** — a
+LLM continuaria só planejando, e o executor é que chamaria os métodos. A
+decisão foi **não delegar**, e a seção 7.4 continua valendo. Três razões:
+
+1. **Os métodos visuais da Rybená são toggles, não valores.** `toggleZoom()`,
+   `nextZoom()`, `toggleDarkContrast()`. Nosso contrato é declarativo —
+   `set_preferences: { textScale: 1.25 }`. Com toggle não dá para exprimir
+   "texto a 125%" sem conhecer o estado atual do fornecedor e calcular a
+   diferença, e não há como ler esse estado com confiança. Quebra a idempotência
+   por `planId`, o desfazer e o recibo "já estava nesse estado".
+2. **O token é preso ao domínio e é temporário.** Os ajustes visuais hoje
+   funcionam sem rede e em `localhost`. Delegando, parariam em desenvolvimento,
+   parariam na rotação do token e cairiam junto com o fornecedor.
+3. **Não reduz complexidade, troca complexidade própria por dependência.** O
+   executor local já passou na auditoria. E como os efeitos somam, não é "usar
+   os dois": é substituir.
+
+**O que foi aproveitado da ideia:** a Rybená tem recursos que nós não tínhamos.
+Três foram portados como preferências declarativas locais — **saturação**
+(padrão, alta, baixa, tons de cinza), **correção de cores** (protanopia,
+deuteranopia, tritanopia) e **fonte para dislexia**. Ficam offline, entram no
+desfazer e o chat os comanda pelo mesmo contrato.
+
+#### Preferências v4
+
+As três chaves novas exigiram `clickbus-a11y-v4`, porque o leitor da v3 valida
+a contagem exata de chaves e um registro antigo cairia no padrão, perdendo o
+que a pessoa tinha salvo. A migração v3 → v4 preenche as novas com o padrão e
+preserva o resto; coberta por teste que confere as treze chaves antigas uma a
+uma. Medido no servidor local: um pedido com as dezesseis chaves responde `503`
+honesto, e um pedido sem as três novas responde `400`.
+
+**Armadilha registrada.** Saturação e correção de cores **não** podem usar
+`filter` num ancestral: `filter` torna o elemento bloco de contenção para
+descendentes `position: fixed`, e o painel, os diálogos de filtro e itinerário
+e a máscara de leitura parariam de se posicionar pela viewport. O efeito vem de
+`backdrop-filter` numa camada fixa em z-index 898, abaixo do painel (950), do
+guia (900) e da máscara (899) — os controles de acessibilidade seguem legíveis.
+Verificado nos seis estados, incluindo saturação e correção combinadas: o
+painel continua ancorado, o botão da busca continua clicável e o overflow
+permanece em 0 px.
+
+#### Defeito de foco encontrado e corrigido
+
+Tirar "Sobre acessibilidade" da grade quebrou o retorno de foco: ao voltar para
+a raiz o foco caía no `body`, porque o seletor de retorno procura
+`#a11y-card-<superfície>` e o link não tinha id. O link recebeu
+`id="a11y-card-about"`, e as cinco entradas voltaram a devolver o foco à origem.
+
+#### Validação desta rodada
+
+| Verificação | Resultado |
+|---|---|
+| typecheck, build, suíte, typecheck de `api/` | **PASS** — 38 testes |
+| axe em 5 telas e no painel em 1440, 821, 820, 390 e 320 px | **PASS** — 0 violações |
+| reflow nos três tamanhos, painel aberto e fechado | **PASS** — 0 px |
+| breakpoints 820/821 | **PASS** — diálogo modal vs. região |
+| Escape, armadilha de foco, aba oculta sem `rAF` | **PASS** — acionador no header recebe o foco de volta |
+| teclado da raiz a cada superfície e de volta | **PASS** — 5 entradas |
+| chips preenchem sem enviar | **PASS** |
+| chat aplica plano com preferência da v4 e oferece desfazer | **PASS** — `saturation` e `dyslexiaFont` chegam ao DOM |
+| camada de filtro não quebra `fixed` nem intercepta ponteiro | **PASS** — 6 estados |
+| guia e máscara, via v3 migrado e via v4 | **PASS** — `pointer-events: none` nas 4 camadas |
+| jornada completa | **PASS** — 0 erro de console |
+| endpoints 405/403/415/413/503 e recusa de preferências incompletas | **PASS** |
+
+`passes` do axe: 304 na linha de base, 291 agora. A diferença continua sendo
+inaplicabilidade, não reprovação: `aria-required-children` e
+`aria-required-parent` saíram com o `tablist`, e `scrollable-region-focusable`
+deixou de ter nó a examinar em 320 px com texto a 150%, porque a raiz 2×2 cabe
+sem rolagem. Nenhuma regra passou de aprovada a violada, e as violações
+seguem em zero.
+
 ## 8. Fase 3 — Validação e evidências
 
 ### T3.1 — Regressão integral

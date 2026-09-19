@@ -222,6 +222,39 @@ automatizável, não acessibilidade comprovada: a ferramenta cobre cerca de um
 terço dos critérios WCAG. O adaptador de desenvolvimento é ferramenta de
 desenvolvimento e não prova nada sobre a Rybená.
 
+### Resultado observado em 19/09/2026 — acionador no header e preferências v4
+
+Segunda rodada do mesmo dia, depois da revisão do padrão visual com o
+responsável. Build de produção em `127.0.0.1:4175`.
+
+| Caso | Status | Evidência |
+|---|---|---|
+| acionador no `Header`, à direita, com pictograma universal | PASS | visível de 320 a 1440 px; `Header` é sticky, então segue alcançável na rolagem |
+| raiz em grade 2×2 com "Sobre" como link | PASS | 4 cartões + link; descrição de cada cartão em `aria-describedby` |
+| chips de sugestão preenchem sem enviar | PASS | após o clique, campo preenchido e região de estado vazia, sem chamada ao planejador |
+| chat aplica plano com preferência da v4 | PASS | `saturation=low` e `dyslexiaFont=true` chegam ao DOM, camada de filtro aparece e desfazer é oferecido |
+| retorno de foco ao sair de cada superfície | PASS após correção | sair de "Sobre" caía no `body`; o link recebeu `id="a11y-card-about"` e as 5 entradas voltaram a devolver o foco à origem |
+| axe em 5 telas e no painel em 5 larguras | PASS | 0 violações |
+| reflow 1440/390/320, painel aberto e fechado | PASS | 0 px de overflow |
+| breakpoints 820/821 | PASS | diálogo modal com backdrop vs. região não modal |
+| Escape, armadilha de foco, aba oculta sem `rAF` | PASS | o acionador no header recebe o foco de volta |
+| camada de saturação/correção não quebra `position: fixed` | PASS | 6 estados, incluindo combinações; painel ancorado e botão da busca clicável |
+| camada de filtro não intercepta ponteiro | PASS | `pointer-events: none`; `elementFromPoint` devolve o botão |
+| guia e máscara com preferências vindas de v3 migrado e de v4 | PASS | 4 camadas com `pointer-events: none` nos dois caminhos |
+| migração v3 → v4 sem perder o que estava salvo | PASS | teste confere as 13 chaves antigas uma a uma e o padrão das 3 novas |
+| servidor recusa preferências incompletas | PASS | 16 chaves → `503` honesto; sem as 3 novas → `400` |
+| jornada completa | PASS | 0 erro e 0 exceção de console |
+| captura de evidência em 320 px | PASS | 3 PNG regenerados e revisados |
+| correção de cores validada com pessoas com dicromacia | NOT RUN | as matrizes são aproximação, não simulação clínica |
+| fonte para dislexia validada com pessoas disléxicas | NOT RUN | usa famílias já instaladas no sistema; o ganho presumido vem de espaçamento e peso |
+
+**Decisão registrada.** Os ajustes visuais continuam sendo responsabilidade
+exclusiva do executor local. A alternativa de delegá-los aos toggles da Rybená
+foi avaliada e recusada: os métodos do fornecedor são relativos, não
+declarativos, o que quebraria idempotência, desfazer e funcionamento offline —
+ver a seção 7.7 do plano. Três recursos que só a Rybená tinha foram portados
+localmente.
+
 ## 8. Registro
 
 ```text

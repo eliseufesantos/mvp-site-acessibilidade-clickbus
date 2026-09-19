@@ -40,6 +40,7 @@ import { explainFromGlossary } from '../core/glossary';
 import {
   COMFORTABLE_READING_PATCH,
   applyPreferencePatch,
+  getActivePreferenceLabels,
   getDefaultPreferences,
   loadPreferences,
   parsePreferencePatch,
@@ -150,12 +151,66 @@ await test('migrates legacy v1 elderly mode', () => {
   assert(loaded.preferences.textScale === 1.125 && loaded.preferences.controlSize === 'large');
 });
 
-await test('falls back safely on invalid storage and serializes v3', () => {
+await test('falls back safely on invalid storage and serializes v4', () => {
   const storage = new MemoryStorage();
-  storage.setItem('clickbus-a11y-v3', '{bad json');
+  storage.setItem('clickbus-a11y-v4', '{bad json');
   equal(loadPreferences(storage).preferences, getDefaultPreferences());
   const encoded = serializePreferences({ ...getDefaultPreferences(), cursor: 'large' });
-  assert(encoded.includes('"version":3') && encoded.includes('"cursor":"large"'));
+  assert(encoded.includes('"version":4') && encoded.includes('"cursor":"large"'));
+});
+
+await test('migrates v3 preferences to v4 without losing what was saved', () => {
+  // v4 so acrescentou saturacao, correcao de cores e fonte para dislexia. Quem
+  // ja tinha preferencias salvas nao pode perde-las na atualizacao.
+  const storage = new MemoryStorage();
+  const v3 = {
+    version: 3,
+    visual: {
+      contrast: 'high', textScale: 1.25, controlSize: 'large', cursor: 'large',
+      highlightLinks: true, highlightHeadings: false, letterSpacing: 'wide',
+      lineHeight: 'comfortable', textAlign: 'left', readingGuide: true,
+      readingMask: false, reducedMotion: true,
+    },
+    libras: { speed: 0.75 },
+  };
+  storage.setItem('clickbus-a11y-v3', JSON.stringify(v3));
+  const loaded = loadPreferences(storage);
+  assert(loaded.migratedFrom === 3, 'deveria reportar migracao de v3');
+  assert(loaded.preferences.contrast === 'high' && loaded.preferences.textScale === 1.25);
+  assert(loaded.preferences.controlSize === 'large' && loaded.preferences.cursor === 'large');
+  assert(loaded.preferences.highlightLinks === true && loaded.preferences.letterSpacing === 'wide');
+  assert(loaded.preferences.lineHeight === 'comfortable' && loaded.preferences.textAlign === 'left');
+  assert(loaded.preferences.readingGuide === true && loaded.preferences.reducedMotion === true);
+  assert(loaded.preferences.librasSpeed === 0.75);
+  // As chaves novas entram no padrao, nunca indefinidas.
+  assert(loaded.preferences.saturation === 'default');
+  assert(loaded.preferences.colorFilter === 'none');
+  assert(loaded.preferences.dyslexiaFont === false);
+
+  // v4 tem precedencia sobre um v3 remanescente.
+  storage.setItem('clickbus-a11y-v4', serializePreferences({ ...getDefaultPreferences(), saturation: 'grayscale' }));
+  const atual = loadPreferences(storage);
+  assert(atual.migratedFrom === null && atual.preferences.saturation === 'grayscale');
+});
+
+await test('accepts the new colour and dyslexia preferences and rejects invalid values', () => {
+  equal(parsePreferencePatch({ saturation: 'grayscale' }), { saturation: 'grayscale' });
+  equal(parsePreferencePatch({ colorFilter: 'deuteranopia' }), { colorFilter: 'deuteranopia' });
+  equal(parsePreferencePatch({ dyslexiaFont: true }), { dyslexiaFont: true });
+  assert(parsePreferencePatch({ saturation: 'neon' }) === null);
+  assert(parsePreferencePatch({ colorFilter: 'qualquer' }) === null);
+  assert(parsePreferencePatch({ dyslexiaFont: 'sim' }) === null);
+
+  // O esquema enviado ao provedor deriva das mesmas constantes.
+  const props = PLANNER_RESPONSE_JSON_SCHEMA.properties.actions.items.properties.patch.properties;
+  equal([...props.saturation.enum], ['default', 'high', 'low', 'grayscale']);
+  equal([...props.colorFilter.enum], ['none', 'protanopia', 'deuteranopia', 'tritanopia']);
+  assert(props.dyslexiaFont.type === 'boolean');
+
+  const labels = getActivePreferenceLabels({
+    ...getDefaultPreferences(), saturation: 'low', colorFilter: 'protanopia', dyslexiaFont: true,
+  });
+  assert(labels.includes('Saturação baixa') && labels.includes('Correção protanopia') && labels.includes('Fonte para dislexia'));
 });
 
 await test('rejects unknown and invalid preference values', () => {
