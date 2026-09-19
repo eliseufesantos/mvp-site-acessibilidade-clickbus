@@ -6,6 +6,10 @@ app/vite.config.js
 app/vite.config.d.ts
 .pnpm-store/
 .tmp-chrome-qa/
+# Perfis de navegador criados pelas capturas. O script os apaga no final,
+# mas o Chrome mantem arquivos LOCK abertos e a limpeza pode falhar.
+app/.tmp-accessibility-cdp/
+.tmp-accessibility-cdp/
 tmp/
 *.log
 .env
