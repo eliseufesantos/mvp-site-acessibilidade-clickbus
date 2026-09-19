@@ -1,6 +1,12 @@
 export interface LlmProvider {
-  complete(system: string, user: string, signal: AbortSignal): Promise<unknown>;
+  complete(system: string, user: string, signal: AbortSignal, responseSchema: unknown): Promise<unknown>;
 }
+
+// Modelos com raciocínio contam os tokens de pensamento dentro deste teto. Com
+// 1.024 o orçamento se esgotava antes da resposta e `finishReason` voltava
+// `MAX_TOKENS`, que o adaptador trata como resposta incompleta. A saída útil
+// do contrato é pequena; a folga aqui é para o raciocínio, não para o texto.
+const MAX_OUTPUT_TOKENS = 4096;
 
 export interface ProviderConfiguration {
   endpoint: string;
@@ -86,7 +92,7 @@ class OpenAiCompatibleProvider implements LlmProvider {
     this.chatCompletionsUrl = url.toString();
   }
 
-  async complete(system: string, user: string, signal: AbortSignal): Promise<unknown> {
+  async complete(system: string, user: string, signal: AbortSignal, responseSchema: unknown): Promise<unknown> {
     const response = await this.fetchImplementation(this.chatCompletionsUrl, {
       method: 'POST',
       headers: {
@@ -96,8 +102,11 @@ class OpenAiCompatibleProvider implements LlmProvider {
       body: JSON.stringify({
         model: this.configuration.model,
         temperature: 0,
-        max_tokens: 1024,
-        response_format: { type: 'json_object' },
+        max_tokens: MAX_OUTPUT_TOKENS,
+        response_format: {
+          type: 'json_schema',
+          json_schema: { name: 'accessibility_response', strict: true, schema: responseSchema },
+        },
         messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
       }),
       signal,
@@ -130,7 +139,7 @@ export class GeminiProvider implements LlmProvider {
     this.useLowThinking = /^gemini-3(?:[.-]|$)/.test(model);
   }
 
-  async complete(system: string, user: string, signal: AbortSignal): Promise<unknown> {
+  async complete(system: string, user: string, signal: AbortSignal, responseSchema: unknown): Promise<unknown> {
     const response = await this.fetchImplementation(this.generateContentUrl, {
       method: 'POST',
       headers: {
@@ -141,8 +150,8 @@ export class GeminiProvider implements LlmProvider {
         systemInstruction: { parts: [{ text: system }] },
         contents: [{ role: 'user', parts: [{ text: user }] }],
         generationConfig: {
-          maxOutputTokens: 1024,
-          responseJsonSchema: { type: 'object' },
+          maxOutputTokens: MAX_OUTPUT_TOKENS,
+          responseJsonSchema: responseSchema,
           responseMimeType: 'application/json',
           ...(this.useLowThinking ? { thinkingConfig: { thinkingLevel: 'LOW' } } : {}),
         },

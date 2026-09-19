@@ -1,5 +1,13 @@
 import type { AccessibilityPreferences } from '../../../types.js';
-import { LIBRAS_SPEEDS, PREFERENCE_KEYS, parsePreferencePatch, type PreferencePatch } from './preferences.js';
+import {
+  LIBRAS_SPEEDS,
+  LINE_HEIGHTS,
+  PREFERENCE_KEYS,
+  TEXT_ALIGNS,
+  TEXT_SCALES,
+  parsePreferencePatch,
+  type PreferencePatch,
+} from './preferences.js';
 
 export const CONTRACT_VERSION = '2.0' as const;
 
@@ -217,3 +225,93 @@ export const textResponseSchema = {
 };
 
 export const ALL_ACTION_TYPES = actionTypes;
+
+// Esquemas de saída estruturada enviados ao provedor.
+//
+// São derivados das mesmas constantes que os validadores acima para não
+// divergirem. Eles orientam o modelo, mas NÃO substituem a validação: o
+// servidor revalida com `plannerResponseSchema`/`textResponseSchema` e o
+// executor local revalida de novo antes de aplicar qualquer efeito.
+//
+// A combinação exata de chaves por tipo de ação continua sendo responsabilidade
+// de `parsePlanAction`, porque o suporte a `anyOf` na saída estruturada varia
+// entre provedores e um esquema rejeitado derrubaria a chamada inteira.
+
+const preferencePatchJsonSchema = {
+  type: 'object',
+  description: 'Somente as chaves que devem mudar. Nunca envie o objeto completo.',
+  properties: {
+    contrast: { type: 'string', enum: ['default', 'high'] },
+    textScale: { type: 'number', enum: [...TEXT_SCALES] },
+    controlSize: { type: 'string', enum: ['default', 'large'] },
+    cursor: { type: 'string', enum: ['default', 'large'] },
+    highlightLinks: { type: 'boolean' },
+    highlightHeadings: { type: 'boolean' },
+    letterSpacing: { type: 'string', enum: ['default', 'wide'] },
+    lineHeight: { type: 'string', enum: [...LINE_HEIGHTS] },
+    textAlign: { type: 'string', enum: [...TEXT_ALIGNS] },
+    readingGuide: { type: 'boolean' },
+    readingMask: { type: 'boolean' },
+    reducedMotion: { type: 'boolean' },
+    librasSpeed: { type: 'number', enum: [...LIBRAS_SPEEDS] },
+  },
+  additionalProperties: false,
+} as const;
+
+const planActionJsonSchema = {
+  type: 'object',
+  properties: {
+    type: { type: 'string', enum: [...actionTypes] },
+    patch: {
+      ...preferencePatchJsonSchema,
+      description: 'Obrigatório e exclusivo de set_preferences.',
+    },
+    contentRef: {
+      type: 'string',
+      description: 'Obrigatório e exclusivo de translate_content. Use um id de context.contentTargets.',
+    },
+    speed: {
+      type: 'number',
+      enum: [...LIBRAS_SPEEDS],
+      description: 'Obrigatório e exclusivo de set_libras_speed.',
+    },
+  },
+  required: ['type'],
+  additionalProperties: false,
+} as const;
+
+export const PLANNER_RESPONSE_JSON_SCHEMA = {
+  type: 'object',
+  properties: {
+    contractVersion: { type: 'string', enum: [CONTRACT_VERSION] },
+    requestId: { type: 'string', description: 'Copie exatamente o requestId do pedido.' },
+    planId: { type: 'string', description: 'Identificador curto e único deste plano.' },
+    baseStateRevision: { type: 'integer', description: 'Copie exatamente context.stateRevision do pedido.' },
+    pageEpoch: { type: 'integer', description: 'Copie exatamente context.pageEpoch do pedido.' },
+    panelSession: { type: 'integer', description: 'Copie exatamente context.panelSession do pedido.' },
+    mode: { type: 'string', enum: ['apply', 'propose', 'clarify', 'unsupported'] },
+    message: { type: 'string', description: 'Resposta curta em português brasileiro para a pessoa usuária.' },
+    actions: {
+      type: 'array',
+      maxItems: 3,
+      description: 'Vazio quando mode for clarify ou unsupported. Sem tipos repetidos.',
+      items: planActionJsonSchema,
+    },
+  },
+  required: [
+    'contractVersion', 'requestId', 'planId', 'baseStateRevision',
+    'pageEpoch', 'panelSession', 'mode', 'message', 'actions',
+  ],
+  additionalProperties: false,
+} as const;
+
+export const TEXT_RESPONSE_JSON_SCHEMA = {
+  type: 'object',
+  properties: {
+    contractVersion: { type: 'string', enum: [CONTRACT_VERSION] },
+    requestId: { type: 'string', description: 'Copie exatamente o requestId do pedido.' },
+    text: { type: 'string', description: 'Resposta em português brasileiro simples.' },
+  },
+  required: ['contractVersion', 'requestId', 'text'],
+  additionalProperties: false,
+} as const;

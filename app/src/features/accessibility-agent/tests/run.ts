@@ -19,7 +19,13 @@ import {
   resolvePublicContent,
   simplifyPublicContent,
 } from '../adapters/clickbus/content';
-import { CONTRACT_VERSION, plannerResponseSchema, type PlannerResponse } from '../core/contracts';
+import {
+  CONTRACT_VERSION,
+  PLANNER_RESPONSE_JSON_SCHEMA,
+  TEXT_RESPONSE_JSON_SCHEMA,
+  plannerResponseSchema,
+  type PlannerResponse,
+} from '../core/contracts';
 import { AccessibilityExecutor, PlanExecutionError } from '../core/executor';
 import { explainFromGlossary } from '../core/glossary';
 import {
@@ -192,7 +198,11 @@ await test('Gemini provider sends a native structured request and parses split J
     assert(payload.systemInstruction.parts[0].text === 'system');
     assert(payload.contents[0].role === 'user' && payload.contents[0].parts[0].text === 'user');
     assert(payload.generationConfig.responseMimeType === 'application/json');
-    assert(payload.generationConfig.maxOutputTokens === 1024);
+    // O teto precisa acomodar os tokens de raciocínio, não só a saída útil.
+    assert(payload.generationConfig.maxOutputTokens === 4096);
+    // O esquema real precisa chegar ao provedor. Um `{ type: 'object' }` aqui
+    // não restringe nada e devolve a estrutura à adivinhação do modelo.
+    equal(payload.generationConfig.responseJsonSchema, TEXT_RESPONSE_JSON_SCHEMA);
     assert(payload.generationConfig.candidateCount === undefined);
     assert(payload.generationConfig.temperature === undefined);
     assert(payload.generationConfig.thinkingConfig === undefined);
@@ -206,7 +216,7 @@ await test('Gemini provider sends a native structured request and parses split J
     }), { status: 200, headers: { 'content-type': 'application/json' } });
   });
 
-  equal(await provider.complete('system', 'user', controller.signal), { ok: true });
+  equal(await provider.complete('system', 'user', controller.signal, TEXT_RESPONSE_JSON_SCHEMA), { ok: true });
   assert(calls === 1);
 });
 
@@ -224,7 +234,7 @@ await test('Gemini thinkingLevel uses the documented enum and only for the Gemin
         candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '{"ok":true}' }] } }],
       }), { status: 200, headers: { 'content-type': 'application/json' } });
     });
-    await provider.complete('system', 'user', signal);
+    await provider.complete('system', 'user', signal, TEXT_RESPONSE_JSON_SCHEMA);
     return captured?.generationConfig?.thinkingConfig;
   };
 
@@ -252,15 +262,15 @@ await test('Gemini provider fails closed on blocked, incomplete and malformed re
     new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } }));
   const signal = new AbortController().signal;
   await expectError(
-    responseFor({ promptFeedback: { blockReason: 'SAFETY' } }).complete('system', 'user', signal),
+    responseFor({ promptFeedback: { blockReason: 'SAFETY' } }).complete('system', 'user', signal, TEXT_RESPONSE_JSON_SCHEMA),
     'provider_blocked_response',
   );
   await expectError(
-    responseFor({ candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: '{}' }] } }] }).complete('system', 'user', signal),
+    responseFor({ candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: '{}' }] } }] }).complete('system', 'user', signal, TEXT_RESPONSE_JSON_SCHEMA),
     'provider_incomplete_response',
   );
   await expectError(
-    responseFor({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: 'not-json' }] } }] }).complete('system', 'user', signal),
+    responseFor({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: 'not-json' }] } }] }).complete('system', 'user', signal, TEXT_RESPONSE_JSON_SCHEMA),
     'provider_invalid_json',
   );
   let httpCalls = 0;
@@ -268,8 +278,56 @@ await test('Gemini provider fails closed on blocked, incomplete and malformed re
     httpCalls += 1;
     return new Response('{"error":{"message":"upstream detail must stay private"}}', { status: 429 });
   });
-  await expectError(httpFailure.complete('system', 'user', signal), 'provider_http_429');
+  await expectError(httpFailure.complete('system', 'user', signal, TEXT_RESPONSE_JSON_SCHEMA), 'provider_http_429');
   assert(httpCalls === 1);
+});
+
+await test('server sends the matching output schema and surfaces a stable failure code', async () => {
+  const schemaFor = async (endpoint: 'plan' | 'explain' | 'simplify', body: unknown) => {
+    let received: unknown;
+    const provider: LlmProvider = {
+      complete: async (_system, _user, _signal, responseSchema) => {
+        received = responseSchema;
+        throw new Error('provider_incomplete_response');
+      },
+    };
+    const response = await handleAccessibilityRequest(
+      new Request(`http://local/api/accessibility/${endpoint}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', origin: 'http://local' },
+        body: JSON.stringify(body),
+      }),
+      endpoint,
+      provider,
+      unlimitedQuota,
+    );
+    return { received, payload: await response.json() as Record<string, unknown>, status: response.status };
+  };
+
+  const planned = await schemaFor('plan', plannerRequestBody());
+  equal(planned.received, PLANNER_RESPONSE_JSON_SCHEMA);
+  const explained = await schemaFor('explain', {
+    contractVersion: CONTRACT_VERSION, requestId: 'r', term: 'embarque', context: 'x', contentRef: 'results-help',
+  });
+  equal(explained.received, TEXT_RESPONSE_JSON_SCHEMA);
+
+  // Seis falhas distintas do adaptador não podem virar a mesma mensagem opaca.
+  assert(planned.status === 502 && planned.payload.code === 'provider_incomplete_response');
+  assert(typeof planned.payload.error === 'string');
+
+  // Uma exceção inesperada não pode vazar texto interno como código.
+  const opaque: LlmProvider = {
+    complete: async () => { throw new Error('ReferenceError: detalhe interno do runtime'); },
+  };
+  const unexpected = await handleAccessibilityRequest(jsonRequest(plannerRequestBody()), 'plan', opaque, unlimitedQuota);
+  assert((await unexpected.json() as Record<string, unknown>).code === 'provider_failed');
+
+  // Resposta completa porém fora do contrato recebe código próprio.
+  const offContract: LlmProvider = { complete: async () => ({ contractVersion: CONTRACT_VERSION, requestId: 'r', extra: true }) };
+  const mismatch = await handleAccessibilityRequest(jsonRequest(plannerRequestBody()), 'plan', offContract, unlimitedQuota);
+  const mismatchBody = await mismatch.json() as Record<string, unknown>;
+  assert(mismatch.status === 502 && mismatchBody.code === 'contract_mismatch');
+  assert(typeof mismatchBody.detail === 'string');
 });
 
 await test('provider factory keeps missing configuration disabled and selects Gemini by host', () => {

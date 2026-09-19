@@ -1,4 +1,6 @@
 import {
+  PLANNER_RESPONSE_JSON_SCHEMA,
+  TEXT_RESPONSE_JSON_SCHEMA,
   explainRequestSchema,
   plannerRequestSchema,
   plannerResponseSchema,
@@ -130,6 +132,17 @@ const isAllowedOrigin = (request: Request): boolean => {
   return configured.includes(normalizedOrigin);
 };
 
+// Identificador estável de qual ramo do adaptador falhou. O adaptador lança
+// `Error` com nomes fixos (`provider_http_429`, `provider_incomplete_response`,
+// ...) e sem conteúdo de prompt, então expor o código é seguro e evita que seis
+// falhas distintas apareçam como a mesma mensagem genérica.
+const PROVIDER_ERROR_CODE = /^provider_[a-z0-9_]{1,60}$/;
+
+const providerErrorCode = (error: unknown): string => {
+  const message = error instanceof Error ? error.message : '';
+  return PROVIDER_ERROR_CODE.test(message) ? message : 'provider_failed';
+};
+
 class RequestBodyTooLargeError extends Error {}
 
 const readRequestBody = async (request: Request): Promise<string> => {
@@ -203,18 +216,24 @@ export const handleAccessibilityRequest = async (
   const timeout = setTimeout(() => controller.abort(), 10_000);
   try {
     const result = endpoint === 'plan'
-      ? await provider.complete(PLANNER_SYSTEM_PROMPT, plannerUserPrompt(parsed.data as PlannerRequest), controller.signal)
+      ? await provider.complete(PLANNER_SYSTEM_PROMPT, plannerUserPrompt(parsed.data as PlannerRequest), controller.signal, PLANNER_RESPONSE_JSON_SCHEMA)
       : endpoint === 'explain'
-        ? await provider.complete(EXPLAIN_SYSTEM_PROMPT, explainUserPrompt(parsed.data as ExplainRequest), controller.signal)
-        : await provider.complete(SIMPLIFY_SYSTEM_PROMPT, simplifyUserPrompt(parsed.data as SimplifyRequest), controller.signal);
+        ? await provider.complete(EXPLAIN_SYSTEM_PROMPT, explainUserPrompt(parsed.data as ExplainRequest), controller.signal, TEXT_RESPONSE_JSON_SCHEMA)
+        : await provider.complete(SIMPLIFY_SYSTEM_PROMPT, simplifyUserPrompt(parsed.data as SimplifyRequest), controller.signal, TEXT_RESPONSE_JSON_SCHEMA);
     const output = endpoint === 'plan' ? plannerResponseSchema.safeParse(result) : textResponseSchema.safeParse(result);
-    if (!output.success) return json({ error: 'O provedor retornou uma resposta fora do contrato seguro.' }, 502);
+    if (!output.success) {
+      return json({
+        error: 'O provedor retornou uma resposta fora do contrato seguro.',
+        code: 'contract_mismatch',
+        detail: output.error,
+      }, 502);
+    }
     return json(output.data);
-  } catch {
-    const message = controller.signal.aborted
-      ? 'O provedor excedeu o limite de 10 segundos.'
-      : 'O provedor de IA não conseguiu responder.';
-    return json({ error: message }, 502);
+  } catch (error) {
+    if (controller.signal.aborted) {
+      return json({ error: 'O provedor excedeu o limite de 10 segundos.', code: 'provider_timeout' }, 502);
+    }
+    return json({ error: 'O provedor de IA não conseguiu responder.', code: providerErrorCode(error) }, 502);
   } finally {
     clearTimeout(timeout);
     request.signal.removeEventListener('abort', abortFromRequest);
