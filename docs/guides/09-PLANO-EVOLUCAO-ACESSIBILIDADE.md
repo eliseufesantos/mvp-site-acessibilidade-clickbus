@@ -58,6 +58,7 @@ Para tarefas que tocam funções de `api/`, adicionalmente:
 | T1.5 | Atualizar snapshot do `AGENTS.md` | 1 | pendente |
 | T1.6 | Foco independente de `requestAnimationFrame` | 1 | pendente |
 | T1.7 | Correções menores agrupadas | 1 | pendente |
+| T1.8 | Revisar prompts de explicação e simplificação | 1 | pendente — ver 5.4 |
 | T2.1 | Acionador circular e grade de recursos | 2 | pendente |
 | T2.2 | Chat assistente com ditado por voz | 2 | pendente |
 | T2.3 | Capacidade de voz no contrato e no executor | 2 | pendente |
@@ -361,6 +362,25 @@ A ressalva é disponibilidade. Em 10 chamadas: 2 sucessos, 3 × HTTP 503 e 5 × 
 3. **404 prova que a chave está certa.** A API do Google valida autenticação **antes** do caminho: chave inválida devolve `400 API_KEY_INVALID`. Portanto um 404 significa credencial aceita e modelo inexistente naquele caminho. Use isso para não caçar problema de chave à toa.
 
 **Regra derivada, obrigatória:** depois de qualquer troca de `ACCESSIBILITY_LLM_MODEL`, rode um smoke real antes de confiar no modelo. Nunca troque o modelo na véspera da apresentação sem smoke.
+
+Disponibilidade medida em 19/09/2026, mesmo endpoint, mesma chave:
+
+| Modelo | Resultado |
+|---|---|
+| `gemini-3.5-flash` | **4 de 4** — em uso |
+| `gemini-3.8-flash` | 2 de 10 (3 × 503, 5 × 429) |
+| `gemini-2.5-flash` | 0 de 6 — sempre 404 |
+
+#### 5.4 Qualidade semântica: `PARCIAL`, e há uma tarefa nova aqui
+
+Nas mesmas 4 chamadas bem-sucedidas, explicando o termo "embarque": duas respostas corretas, uma vaga e **uma factualmente errada** — afirmou que "o embarque está diretamente relacionado ao ato de comparar horários", que é o contexto, não o termo.
+
+A sonda usou um contexto propositalmente pobre, então o resultado não é conclusivo. Mas o padrão aponta para o `EXPLAIN_SYSTEM_PROMPT`, que instrui *"usando somente o contexto fornecido"*. Para um glossário isso é forte demais: o contexto deve **desambiguar** o termo, não ser a única fonte do significado. O modelo, obediente, descreve o contexto quando ele é magro.
+
+**T1.8 (nova, pequena) — revisar os prompts de explicação e simplificação.**
+Arquivo: `app/server/accessibility/prompt.ts`. Reescrever `EXPLAIN_SYSTEM_PROMPT` para que o contexto sirva de desambiguação e não de fonte única, preservando as proibições já existentes (nada de aconselhamento jurídico, financeiro ou médico). Depois, avaliar com pelo menos 5 termos reais do glossário e contextos verdadeiros da página, comparando com a explicação determinística que já existe em `core/glossary.ts`. Aceite: nenhuma resposta factualmente errada na amostra, com revisão humana registrada em `VALIDATION.md`.
+
+Até isso acontecer, **não** apresente a explicação por IA como recurso confiável. O glossário determinístico local continua sendo o caminho seguro.
 
 **Pendência a registrar:** fixar um modelo estável para a apresentação ou documentar explicitamente que `gemini-flash-latest` é alias mutável. Antes de habilitar chamadas pagas em hospedagem pública, configurar quota e budget no Google e rate limit persistente ou WAF na Vercel — a quota por instância do handler é apenas defesa em profundidade e não sobrevive ao escalonamento de funções stateless.
 
