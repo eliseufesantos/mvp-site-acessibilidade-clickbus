@@ -32,15 +32,25 @@ Para tarefas que tocam funções de `api/`, adicionalmente:
 
 > Nunca use `npx tsc` sem caminho. O pacote `tsc` do npm **não é** o TypeScript e produz erros de sintaxe falsos. Use sempre o binário local acima.
 
+### Paralelização: o que pode ser dividido e o que não pode
+
+**Pode rodar em paralelo, um agente por tarefa.** As tarefas da Fase 1 tocam arquivos distintos e têm critério de aceite próprio: T1.1, T1.2, T1.4, T1.5, T1.6 e T1.7. T1.6 é a única que cruza vários arquivos, então dê-a a um agente sozinho para evitar conflito de edição.
+
+**Não divida entre agentes.** A Fase 2 é **um** redesenho coerente com invariantes apertadas. T2.1 a T2.4 compartilham o mesmo componente, o mesmo CSS e o mesmo modelo de foco; repartir entre agentes produz superfícies que não conversam e perde a acessibilidade já auditada. Um agente executa a Fase 2 inteira, na ordem.
+
+**Ordem obrigatória.** T0.0 antes de tudo. T0.3 antes de qualquer trabalho de Fase 2 que toque Libras ou voz, porque sem o adaptador falso não há como exercitar esses caminhos fora do domínio autorizado. T2.3 antes de T2.4.
+
+**Ao despachar um agente**, passe o identificador da tarefa e o caminho deste arquivo. Ele deve ler o `AGENTS.md` e a tarefa inteira antes de editar, e não deve expandir o escopo para tarefas vizinhas.
+
 ### Painel de progresso
 
 | ID | Tarefa | Fase | Status |
 |----|--------|------|--------|
 | **T0.0** | **Corrigir `.vercelignore` — funções quebradas em produção** | **0** | **PASS 19/09 — verificado em produção, ver 5.1** |
-| T0.1 | Corrigir enum `thinkingLevel` do Gemini | 0 | código concluído 19/09, suíte 25/25 — smoke real pendente (T0.2) |
-| T0.2 | Credenciais locais e smoke real do Gemini | 0 | pendente |
+| T0.1 | Corrigir enum `thinkingLevel` do Gemini | 0 | PASS 19/09 — aceito pelo provedor em chamada real |
+| T0.2 | Smoke real do Gemini | 0 | PASS 19/09 em produção, ver 5.2 — `.env` local segue pendente |
 | T0.3 | Adaptador Libras de desenvolvimento (fake) | 0 | pendente |
-| T0.4 | Deploy e smoke real da Rybená no domínio autorizado | 0 | pendente |
+| T0.4 | Deploy e smoke real da Rybená no domínio autorizado | 0 | endpoint 200 e player aberto no navegador 19/09 — falta evidência registrada |
 | T1.1 | `aria-label` descartado em `<div>` (14 casos) | 1 | pendente |
 | T1.2 | Anúncio de filtragem nos resultados | 1 | pendente |
 | T1.3 | ~~`.vercelignore`~~ — promovida para **T0.0** | 1 | reclassificada |
@@ -338,6 +348,20 @@ curl -s -X POST http://127.0.0.1:4173/api/accessibility/explain \
 
 **Risco:** médio. Se a resposta cair no 502 "fora do contrato seguro", o problema é o prompt ou o schema, não a conectividade — diagnostique antes de afrouxar o contrato. **Nunca afrouxe o contrato para fazer um teste passar.**
 
+#### 5.2 Resultado: PASS em produção, com ressalva de disponibilidade
+
+Em 19/09/2026, contra o domínio autorizado com `gemini-3.8-flash`, **duas chamadas retornaram 200 com corpo aprovado pelo `textResponseSchema`**. Isso prova, com chamada real e não com transporte falso: o `thinkingLevel: 'LOW'` é aceito, o `responseJsonSchema` real é aceito, 4.096 tokens bastam, e a resposta cabe no contrato.
+
+A ressalva é disponibilidade. Em 10 chamadas: 2 sucessos, 3 × HTTP 503 e 5 × HTTP 429 do provedor. Daí veio o retry único de 503/429 descrito na seção 3 do `AGENTS.md`.
+
+#### 5.3 Escolha de modelo: três lições caras
+
+1. **Aparecer em `models.list` não prova que o modelo serve.** `gemini-2.5-flash` está listado com `generateContent` entre os métodos suportados e mesmo assim devolve **404** em `:generateContent`. Modelo catalogado pode estar aposentado para atendimento.
+2. **"Maduro" não é sinônimo de "disponível".** A troca de `gemini-3.8-flash` para `gemini-2.5-flash` foi feita supondo que um modelo mais antigo estaria menos saturado. Trocou-se instabilidade por indisponibilidade total.
+3. **404 prova que a chave está certa.** A API do Google valida autenticação **antes** do caminho: chave inválida devolve `400 API_KEY_INVALID`. Portanto um 404 significa credencial aceita e modelo inexistente naquele caminho. Use isso para não caçar problema de chave à toa.
+
+**Regra derivada, obrigatória:** depois de qualquer troca de `ACCESSIBILITY_LLM_MODEL`, rode um smoke real antes de confiar no modelo. Nunca troque o modelo na véspera da apresentação sem smoke.
+
 **Pendência a registrar:** fixar um modelo estável para a apresentação ou documentar explicitamente que `gemini-flash-latest` é alias mutável. Antes de habilitar chamadas pagas em hospedagem pública, configurar quota e budget no Google e rate limit persistente ou WAF na Vercel — a quota por instância do handler é apenas defesa em profundidade e não sobrevive ao escalonamento de funções stateless.
 
 ### T0.3 — Adaptador Libras de desenvolvimento
@@ -554,6 +578,43 @@ A API da Rybená **também** oferece os mesmos ajustes visuais que o projeto já
 Justificativa: a implementação local já passou na auditoria, funciona sem rede, persiste em `clickbus-a11y-v3` com migração de versões, e não depende de um token temporário. Delegar à Rybená perderia tudo isso.
 
 **Regra derivada, de cumprimento obrigatório:** o executor **nunca** chama os métodos visuais da Rybená. Se ambos aplicarem contraste ou zoom ao mesmo tempo, os efeitos se somam e o resultado fica quebrado — zoom duplo, filtros de contraste em conflito. Ao carregar o script, avalie usar `disableAccessibilityButton=true` para que a barra do fornecedor não ofereça ao usuário controles que colidem com os nossos.
+
+### 7.5 Especificação da nova navegação
+
+Hoje o painel é um `tablist` de três abas: `conversation`, `settings`, `content`. O alvo é **lançador + superfície**, que é o padrão da referência.
+
+```text
+acionador circular (host lateral fixo, fora do Header)
+└── painel
+    ├── superfície RAIZ: grade de cartões
+    │   ├── Libras            -> superfície Libras
+    │   ├── Voz               -> superfície Voz
+    │   ├── Ajustes visuais   -> PreferenceControls (já existe, já auditado)
+    │   ├── Conteúdo          -> ContentTools (já existe, já auditado)
+    │   └── Sobre             -> texto estático, limites e créditos
+    └── faixa fixa na base: chat assistente + ditado
+```
+
+**Modelo de estado.** Uma superfície ativa por vez, com `raiz` como padrão. Toda superfície que não é a raiz precisa de um controle "Voltar" como **primeiro** elemento focável. Abrir o painel sempre começa na raiz — não restaure a última superfície, porque a pessoa pode ter mudado de página entre uma abertura e outra.
+
+**O que acontece com as abas.** O `tablist` sai. Isso **remove** a navegação por setas que `handleTabKeyDown` implementa hoje; a grade passa a ser percorrida por `Tab`, o que é correto para uma grade de botões. Não recrie `role="tab"` em cartões: cartão que navega para outra superfície é `<button>`, não aba.
+
+**O chat fica sempre visível**, na base, em todas as superfícies. Ele é a porta de entrada do assistente e ocupa o lugar que na referência é do botão "Atendimento em Libras". Em 320 px isso compete por espaço: colapse o chat para uma linha com o campo e o botão de envio, nunca o esconda atrás de outro clique.
+
+**Não regrida nada desta lista** — tudo já passa na auditoria hoje:
+
+| Invariante | Onde se prova |
+|---|---|
+| switches nomeados por `aria-labelledby` | axe, painel aberto |
+| segmentados em `role="group"` com `aria-label` | axe, painel aberto |
+| modal com backdrop e body travado em ≤ 820 px | teste de breakpoint |
+| região não modal e página rolável em ≥ 821 px | teste de breakpoint |
+| Escape fecha e devolve foco ao acionador | teclado |
+| armadilha de foco apenas no modo modal | teclado |
+| 0 px de overflow em 320 px com texto a 150% | reflow |
+| 0 violações axe | varredura antes e depois |
+
+O jeito de não regredir é mecânico: **rode o axe com o painel aberto antes de começar, guarde o resultado, e compare ao terminar.** Contagem de `passes` que cai é sinal de que algo deixou de ser exposto.
 
 ### T2.1 — Acionador circular e grade de recursos
 
