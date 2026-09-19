@@ -183,7 +183,7 @@ export const handleAccessibilityRequest = async (
     : endpoint === 'explain'
       ? explainRequestSchema.safeParse(body)
       : simplifyRequestSchema.safeParse(body);
-  if (!parsed.success) return json({ error: parsed.error }, 400);
+  if (parsed.success === false) return json({ error: parsed.error }, 400);
   if (!provider) {
     return json({ error: 'O provedor de IA ainda não foi configurado. Os ajustes manuais continuam disponíveis.' }, 503);
   }
