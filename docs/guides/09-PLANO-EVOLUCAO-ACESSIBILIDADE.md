@@ -38,6 +38,8 @@ Para tarefas que tocam funções de `api/`, adicionalmente:
 
 **Não divida entre agentes.** A Fase 2 é **um** redesenho coerente com invariantes apertadas. T2.1 a T2.4 compartilham o mesmo componente, o mesmo CSS e o mesmo modelo de foco; repartir entre agentes produz superfícies que não conversam e perde a acessibilidade já auditada. Um agente executa a Fase 2 inteira, na ordem.
 
+**T1.8 fica de fora da paralelização.** O critério de aceite dela exige julgamento humano sobre qualidade de texto, que nenhum agente fecha sozinho. Trate como tarefa acompanhada.
+
 **Ordem obrigatória.** T0.0 antes de tudo. T0.3 antes de qualquer trabalho de Fase 2 que toque Libras ou voz, porque sem o adaptador falso não há como exercitar esses caminhos fora do domínio autorizado. T2.3 antes de T2.4.
 
 **Ao despachar um agente**, passe o identificador da tarefa e o caminho deste arquivo. Ele deve ler o `AGENTS.md` e a tarefa inteira antes de editar, e não deve expandir o escopo para tarefas vizinhas.
