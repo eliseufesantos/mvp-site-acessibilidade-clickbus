@@ -255,6 +255,28 @@ declarativos, o que quebraria idempotência, desfazer e funcionamento offline �
 ver a seção 7.7 do plano. Três recursos que só a Rybená tinha foram portados
 localmente.
 
+### Resultado observado em 19/09/2026 — terceira rodada
+
+| Caso | Status | Evidência |
+|---|---|---|
+| correção de cores aumenta a separação em vez de simular a deficiência | **FAIL corrigido** | as matrizes originais eram de simulação: vermelho–verde caía de 1,414 para 0,559 na deuteranopia. Substituídas por daltonização escolhida por medição; teste novo reprova qualquer matriz que baixe a média ou piore o pior par, e a eficácia foi verificada reintroduzindo as antigas |
+| contador de ajustes estilizado após o portal | **FAIL corrigido** | o seletor ancorado em `.accessibility-plugin` deixou de casar, e o contador virou uma segunda linha dentro do círculo. Escopado em `.accessibility-plugin__trigger-badge`; medido `position: absolute`, 22×22 |
+| ícone do acionador | PASS | pictograma universal de acesso próprio, no lugar do ícone de cadeira de rodas do Lucide |
+| Libras e Voz abrem a Rybená sem superfície intermediária | PASS | sem token: mensagem honesta e permanece na raiz; com o adaptador simulado: "Pronto. Selecione um texto na página…" |
+| URL do CDN em `mode=full` com `disableAccessibilityButton=true` | PASS de contrato | validadores do servidor e do navegador e teste de formato atualizados. **Funcionamento real: NOT RUN** — depende do domínio autorizado |
+| chat maior com histórico visível | PASS | últimos quatro turnos, com quem falou |
+| superfície Conteúdo simplificada | PASS | um fluxo em vez de duas seções paralelas; seletor só com mais de um trecho; um resultado por vez |
+| indicador de ajustes ativos | PASS | "N ajustes ativos nesta página" com nomes e "Remover todos", sem o número interno de revisão |
+| axe, reflow, breakpoints, foco, teclado, jornada, endpoints | PASS | 0 violações, 0 px de overflow, 39 testes |
+| `mode=full` com o token real | NOT RUN | não verificável fora do domínio autorizado; se falhar, Libras e voz não abrem |
+| correção de cores com pessoas com dicromacia | NOT RUN | as matrizes são aproximação medida, não validação com pessoas |
+
+**Exposição de dados registrada.** Com a seleção dentro da barra da Rybená,
+qualquer texto da página pode chegar ao fornecedor, inclusive nome e CPF no
+checkout. O responsável optou por manter Libras e Voz em todas as etapas. A
+exclusão de dados de checkout continua valendo para o planejador de IA e para
+as ferramentas de conteúdo, e não alcança essa seleção livre.
+
 ## 8. Registro
 
 ```text

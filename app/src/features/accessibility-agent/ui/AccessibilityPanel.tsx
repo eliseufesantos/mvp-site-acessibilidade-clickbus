@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  Accessibility, BookOpenText, Bot, Check, ChevronLeft, FlaskConical, Info,
+  BookOpenText, Bot, Check, ChevronLeft, FlaskConical, Info,
   Languages, Mic, Send, SlidersHorizontal, Sparkles, Square, Undo2, Volume2, X,
 } from 'lucide-react';
 import type { AccessibilityPreferences, JourneyStep } from '../../../types';
 import { Button } from '../../../components/ui/Button';
+import { UniversalAccessIcon } from '../../../components/accessibility/UniversalAccessIcon';
 import { getPublicContentTargets, resolvePublicContent } from '../adapters/clickbus/content';
 import { RYBENA_SIMULATION_NOTICE } from '../adapters/libras/contracts';
 import { librasAdapter } from '../adapters/libras/selection';
@@ -21,7 +22,6 @@ import { getActivePreferenceLabels, type PreferencePatch } from '../core/prefere
 import { AboutSurface } from './AboutSurface';
 import { ContentTools } from './ContentTools';
 import { FeatureGrid, type FeatureCard } from './FeatureGrid';
-import { PlayerSurface } from './PlayerSurface';
 import { PreferenceControls } from './PreferenceControls';
 import { useVoiceInput } from './useVoiceInput';
 import { focusAfterRender } from '../../../utils/focus';
@@ -31,7 +31,8 @@ import { focusAfterRender } from '../../../utils/focus';
  * padrão. O `tablist` anterior saiu: cartão que navega para outra superfície é
  * `<button>`, percorrido por `Tab`, não `role="tab"`.
  */
-type PanelSurface = 'root' | 'libras' | 'voice' | 'settings' | 'content' | 'about';
+type PanelSurface = 'root' | 'settings' | 'content' | 'about';
+type CardId = 'libras' | 'voice' | 'settings' | 'content';
 
 interface AccessibilityPanelProps {
   canUndo: boolean;
@@ -83,8 +84,6 @@ const currentCapabilities = (playerAvailable: boolean, hasContent: boolean): Act
 };
 
 const SURFACE_TITLES: Record<Exclude<PanelSurface, 'root'>, string> = {
-  libras: 'Libras',
-  voice: 'Voz',
   settings: 'Ajustes visuais',
   content: 'Conteúdo',
   about: 'Sobre acessibilidade',
@@ -183,6 +182,34 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
     setSurface(next);
   };
 
+  /**
+   * Libras e Voz não têm superfície intermediária: abrem a aplicação da
+   * Rybená, e a seleção de texto acontece na interface dela.
+   */
+  const startRybena = async (mode: 'libras' | 'voz') => {
+    const rotulo = mode === 'voz' ? 'narração em voz' : 'tradução em Libras';
+    announce(`Abrindo a ${rotulo}…`, 'busy');
+    const ready = await librasAdapter.initialize();
+    if (ready.status !== 'accepted') {
+      announce(ready.message, 'error');
+      return;
+    }
+    await librasAdapter.setMode(mode);
+    const opened = await librasAdapter.open();
+    announce(
+      opened.status === 'accepted'
+        ? `Pronto. Selecione um texto na página para a ${rotulo}.`
+        : opened.message,
+      opened.status === 'accepted' ? 'neutral' : 'error',
+    );
+  };
+
+  const handleCard = (id: CardId) => {
+    if (id === 'libras') { void startRybena('libras'); return; }
+    if (id === 'voice') { void startRybena('voz'); return; }
+    openSurface(id);
+  };
+
   const dependencies = (requestId: string) => ({
     requestId,
     getStateRevision: props.getStateRevision,
@@ -274,20 +301,29 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
     }
   };
 
-  const cards: readonly FeatureCard<Exclude<PanelSurface, 'root'>>[] = [
+  const playerNote = (mode: 'libras' | 'voz') => {
+    if (librasSimulated) return 'Simulação';
+    if (player.state === 'loading') return 'Abrindo…';
+    if (player.mode !== mode) return undefined;
+    if (player.state === 'translating') return mode === 'voz' ? 'Narrando' : 'Traduzindo';
+    if (player.state === 'ready' || player.state === 'paused') return 'Aberta';
+    return undefined;
+  };
+
+  const cards: readonly FeatureCard<CardId>[] = [
     {
       id: 'libras',
       label: 'Libras',
-      description: 'Traduzir um trecho público desta tela em Libras.',
+      description: 'Abre a tradução em Libras da Rybená. A seleção do texto acontece na interface dela.',
       icon: Languages,
-      note: librasSimulated ? 'Simulação' : player.mode === 'libras' && player.state === 'translating' ? 'Traduzindo' : undefined,
+      note: playerNote('libras'),
     },
     {
       id: 'voice',
       label: 'Voz',
-      description: 'Ouvir a narração de um trecho público desta tela.',
+      description: 'Abre a narração em voz da Rybená. A seleção do texto acontece na interface dela.',
       icon: Volume2,
-      note: librasSimulated ? 'Simulação' : player.mode === 'voz' && player.state === 'translating' ? 'Narrando' : undefined,
+      note: playerNote('voz'),
     },
     { id: 'settings', label: 'Ajustes visuais', description: 'Contraste, tamanho do texto, cores, espaçamento, guia e máscara.', icon: SlidersHorizontal },
     { id: 'content', label: 'Conteúdo', description: 'Explicar um termo ou simplificar um trecho desta tela.', icon: BookOpenText },
@@ -303,7 +339,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       ref={panelRef}
     >
       <div className="accessibility-panel__heading">
-        <Accessibility aria-hidden="true" size={22} />
+        <UniversalAccessIcon className="accessibility-panel__mark" />
         <div><h2>Acessibilidade</h2><p>Ajustes que acompanham você.</p></div>
         <svg className="a11y-route-mark" viewBox="0 0 96 40" aria-hidden="true" focusable="false">
           <path d="M9 9h22c13 0 13 22 27 22h28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -326,17 +362,30 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       <div className="a11y-surface" ref={bodyRef}>
         {surface === 'root' ? (
           <>
-            <FeatureGrid cards={cards} onOpen={openSurface} />
+            <FeatureGrid cards={cards} onOpen={handleCard} />
 
             <button id="a11y-card-about" className="a11y-about-link" type="button" onClick={() => openSurface('about')}>
               <Info aria-hidden="true" /> Sobre acessibilidade
             </button>
 
             {activeLabels.length > 0 ? (
-              <div className="active-preferences">
-                <div><strong>Agora na página</strong><span>Revisão {props.stateRevision}</span></div>
-                <div className="preference-chips">{activeLabels.map((label) => <span key={label}><Check aria-hidden="true" />{label}</span>)}</div>
-              </div>
+              <section className="active-preferences" aria-labelledby="active-preferences-title">
+                <div>
+                  <h3 id="active-preferences-title">
+                    <Check aria-hidden="true" />
+                    {activeLabels.length} {activeLabels.length === 1 ? 'ajuste ativo nesta página' : 'ajustes ativos nesta página'}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => announce(props.onReset() ? 'Aparência padrão restaurada.' : 'A aparência já está no padrão.')}
+                  >
+                    Remover todos
+                  </button>
+                </div>
+                <ul className="preference-chips">
+                  {activeLabels.map((label) => <li key={label}>{label}</li>)}
+                </ul>
+              </section>
             ) : null}
             {!props.storageAvailable ? <p className="storage-warning" role="status">As preferências funcionam nesta sessão, mas este navegador bloqueou o salvamento local.</p> : null}
           </>
@@ -348,15 +397,6 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
               </button>
               <h3 className="a11y-surface__title">{SURFACE_TITLES[surface]}</h3>
             </div>
-
-            {surface === 'libras' || surface === 'voice' ? (
-              <PlayerSurface
-                mode={surface === 'voice' ? 'voz' : 'libras'}
-                playerSpeed={props.preferences.librasSpeed}
-                onSpeedChange={(librasSpeed) => props.onApply({ librasSpeed })}
-                page={props.page}
-              />
-            ) : null}
 
             {surface === 'settings' ? (
               <PreferenceControls
@@ -379,6 +419,17 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       </div>
 
       <div className="a11y-chat">
+        {history.length > 0 ? (
+          <ol className="a11y-chat__log">
+            {history.slice(-4).map((turno, index) => (
+              <li key={`${turno.role}-${index}`} className={`a11y-chat__turn a11y-chat__turn--${turno.role}`}>
+                <span className="a11y-chat__who">{turno.role === 'user' ? 'Você' : 'Assistente'}</span>
+                <p>{turno.content}</p>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+
         <form className="a11y-chat__form" onSubmit={askAssistant}>
           <label htmlFor="accessibility-request"><Bot aria-hidden="true" /> Peça uma adaptação</label>
           <div className="a11y-chat__suggestions" role="group" aria-label="Sugestões de pedido">
@@ -442,6 +493,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
           <div className="assistant-proposal">
             <strong>Confirme antes de aplicar</strong>
             <p>{proposal.message}</p>
+            <p className="assistant-proposal__hint">O planejador propôs estas ações. Nada acontece até você confirmar:</p>
             <ul>{proposal.actions.map((action, index) => <li key={`${action.type}-${index}`}>{describeAction(action)}</li>)}</ul>
             <div>
               <Button variant="quiet" onClick={() => { setProposal(null); announce('Proposta cancelada. Nada foi alterado.'); }}>Cancelar</Button>

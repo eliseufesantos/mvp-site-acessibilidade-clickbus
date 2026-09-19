@@ -8,11 +8,6 @@ import type { AccessibilityPreferences } from '../../types';
  * descendentes `position: fixed`, e o painel de acessibilidade, os diálogos e a
  * máscara de leitura parariam de se posicionar pela viewport.
  *
- * As matrizes são aproximações de daltonização para dicromacias, no espírito
- * dos filtros de correção de cor: aumentam a separação entre matizes
- * confundíveis deslocando parte do canal perdido para os canais preservados.
- * **Não** são simulação clínica, não corrigem contraste insuficiente e não
- * substituem outro sinal além da cor.
  */
 
 interface ColorFiltersProps {
@@ -20,13 +15,30 @@ interface ColorFiltersProps {
   saturation: AccessibilityPreferences['saturation'];
 }
 
-const MATRICES: Record<Exclude<AccessibilityPreferences['colorFilter'], 'none'>, string> = {
-  protanopia:
-    '0.817 0.183 0 0 0  0.333 0.667 0 0 0  0 0.125 0.875 0 0  0 0 0 1 0',
-  deuteranopia:
-    '0.625 0.375 0 0 0  0.7 0.3 0 0 0  0 0.3 0.7 0 0  0 0 0 1 0',
-  tritanopia:
-    '0.95 0.05 0 0 0  0 0.433 0.567 0 0  0 0.475 0.525 0 0  0 0 0 1 0',
+/**
+ * Matrizes de **daltonização**, não de simulação.
+ *
+ * A primeira versão usava as matrizes de simulação de dicromacia que circulam
+ * em ferramentas de "colorblind simulator". Elas fazem o oposto do prometido:
+ * medida a separação euclidiana entre vermelho e verde puros, a de
+ * deuteranopia caía de 1,414 para 0,559 — o controle chamado "correção"
+ * tornava as cores *menos* distinguíveis para quem o escolhesse.
+ *
+ * Estas são `D = I + E·(I − S)`, onde `S` simula a deficiência e `E`
+ * redistribui o erro para os canais que a pessoa ainda separa. A escolha de `E`
+ * não foi por intuição: foi medida sobre oito pares de cores comumente
+ * confundidos, e a suíte de testes reprova qualquer matriz que reduza a
+ * separação média ou piore o pior par.
+ *
+ * **Limite honesto.** Continua sendo aproximação, derivada de um modelo linear
+ * simples e de um conjunto pequeno de pares. Não foi validada com pessoas com
+ * dicromacia, não é simulação clínica, não corrige contraste insuficiente e não
+ * substitui outro sinal além da cor.
+ */
+export const COLOR_CORRECTION_MATRICES: Record<Exclude<AccessibilityPreferences['colorFilter'], 'none'>, string> = {
+  protanopia: '1.183 -0.2705 0.0875 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0',
+  deuteranopia: '1.375 -0.585 0.21 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0',
+  tritanopia: '1 0 0 0 0  0 1.2345 -0.2345 0 0  0 0 1 0 0  0 0 0 1 0',
 };
 
 export function ColorFilters({ colorFilter, saturation }: ColorFiltersProps) {
@@ -38,9 +50,9 @@ export function ColorFilters({ colorFilter, saturation }: ColorFiltersProps) {
           resolve se o filtro existir quando o estilo é aplicado. */}
       <svg className="sr-only" aria-hidden="true" focusable="false">
         <defs>
-          {(Object.keys(MATRICES) as (keyof typeof MATRICES)[]).map((name) => (
+          {(Object.keys(COLOR_CORRECTION_MATRICES) as (keyof typeof COLOR_CORRECTION_MATRICES)[]).map((name) => (
             <filter key={name} id={`a11y-${name}`} colorInterpolationFilters="linearRGB">
-              <feColorMatrix type="matrix" values={MATRICES[name]} />
+              <feColorMatrix type="matrix" values={COLOR_CORRECTION_MATRICES[name]} />
             </filter>
           ))}
         </defs>

@@ -59,7 +59,11 @@
   stroke-width: 2;
 }
 
-.accessibility-plugin .mode-count {
+/* Escopo na classe do proprio acionador: o portal leva o botao para fora de
+   `.accessibility-plugin`, entao um seletor ancorado no host nao casaria e o
+   contador voltaria ao estilo generico, virando uma segunda linha dentro do
+   circulo em vez de um selo de canto. */
+.accessibility-plugin__trigger-badge .mode-count {
   position: absolute;
   top: -5px;
   right: -5px;
@@ -123,8 +127,8 @@
 }
 
 .accessibility-plugin .accessibility-panel__heading > svg:not(.a11y-route-mark) {
-  width: 22px;
-  height: 22px;
+  width: 23px;
+  height: 23px;
   margin-top: 2px;
   color: #ffffff;
 }
@@ -356,6 +360,51 @@
   background: var(--a11y-soft);
 }
 
+/* O painel é um MVP didático: ver o pedido e a resposta lado a lado explica o
+   que o planejador fez melhor do que qualquer texto de ajuda. */
+.accessibility-plugin .a11y-chat__log {
+  max-height: 168px;
+  margin: 0 0 11px;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.accessibility-plugin .a11y-chat__turn {
+  margin-bottom: 8px;
+  padding: 9px 11px;
+  border-radius: 11px;
+  background: var(--cb-surface);
+}
+
+.accessibility-plugin .a11y-chat__turn--user {
+  background: var(--a11y-soft-strong);
+}
+
+.accessibility-plugin .a11y-chat__who {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--a11y-accent-strong);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.accessibility-plugin .a11y-chat__turn p {
+  margin: 0;
+  color: var(--a11y-text);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.accessibility-plugin .assistant-proposal__hint {
+  margin: 8px 0 0;
+  color: var(--a11y-muted);
+  font-size: 0.72rem;
+}
+
 .accessibility-plugin .a11y-chat__form > label {
   display: flex;
   align-items: center;
@@ -405,7 +454,7 @@
 .accessibility-plugin .a11y-chat__row textarea {
   width: 100%;
   min-width: 0;
-  min-height: 56px;
+  min-height: 84px;
   padding: 11px 12px;
   border: 1px solid var(--a11y-border);
   border-radius: 11px;
@@ -631,6 +680,103 @@
   border: 1px solid color-mix(in srgb, var(--a11y-accent) 24%, var(--a11y-border));
   border-radius: 14px;
   background: var(--a11y-soft);
+}
+
+.accessibility-plugin .active-preferences h3 {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  color: var(--a11y-text);
+  font-size: 0.84rem;
+  font-weight: 650;
+  gap: 6px;
+}
+
+.accessibility-plugin .active-preferences h3 svg {
+  width: 16px;
+  height: 16px;
+  color: var(--cb-success);
+}
+
+.accessibility-plugin .active-preferences > div:first-child button {
+  padding: 4px 9px;
+  border: 1px solid var(--a11y-border);
+  border-radius: 999px;
+  background: var(--cb-surface);
+  color: var(--a11y-accent-strong);
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.accessibility-plugin .active-preferences > div:first-child button:hover {
+  border-color: var(--a11y-accent);
+  background: var(--a11y-soft-strong);
+}
+
+.accessibility-plugin .active-preferences ul.preference-chips {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.accessibility-plugin .active-preferences ul.preference-chips li {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 5px 5px 0;
+  padding: 4px 9px;
+  border: 1px solid var(--a11y-border);
+  border-radius: 999px;
+  background: var(--cb-surface);
+  color: var(--a11y-text);
+  font-size: 0.71rem;
+  font-weight: 600;
+}
+
+/* Conteudo: um fluxo so. */
+.accessibility-plugin .field-label span {
+  margin-left: 6px;
+  color: var(--a11y-muted);
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+
+.accessibility-plugin .content-tools__actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  margin-top: 13px;
+  gap: 8px;
+}
+
+.accessibility-plugin .content-tools__actions .button {
+  font-size: 0.82rem;
+}
+
+.accessibility-plugin .content-tools__term {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+}
+
+.accessibility-plugin .content-tools__term .button {
+  min-width: 48px;
+  padding-inline: 12px;
+}
+
+.accessibility-plugin p.content-original {
+  margin: 4px 0 0;
+  padding: 11px 12px;
+  border-left: 3px solid var(--a11y-border);
+  border-radius: 0 9px 9px 0;
+  background: var(--a11y-soft);
+  color: var(--a11y-muted);
+  font-size: 0.79rem;
+  line-height: 1.5;
+}
+
+.accessibility-plugin .content-tools__empty {
+  margin: 0;
+  color: var(--a11y-muted);
+  font-size: 0.8rem;
 }
 
 .accessibility-plugin .accessibility-assistant {
@@ -891,10 +1037,6 @@
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
-}
-
-.accessibility-plugin--selecting .mode-count {
-  display: none;
 }
 
 html[data-contrast='high'] .accessibility-plugin__trigger,

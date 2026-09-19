@@ -1090,6 +1090,97 @@ deixou de ter nó a examinar em 320 px com texto a 150%, porque a raiz 2×2 cabe
 sem rolagem. Nenhuma regra passou de aprovada a violada, e as violações
 seguem em zero.
 
+### 7.8 Segunda revisão de UX e um defeito nocivo — 19/09/2026
+
+#### Defeito grave: a "correção de cores" simulava a deficiência
+
+A primeira implementação usou as matrizes que circulam em ferramentas de
+*simulação* de daltonismo. Medida a separação euclidiana entre vermelho e verde
+puros, o filtro chamado "correção" fazia isto:
+
+| Filtro | Separação vermelho–verde |
+|---|---|
+| sem filtro | 1,414 |
+| "correção" de protanopia | 0,727 |
+| "correção" de deuteranopia | **0,559** |
+
+Ou seja: quem escolhesse o controle para distinguir melhor as cores passava a
+distingui-las **pior**. Isso é pior do que não ter o recurso.
+
+A troca foi para daltonização de verdade, `D = I + E·(I − S)`. A matriz de
+redistribuição `E` não foi escolhida por intuição: foram medidos sete
+candidatos sobre oito pares de cores comumente confundidos, avaliando a
+separação **percebida através da deficiência**. A daltonização clássica de
+livro reprovou na deuteranopia — piorou os oito pares —, e o que venceu foi
+redistribuir o erro para um único canal.
+
+E a medição virou teste: a suíte reprova qualquer matriz que reduza a separação
+média ou piore o pior par, e confirma que a matriz de simulação reprovaria
+nesse mesmo critério. A eficácia foi verificada reintroduzindo as matrizes
+antigas de propósito — o teste acusou.
+
+**Limite que permanece:** continua sendo aproximação sobre um modelo linear
+simples e um conjunto pequeno de pares, **não validada com pessoas com
+dicromacia**.
+
+#### Defeito de estilo depois do portal
+
+O contador de ajustes ativos estava estilizado por `.accessibility-plugin
+.mode-count`. Como o portal leva o acionador para fora desse host, o seletor
+deixou de casar e o contador voltou ao estilo genérico: virou uma segunda linha
+dentro do círculo de 42 px em vez de um selo de canto, esticando o acionador
+para 58 px de altura. Medido: `position: static`, fora de `.accessibility-plugin`.
+Corrigido escopando em `.accessibility-plugin__trigger-badge`.
+
+Foi removida também a regra que escondia o contador durante o modo de seleção:
+ela existia para o acionador flutuante, que encolhia, e o do header não muda de
+forma.
+
+#### Mudanças de UX pedidas pelo responsável
+
+| Pedido | O que foi feito |
+|---|---|
+| trocar o ícone | Pictograma universal de acesso desenhado em `UniversalAccessIcon.tsx`. O ícone anterior era o de cadeira de rodas do Lucide, que representa mobilidade e comunica menos do que o painel oferece |
+| Libras e Voz abrem a Rybená direto | Os cartões deixaram de navegar para uma superfície: eles inicializam o player, trocam o modo e abrem. `PlayerSurface.tsx` foi removido |
+| seleção de texto na própria Rybená | A URL do CDN passou de `mode=api` para `mode=full`, com `disableAccessibilityButton=true` |
+| chat maior e mais didático | Campo mais alto e histórico dos últimos quatro turnos visível, com quem falou. A proposta passou a explicitar que nada acontece até confirmar |
+| Conteúdo mais simples | Era duas seções paralelas com seletores repetidos. Virou um fluxo: trecho, termo opcional e dois botões. O seletor só aparece quando a etapa tem mais de um trecho, e um resultado por vez |
+| indicador de ajustes | "Agora na página / Revisão 5" virou "7 ajustes ativos nesta página" com os nomes e um botão "Remover todos". O número de revisão era artefato interno e não dizia nada |
+
+#### `mode=full`: o que muda e o que fica em aberto
+
+`disableAccessibilityButton=true` é o que impede a colisão da seção 7.4: sem
+ele a barra do fornecedor traria contraste, zoom e espaçamento, que somariam
+com o executor local. A decisão de manter os ajustes visuais locais continua
+valendo.
+
+**Não é possível verificar isto fora do domínio autorizado.** O token é preso
+ao domínio, e o que foi exercitado aqui é o adaptador simulado e o contrato da
+URL. Se `mode=full` não funcionar com o token, Libras e voz não abrem — e isso
+só aparece em T0.4.
+
+**Exposição de dados aceita pelo responsável.** Com a seleção dentro da barra
+do fornecedor, qualquer texto da página pode ser enviado a ele, inclusive nome
+e CPF no checkout. A opção escolhida foi manter Libras e Voz disponíveis em
+todas as etapas. A exclusão de dados de checkout continua aplicada onde o
+código a aplica — capacidades do planejador e alvos públicos registrados — e
+**não** alcança a seleção livre feita na Rybená. Registrado no `AGENTS.md`.
+
+#### Validação desta rodada
+
+| Verificação | Resultado |
+|---|---|
+| typecheck, build, suíte, typecheck de `api/` | **PASS** — 39 testes |
+| axe em 5 telas e no painel em 5 larguras | **PASS** — 0 violações |
+| reflow nos três tamanhos | **PASS** — 0 px |
+| breakpoints, Escape, armadilha de foco, aba oculta | **PASS** |
+| teclado da raiz às três superfícies e de volta | **PASS** |
+| cartão Libras/Voz sem token | **PASS** — "A Rybená ainda não foi configurada neste ambiente.", sem abrir superfície |
+| cartão Libras/Voz com o adaptador simulado | **PASS** — "Pronto. Selecione um texto na página…", permanece na raiz |
+| contador de ajustes no acionador | **PASS** — `position: absolute`, 22×22 |
+| matrizes de correção aumentam a separação | **PASS** — coberto por teste, eficácia verificada por reversão |
+| jornada, guia/máscara, endpoints | **PASS** |
+
 ## 8. Fase 3 — Validação e evidências
 
 ### T3.1 — Regressão integral

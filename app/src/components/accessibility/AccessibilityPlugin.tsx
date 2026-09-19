@@ -1,4 +1,4 @@
-import { Accessibility, MousePointer2 } from 'lucide-react';
+import { MousePointer2 } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { PreferencePatch } from '../../features/accessibility-agent/core/preferences';
@@ -6,6 +6,7 @@ import { getActivePreferenceLabels } from '../../features/accessibility-agent/co
 import type { AccessibilityPreferences, JourneyStep } from '../../types';
 import { AccessibilityPanel } from './AccessibilityPanel';
 import { ACCESSIBILITY_SLOT_ID } from '../layout/Header';
+import { UniversalAccessIcon } from './UniversalAccessIcon';
 import { focusAfterRender } from '../../utils/focus';
 
 interface AccessibilityPluginProps {
@@ -157,7 +158,7 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
     >
       <span className="accessibility-plugin__trigger-text" aria-hidden="true">Acessibilidade</span>
       <span className="accessibility-plugin__trigger-badge">
-        <Accessibility className="accessibility-plugin__trigger-icon" aria-hidden="true" />
+        <UniversalAccessIcon className="accessibility-plugin__trigger-icon" />
         {activeModes > 0 ? <span className="mode-count" aria-hidden="true">{activeModes}</span> : null}
       </span>
     </button>

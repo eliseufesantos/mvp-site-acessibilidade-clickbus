@@ -13,6 +13,7 @@ import {
 } from '../adapters/libras/rybenaBrowser';
 import { RybenaUnavailableAdapter, RYBENA_UNAVAILABLE_MESSAGE } from '../adapters/libras/rybenaUnavailable';
 import { RybenaDevelopmentAdapter } from '../adapters/libras/rybenaDevelopment';
+import { COLOR_CORRECTION_MATRICES } from '../../../components/accessibility/ColorFilters';
 import {
   LIBRAS_SIMULATION_ENABLED_VALUE,
   LIBRAS_SIMULATION_ENV_VAR,
@@ -191,6 +192,55 @@ await test('migrates v3 preferences to v4 without losing what was saved', () => 
   storage.setItem('clickbus-a11y-v4', serializePreferences({ ...getDefaultPreferences(), saturation: 'grayscale' }));
   const atual = loadPreferences(storage);
   assert(atual.migratedFrom === null && atual.preferences.saturation === 'grayscale');
+});
+
+await test('colour correction increases separation instead of simulating the deficiency', () => {
+  // Esta suite existe por causa de um defeito real: a primeira versao usava as
+  // matrizes de SIMULACAO de dicromacia, que tornam as cores menos
+  // distinguiveis justamente para quem escolhe o controle "correcao".
+  const SIMULACAO: Record<string, number[][]> = {
+    protanopia: [[0.817, 0.183, 0], [0.333, 0.667, 0], [0, 0.125, 0.875]],
+    deuteranopia: [[0.625, 0.375, 0], [0.700, 0.300, 0], [0, 0.300, 0.700]],
+    tritanopia: [[0.950, 0.050, 0], [0, 0.433, 0.567], [0, 0.475, 0.525]],
+  };
+  // Pares comumente confundidos, nao so primarias puras.
+  const PARES: [number[], number[]][] = [
+    [[1, 0, 0], [0, 1, 0]], [[1, 0.5, 0], [0.6, 0.8, 0]], [[0.8, 0, 0], [0.5, 0.35, 0.1]],
+    [[0, 0.6, 0], [0.5, 0.35, 0.1]], [[0.9, 0.1, 0.1], [0.1, 0.6, 0.1]], [[0, 0, 1], [0.5, 0, 0.8]],
+    [[0, 0.7, 0.7], [0.6, 0.7, 0.2]], [[1, 1, 0], [0.6, 1, 0.2]],
+  ];
+
+  const parseMatriz = (valores: string): number[][] => {
+    const n = valores.trim().split(/\s+/).map(Number);
+    assert(n.length === 20 && n.every((v) => Number.isFinite(v)), 'feColorMatrix precisa de 20 numeros finitos');
+    return [n.slice(0, 3), n.slice(5, 8), n.slice(10, 13)];
+  };
+  const aplicar = (m: number[][], v: number[]) =>
+    m.map((r) => Math.min(1, Math.max(0, r[0] * v[0] + r[1] * v[1] + r[2] * v[2])));
+  const separacao = (a: number[], b: number[]) =>
+    Math.sqrt(a.reduce((soma, x, i) => soma + (x - b[i]) ** 2, 0));
+
+  for (const tipo of Object.keys(SIMULACAO)) {
+    const correcao = parseMatriz(COLOR_CORRECTION_MATRICES[tipo as keyof typeof COLOR_CORRECTION_MATRICES]);
+    const simula = SIMULACAO[tipo];
+    // Percebido por quem tem a deficiencia: com e sem a correcao aplicada antes.
+    const semFiltro = PARES.map(([a, b]) => separacao(aplicar(simula, a), aplicar(simula, b)));
+    const comFiltro = PARES.map(([a, b]) =>
+      separacao(aplicar(simula, aplicar(correcao, a)), aplicar(simula, aplicar(correcao, b))));
+
+    const media = (v: number[]) => v.reduce((x, y) => x + y, 0) / v.length;
+    assert(media(comFiltro) > media(semFiltro),
+      `${tipo}: a correcao precisa aumentar a separacao media, mediu ${media(comFiltro).toFixed(3)} contra ${media(semFiltro).toFixed(3)}`);
+    assert(Math.min(...comFiltro) >= Math.min(...semFiltro) - 1e-9,
+      `${tipo}: a correcao nao pode piorar o pior par`);
+
+    // E a matriz de simulacao precisa REPROVAR nesse mesmo criterio, senao o
+    // teste nao estaria medindo nada.
+    const comSimulacao = PARES.map(([a, b]) =>
+      separacao(aplicar(simula, aplicar(simula, a)), aplicar(simula, aplicar(simula, b))));
+    assert(media(comSimulacao) < media(semFiltro),
+      `${tipo}: a matriz de simulacao deveria reprovar neste criterio`);
+  }
 });
 
 await test('accepts the new colour and dyslexia preferences and rejects invalid values', () => {
@@ -527,17 +577,17 @@ await test('Rybená adapter stays unavailable without network behavior', async (
 
 await test('Rybená accepts only the expected tokenized API script URL', () => {
   const testToken = 'a'.repeat(64);
-  const expected = `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=api&doNotTrack=true`;
+  const expected = `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=full&disableAccessibilityButton=true&doNotTrack=true`;
   assert(parseRybenaScriptUrl(expected) === expected);
 
   for (const invalid of [
-    `https://attacker.example/dom/master/latest/rybena.js?token=${testToken}&mode=api&doNotTrack=true`,
-    'https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=short&mode=api&doNotTrack=true',
+    `https://attacker.example/dom/master/latest/rybena.js?token=${testToken}&mode=full&disableAccessibilityButton=true&doNotTrack=true`,
+    'https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=short&mode=full&disableAccessibilityButton=true&doNotTrack=true',
     `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=full&doNotTrack=true`,
     `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=api&doNotTrack=false`,
-    `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=api&doNotTrack=true&extra=value`,
-    `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&token=${testToken}&mode=api&doNotTrack=true`,
-    `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=api&doNotTrack=true#unexpected`,
+    `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=full&disableAccessibilityButton=true&doNotTrack=true&extra=value`,
+    `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&token=${testToken}&mode=full&disableAccessibilityButton=true&doNotTrack=true`,
+    `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=full&disableAccessibilityButton=true&doNotTrack=true#unexpected`,
   ]) {
     let rejected = false;
     try { parseRybenaScriptUrl(invalid); } catch { rejected = true; }

@@ -128,6 +128,7 @@ export function ContentTools({ onSelectionModeChange, page }: ContentToolsProps)
     }
     const known = explainFromGlossary(cleanTerm);
     if (known) {
+      setSimplified('');
       setExplanation(known.explanation);
       setStatus('Explicação encontrada no glossário local da viagem.');
       return;
@@ -146,6 +147,7 @@ export function ContentTools({ onSelectionModeChange, page }: ContentToolsProps)
         context: selected.text,
         contentRef: selected.id,
       }, controller.signal);
+      setSimplified('');
       setExplanation(response.text);
       setStatus('Explicação gerada para o termo escolhido. Confira o contexto antes de usar.');
     } catch (error) {
@@ -175,6 +177,7 @@ export function ContentTools({ onSelectionModeChange, page }: ContentToolsProps)
     }
     const localSimplification = simplifyPublicContent(page, selected.id);
     if (localSimplification) {
+      setExplanation('');
       setSimplified(localSimplification);
       setStatus('Versão simples revisada localmente. O texto original foi preservado para comparação.');
       return;
@@ -189,6 +192,7 @@ export function ContentTools({ onSelectionModeChange, page }: ContentToolsProps)
         text: selected.text,
         contentRef: selected.id,
       }, controller.signal);
+      setExplanation('');
       setSimplified(response.text);
       setStatus('Versão simplificada gerada. O texto original foi preservado para comparação.');
     } catch (error) {
@@ -198,36 +202,79 @@ export function ContentTools({ onSelectionModeChange, page }: ContentToolsProps)
     }
   };
 
+  // Um fluxo só: escolha o trecho (quando há mais de um), diga o termo se
+  // quiser, e peça explicar ou simplificar. Antes eram duas seções paralelas
+  // com seletores repetidos, e a pessoa tinha de entender a diferença entre
+  // elas antes de conseguir usar qualquer uma.
+  const resultado = explanation || simplified;
+
   return (
     <div className="content-tools">
-      <p className="content-tools__intro">Selecione um texto na página para explicar ou simplificar.</p>
+      <p className="content-tools__intro">
+        Explique um termo que você não conhece ou peça uma versão mais simples do trecho. O texto original nunca é substituído.
+      </p>
+
+      {targets.length === 0 ? (
+        <p className="content-tools__empty">Esta etapa não tem trecho público disponível para estas ferramentas.</p>
+      ) : (
+        <>
+          {targets.length > 1 ? (
+            <>
+              <label className="field-label" htmlFor="content-target">Trecho desta tela</label>
+              <select
+                id="content-target"
+                value={selected?.id ?? ''}
+                onChange={(event) => { setContentRef(event.target.value); setSimplified(''); setExplanation(''); }}
+              >
+                {targets.map((target) => <option key={target.id} value={target.id}>{target.label}</option>)}
+              </select>
+            </>
+          ) : null}
+
+          {selected ? <p className="content-original">{selected.text}</p> : null}
+
+          <label className="field-label" htmlFor="term-to-explain">Termo que você quer entender <span>opcional</span></label>
+          <div className="content-tools__term">
+            <input
+              id="term-to-explain"
+              value={term}
+              onChange={(event) => setTerm(event.target.value)}
+              maxLength={120}
+              placeholder="Ex.: viação"
+            />
+            <Button
+              variant="quiet"
+              aria-pressed={selectingPage}
+              aria-label="Selecionar um termo direto na página"
+              onClick={startPageSelection}
+            >
+              <ScanText aria-hidden="true" />
+            </Button>
+          </div>
+
+          <div className="content-tools__actions">
+            <Button fullWidth onClick={() => void explain()} disabled={busy !== null}>
+              <BookOpenText aria-hidden="true" /> {busy === 'explain' ? 'Explicando…' : 'Explicar termo'}
+            </Button>
+            <Button variant="secondary" fullWidth onClick={() => void simplify()} disabled={!selected || busy !== null}>
+              <WandSparkles aria-hidden="true" /> {busy === 'simplify' ? 'Simplificando…' : 'Simplificar trecho'}
+            </Button>
+          </div>
+        </>
+      )}
+
       {status ? <p className="assistant-message content-tools__status" role="status">{status}</p> : null}
 
-      <section className="a11y-section" aria-labelledby="explain-title">
-        <div className="a11y-section__heading"><h4 id="explain-title"><BookOpenText aria-hidden="true" /> Explicar termo</h4><span>Não executa ajustes</span></div>
-        <p>Termos conhecidos são explicados localmente. Outros termos só usam o trecho público escolhido.</p>
-        <Button className="page-selection-button" variant="quiet" aria-pressed={selectingPage} onClick={startPageSelection} disabled={targets.length === 0}>
-          <ScanText aria-hidden="true" />
-          <span><strong>{selectingPage ? 'Selecione o termo…' : 'Selecionar na página'}</strong><small>{targets.length > 0 ? 'Arraste sobre um trecho identificado desta tela' : 'Nenhum trecho público disponível nesta etapa'}</small></span>
-        </Button>
-        <label className="field-label" htmlFor="term-to-explain">Termo ou expressão</label>
-        <input id="term-to-explain" value={term} onChange={(event) => setTerm(event.target.value)} maxLength={120} placeholder="Ex.: viação" />
-        <Button className="content-primary-action" fullWidth onClick={() => void explain()} disabled={busy !== null}>{busy === 'explain' ? 'Explicando…' : 'Explicar termo'}</Button>
-        {explanation ? <div className="content-result" aria-live="polite"><strong>Explicação</strong><p>{explanation}</p></div> : null}
-      </section>
+      {resultado ? (
+        <div className="content-result" aria-live="polite">
+          <strong>{explanation ? 'Explicação' : 'Versão simplificada'}</strong>
+          <p>{resultado}</p>
+        </div>
+      ) : null}
 
-      <section className="a11y-section" aria-labelledby="simplify-title">
-        <div className="a11y-section__heading"><h4 id="simplify-title"><WandSparkles aria-hidden="true" /> Simplificar trecho</h4><span>Original preservado</span></div>
-        <label className="field-label" htmlFor="content-to-simplify">Trecho público desta tela</label>
-        <select id="content-to-simplify" value={selected?.id ?? ''} onChange={(event) => { setContentRef(event.target.value); setSimplified(''); }} disabled={targets.length === 0}>
-          {targets.length === 0 ? <option value="">Nenhum trecho disponível</option> : targets.map((target) => <option key={target.id} value={target.id}>{target.label}</option>)}
-        </select>
-        {selected ? <div className="content-original"><strong>Texto original</strong><p>{selected.text}</p></div> : <p>Conteúdo de checkout e confirmação não é exposto a esta ferramenta.</p>}
-        <Button variant="secondary" fullWidth onClick={() => void simplify()} disabled={!selected || busy !== null}>{busy === 'simplify' ? 'Simplificando…' : 'Simplificar trecho'}</Button>
-        {simplified ? <div className="content-result" aria-live="polite"><strong>Versão simplificada</strong><p>{simplified}</p></div> : null}
-      </section>
-
-      <p className="privacy-note">As explicações aparecem separadamente e não substituem o texto original. Nenhum dado de passageiro, pagamento, checkout ou confirmação é enviado.</p>
+      <p className="privacy-note">
+        A resposta aparece separadamente e não substitui o texto da página. Nenhum dado de passageiro, pagamento, checkout ou confirmação é enviado.
+      </p>
     </div>
   );
 }

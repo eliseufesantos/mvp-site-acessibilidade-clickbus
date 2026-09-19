@@ -35,7 +35,7 @@ Snapshot operacional atualizado em **19/09/2026**:
 - HEAD: `91b8f7d` mais a Fase 2 e T0.3 na árvore de trabalho, ainda **não commitadas**;
 - aplicação React 18 + TypeScript estrito + Vite 6;
 - typecheck do app, typecheck das funções de `api/` pelo tsconfig da raiz e build Vite: aprovados;
-- suíte do agente de acessibilidade: 38 testes aprovados, incluindo contrato do adaptador Gemini com transporte falso, origem, limite de corpo, quota local, handler/URL Rybená, contrato do adaptador com runtime falso, adaptador de desenvolvimento, contrato 2.1 e a garantia de que o executor não toca nos métodos visuais da Rybená;
+- suíte do agente de acessibilidade: 39 testes aprovados, incluindo contrato do adaptador Gemini com transporte falso, origem, limite de corpo, quota local, handler/URL Rybená, contrato do adaptador com runtime falso, adaptador de desenvolvimento, contrato 2.1 e a garantia de que o executor não toca nos métodos visuais da Rybená;
 - adaptador REST nativo do Gemini implementado no servidor com JSON estruturado, chave somente em header, teto de 4.096 tokens de saída (a folga é para os tokens de raciocínio, que contam nesse limite) e `thinkingLevel: 'LOW'` apenas para a família Gemini 3, conforme o enum do discovery v1beta;
 - o esquema de saída real é enviado em `responseJsonSchema`, derivado das mesmas constantes dos validadores; ele orienta o modelo e **não** substitui a revalidação no servidor nem no executor;
 - **retry:** uma única repetição, restrita a HTTP 503 e 429, respeitando `retry-after` com teto de 2 s e abortando junto com o pedido. Esses dois status são recusas anteriores à geração, então repetir não duplica custo. Qualquer outro status não repete. Não introduza retry em 4xx determinístico, nem laço, nem polling;
@@ -125,6 +125,9 @@ npx --yes pnpm@10.28.0 --dir app test:accessibility
 - Componentes de UI não devem assumir regras comerciais da jornada.
 - Tokens visuais pertencem a `src/styles/tokens.css`; evite valores globais duplicados em componentes.
 - Use os componentes e ícones Lucide existentes antes de criar novas primitivas.
+- O símbolo do acionador é o pictograma universal de acesso, desenhado em `components/accessibility/UniversalAccessIcon.tsx`. Não troque pelo ícone de cadeira de rodas do Lucide: ele representa mobilidade e comunica menos do que o painel oferece.
+- O contador de ajustes ativos precisa ser estilizado pela classe do próprio acionador (`.accessibility-plugin__trigger-badge`), nunca por um seletor ancorado em `.accessibility-plugin`: o portal tira o botão de dentro do host, e um seletor de ancestral deixa de casar em silêncio.
+- **Libras e Voz não têm superfície intermediária.** Os cartões abrem a aplicação da Rybená, e a seleção do texto acontece na interface dela.
 - O acionador de acessibilidade fica no **`Header`**, no fim da barra, e usa o pictograma universal de acessibilidade. Ele é renderizado pelo `AccessibilityPlugin` e projetado para o encaixe `#accessibility-trigger-slot` por `createPortal`, para que o estado do painel não precise subir para o `App`. Se o encaixe faltar, o acionador é renderizado no próprio host: esse controle nunca pode simplesmente sumir. O `Header` é `position: sticky`, então ele continua alcançável durante a rolagem — se a barra deixar de ser sticky, o acionador precisa voltar a ser fixo.
 - no desktop o painel é uma região não modal ancorada abaixo do header, à direita; no mobile é um diálogo modal em tela cheia.
 - o painel é lançador + superfície: uma superfície ativa por vez, `root` por padrão, e abrir sempre começa na raiz. A raiz é uma grade 2×2 de cartões — Libras, Voz, Ajustes visuais e Conteúdo — com "Sobre acessibilidade" como link logo abaixo. Cartão que navega é `<button>`, **nunca** `role="tab"`; não recrie o `tablist`.
@@ -132,7 +135,7 @@ npx --yes pnpm@10.28.0 --dir app test:accessibility
 - o chat fica visível na base de todas as superfícies e colapsa para uma linha em 320 px; não o esconda atrás de outro clique. Os chips de sugestão apenas preenchem o campo — nunca enviam.
 - A seleção de texto da página só ocorre em modo explícito, dentro de um alvo público registrado; durante esse modo o painel deve recolher sem bloquear a página.
 - Não substitua conteúdo original por texto explicado ou simplificado; apresente a saída separadamente.
-- Checkout, passageiro, bilhete, preço, pagamento e confirmação não podem ser enviados ao planejador ou às ferramentas de conteúdo.
+- Checkout, passageiro, bilhete, preço, pagamento e confirmação não podem ser enviados ao planejador ou às ferramentas de conteúdo. Essa exclusão é aplicada pela lista de capacidades e pelos alvos públicos registrados; ela **não** alcança a seleção livre feita dentro da barra da Rybená, decisão registrada na seção 7.
 
 ## 7. Acessibilidade assistida
 
@@ -142,7 +145,8 @@ O núcleo local funciona sem IA e independentemente da Rybená:
 - migração segura de v1/v2/v3 e fallback em memória. A v4 acrescentou `saturation`, `colorFilter` e `dyslexiaFont`; a migração de v3 preenche as três com o padrão e preserva o resto;
 - contraste, quatro escalas de texto, controles/cursor grandes, destaques, espaçamento entre letras, entrelinha, alinhamento, guia, máscara, movimento reduzido, saturação, correção de cores e fonte para dislexia;
 - saturação e correção de cores são aplicadas por `backdrop-filter` numa camada fixa (`.color-filter-layer`, z-index 898), **nunca** por `filter` num ancestral: `filter` transformaria esse ancestral em bloco de contenção para descendentes `position: fixed`, e o painel, os diálogos e a máscara de leitura parariam de se posicionar pela viewport. A camada fica abaixo do painel e das ajudas de leitura, então os próprios controles de acessibilidade continuam legíveis, e usa `pointer-events: none`;
-- a correção de cores é aproximação por matriz para dicromacias, não simulação clínica, e não substitui contraste adequado nem outro sinal além da cor;
+- a correção de cores usa matrizes de **daltonização**, `D = I + E·(I − S)`. **Nunca** use as matrizes de simulação de dicromacia que circulam em "colorblind simulators": elas reduzem a separação entre as cores confundidas, ou seja, pioram exatamente o que o controle promete. Há teste que mede a separação percebida em oito pares e reprova qualquer matriz que baixe a média ou piore o pior par;
+- a correção de cores é aproximação, não simulação clínica, e não substitui contraste adequado nem outro sinal além da cor;
 - preset de leitura confortável, restauração e desfazer de uma transação;
 - contratos runtime fechados e executor local idempotente;
 - glossário determinístico, registro estático de conteúdo público e simplificações locais revisadas para os alvos iniciais;
@@ -200,7 +204,11 @@ aviso permanente de simulação, e o double nunca reivindica o crédito de tradu
 real. Ao alterar essa área, refaça a busca literal por `RybenaDevelopment` em
 `app/dist/assets/index-*.js` depois de um `build` limpo.
 
-Mantenha `RYBENA_ACCESS_TOKEN` somente no runtime do servidor. O loader deve consultar `GET /api/accessibility/rybena` apenas após ação explícita; a resposta `no-store`, `Cross-Origin-Resource-Policy: same-origin` e `nosniff` fornece a URL fixa do CDN com `mode=api` e `doNotTrack=true`. O fetch de configuração expira em 10 s; download do script, preparação do player e espera do runtime expiram em 15 s cada. Se a tag carregar sem disponibilizar os globals esperados, ela é removida para permitir nova tentativa manual. Não versione, embuta no bundle ou registre o token/URL completa em logs ou evidências. Não faça polling/retry automático, não invente métodos, não use VLibras como substituto e não simule tradução. Preserve o crédito “Tradução em Libras por Rybená”.
+A URL do CDN usa `mode=full` para que a interface da Rybená apareça e a seleção de texto seja dela, e `disableAccessibilityButton=true` para **remover os ajustes visuais da barra do fornecedor**. Sem esse parâmetro os controles dele somam com o executor local e o resultado quebra — zoom dobrado e filtros de contraste em conflito. Se alterar o `mode`, atualize os dois validadores, o do servidor e o do navegador, e o teste que congela o formato da URL.
+
+**Consequência aceita pelo responsável em 19/09/2026:** com a seleção na mão do fornecedor, qualquer texto da página pode ser enviado a ele, inclusive nome e CPF na etapa de checkout. A exclusão de dados de checkout e passageiro **continua valendo para o planejador de IA e para as ferramentas de conteúdo**, que é onde ela é aplicada em código; ela não alcança a seleção feita dentro da barra da Rybená.
+
+Mantenha `RYBENA_ACCESS_TOKEN` somente no runtime do servidor. O loader deve consultar `GET /api/accessibility/rybena` apenas após ação explícita; a resposta `no-store`, `Cross-Origin-Resource-Policy: same-origin` e `nosniff` fornece a URL fixa do CDN. O fetch de configuração expira em 10 s; download do script, preparação do player e espera do runtime expiram em 15 s cada. Se a tag carregar sem disponibilizar os globals esperados, ela é removida para permitir nova tentativa manual. Não versione, embuta no bundle ou registre o token/URL completa em logs ou evidências. Não faça polling/retry automático, não invente métodos, não use VLibras como substituto e não simule tradução. Preserve o crédito “Tradução em Libras por Rybená”.
 
 A cobertura automática comprova handler, construção/validação da URL e contrato do adaptador com runtime falso. Fetch pelo navegador, injeção DOM, download remoto, presença dos globals, preparação e player real permanecem `NOT RUN` até o smoke no domínio autorizado; qualidade linguística exige homologação com pessoas surdas sinalizantes.
 

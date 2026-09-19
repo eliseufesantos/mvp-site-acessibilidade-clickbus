@@ -65,7 +65,7 @@ export const parseRybenaScriptUrl = (value: unknown): string => {
     throw new Error('A configuração da Rybená é inválida.');
   }
 
-  const allowedParameters = new Set(['token', 'mode', 'doNotTrack']);
+  const allowedParameters = new Set(['token', 'mode', 'disableAccessibilityButton', 'doNotTrack']);
   const hasUnexpectedParameter = Array.from(url.searchParams.keys())
     .some((parameter) => !allowedParameters.has(parameter));
   const token = url.searchParams.get('token') ?? '';
@@ -76,12 +76,14 @@ export const parseRybenaScriptUrl = (value: unknown): string => {
     || url.password !== ''
     || url.hash !== ''
     || hasUnexpectedParameter
-    || url.searchParams.size !== 3
+    || url.searchParams.size !== 4
     || url.searchParams.getAll('token').length !== 1
     || url.searchParams.getAll('mode').length !== 1
+    || url.searchParams.getAll('disableAccessibilityButton').length !== 1
     || url.searchParams.getAll('doNotTrack').length !== 1
     || !RYBENA_TOKEN_PATTERN.test(token)
-    || url.searchParams.get('mode') !== 'api'
+    || url.searchParams.get('mode') !== 'full'
+    || url.searchParams.get('disableAccessibilityButton') !== 'true'
     || url.searchParams.get('doNotTrack') !== 'true'
   ) {
     throw new Error('A configuração da Rybená é inválida.');
@@ -175,8 +177,10 @@ const loadRybenaRuntime: RuntimeLoader = () => {
 
         const scriptLoader = getScriptLoader();
         if (!scriptLoader) throw new Error('O carregador da API Rybená não ficou disponível.');
+        // Sem `'hidden'`: em `mode=full` a barra do fornecedor é a interface, e
+        // é nela que a pessoa seleciona o texto.
         await withProviderTimeout(
-          scriptLoader.getRybenaScripts('hidden'),
+          scriptLoader.getRybenaScripts(),
           'A Rybená demorou para preparar o player. Tente novamente.',
         );
         const runtime = getRuntime();

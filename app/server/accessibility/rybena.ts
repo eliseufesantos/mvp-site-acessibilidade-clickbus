@@ -21,7 +21,12 @@ export const buildRybenaScriptUrl = (token: string): string | null => {
 
   const url = new URL(RYBENA_SCRIPT_ENDPOINT);
   url.searchParams.set('token', normalizedToken);
-  url.searchParams.set('mode', 'api');
+  // `full` carrega a interface do fornecedor, com Libras e Voz e a seleção de
+  // texto dele. `disableAccessibilityButton` remove os ajustes visuais da barra
+  // — sem isso, os controles dele somam com o executor local e o resultado
+  // quebra: zoom dobrado e filtros de contraste em conflito (seção 7.4).
+  url.searchParams.set('mode', 'full');
+  url.searchParams.set('disableAccessibilityButton', 'true');
   url.searchParams.set('doNotTrack', 'true');
   return url.toString();
 };
