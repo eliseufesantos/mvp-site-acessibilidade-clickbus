@@ -5,6 +5,7 @@
 - [`RESUMO-PARA-APRESENTACAO.md`](RESUMO-PARA-APRESENTACAO.md): visão executiva e roteiro-base de dez slides.
 - [`accessibility-agent/README.md`](accessibility-agent/README.md): índice da documentação de produto, arquitetura, implementação e validação do plugin.
 - [`guides/00-CONTINUAR-PROJETO.md`](guides/00-CONTINUAR-PROJETO.md): retomada rápida do desenvolvimento.
+- [`guides/09-PLANO-EVOLUCAO-ACESSIBILIDADE.md`](guides/09-PLANO-EVOLUCAO-ACESSIBILIDADE.md): plano de execução da rodada atual — desbloqueio de Gemini e Rybená, correções da auditoria de 18/09/2026 e reconstrução do plugin no padrão de lançador com chat. É o documento que orienta agentes nesta etapa.
 
 ## Guias ativos
 
@@ -13,6 +14,7 @@
 - `guides/03-ACESSIBILIDADE.md`: visão concisa do comportamento acessível.
 - `guides/05-DESENVOLVIMENTO.md`: instalação, comandos e convenções.
 - `guides/08-DEPLOY-VERCEL.md`: configuração e diagnóstico do deploy.
+- `guides/09-PLANO-EVOLUCAO-ACESSIBILIDADE.md`: plano de tarefas da rodada atual, com critérios de aceite e riscos.
 
 A matriz atual de QA é [`accessibility-agent/VALIDATION.md`](accessibility-agent/VALIDATION.md). Os antigos guias separados de fluxo, QA e resumo de implementação foram removidos por redundância ou desatualização.
 
