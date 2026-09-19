@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  Accessibility, BookOpenText, Bot, Check, ChevronLeft, FlaskConical, Info,
+  Bot, Check, ChevronLeft, FlaskConical, Info, ScanText,
   Languages, Mic, Send, SlidersHorizontal, Sparkles, Square, Undo2, Volume2, X,
 } from 'lucide-react';
 import type { AccessibilityPreferences, JourneyStep } from '../../../types';
 import { Button } from '../../../components/ui/Button';
-import { getPublicContentTargets, resolvePublicContent } from '../adapters/clickbus/content';
+import { UniversalAccessIcon } from '../../../components/accessibility/UniversalAccessIcon';
+import { getPublicContentTargets, resolvePublicContent, simplifyPublicContent } from '../adapters/clickbus/content';
+import { explainFromGlossary } from '../core/glossary';
 import { RYBENA_SIMULATION_NOTICE } from '../adapters/libras/contracts';
 import { librasAdapter } from '../adapters/libras/selection';
 import {
@@ -16,13 +18,18 @@ import {
   type PlannerResponse,
 } from '../core/contracts';
 import { AccessibilityExecutor, formatExecutionReceipt, type ExecutionReceipt } from '../core/executor';
-import { AccessibilityServiceError, createRequestId, requestPlan } from '../core/plannerClient';
+import {
+  AccessibilityServiceError,
+  createRequestId,
+  requestExplanation,
+  requestPlan,
+  requestSimplification,
+} from '../core/plannerClient';
 import { getActivePreferenceLabels, type PreferencePatch } from '../core/preferences';
 import { AboutSurface } from './AboutSurface';
-import { ContentTools } from './ContentTools';
 import { FeatureGrid, type FeatureCard } from './FeatureGrid';
-import { PlayerSurface } from './PlayerSurface';
 import { PreferenceControls } from './PreferenceControls';
+import { usePageSelection } from './usePageSelection';
 import { useVoiceInput } from './useVoiceInput';
 import { focusAfterRender } from '../../../utils/focus';
 
@@ -31,7 +38,8 @@ import { focusAfterRender } from '../../../utils/focus';
  * padrão. O `tablist` anterior saiu: cartão que navega para outra superfície é
  * `<button>`, percorrido por `Tab`, não `role="tab"`.
  */
-type PanelSurface = 'root' | 'libras' | 'voice' | 'settings' | 'content' | 'about';
+type PanelSurface = 'root' | 'settings' | 'about';
+type CardId = 'libras' | 'voice' | 'settings' | 'about';
 
 interface AccessibilityPanelProps {
   canUndo: boolean;
@@ -55,6 +63,8 @@ const UNDOABLE_ACTIONS: readonly ActionType[] = [
   'set_preferences', 'apply_comfortable_reading', 'reset_preferences',
 ];
 
+const CONTENT_CAPABILITIES: readonly ActionType[] = ['explain_term', 'simplify_content'];
+
 const VISUAL_CAPABILITIES: readonly ActionType[] = [
   'set_preferences', 'apply_comfortable_reading', 'undo_preferences', 'reset_preferences',
 ];
@@ -75,6 +85,10 @@ const VOICE_CAPABILITIES: readonly ActionType[] = [
  */
 const currentCapabilities = (playerAvailable: boolean, hasContent: boolean): ActionType[] => {
   const capabilities = [...VISUAL_CAPABILITIES];
+  // Explicar não depende de trecho: o glossário responde por termo. Simplificar
+  // depende, porque precisa de um alvo público — é o que mantém checkout fora.
+  capabilities.push('explain_term');
+  if (hasContent) capabilities.push('simplify_content');
   if (playerAvailable) {
     capabilities.push(...LIBRAS_CAPABILITIES, ...VOICE_CAPABILITIES);
     if (hasContent) capabilities.push('translate_content', 'speak_content');
@@ -83,10 +97,7 @@ const currentCapabilities = (playerAvailable: boolean, hasContent: boolean): Act
 };
 
 const SURFACE_TITLES: Record<Exclude<PanelSurface, 'root'>, string> = {
-  libras: 'Libras',
-  voice: 'Voz',
   settings: 'Ajustes visuais',
-  content: 'Conteúdo',
   about: 'Sobre acessibilidade',
 };
 
@@ -116,6 +127,8 @@ const ACTION_LABELS: Record<ActionType, string> = {
   resume_libras: 'Retomar a tradução em Libras',
   stop_libras: 'Parar a tradução em Libras',
   set_libras_speed: 'Mudar a velocidade do player',
+  explain_term: 'Explicar o termo perguntado',
+  simplify_content: 'Simplificar o trecho indicado',
   open_voice: 'Abrir o player em voz',
   close_voice: 'Fechar o player',
   speak_content: 'Narrar o trecho escolhido em voz',
@@ -135,6 +148,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
   const [proposal, setProposal] = useState<PlannerResponse | null>(null);
   // Desfazer só aparece depois de um plano que de fato mexeu em preferências.
   const [undoOffered, setUndoOffered] = useState(false);
+  const [answer, setAnswer] = useState<{ text: string; source: 'local' | 'service' } | null>(null);
   const [history, setHistory] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const executorRef = useRef(new AccessibilityExecutor());
   const requestControllerRef = useRef<AbortController | null>(null);
@@ -143,6 +157,12 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
   const firstRenderRef = useRef(true);
   const openedFromRef = useRef<Exclude<PanelSurface, 'root'> | null>(null);
   const voice = useVoiceInput();
+  const pageSelection = usePageSelection({
+    page: props.page,
+    onSelected: (term) => setRequest(`o que significa "${term}"?`),
+    onStatus: (message) => announce(message),
+    onModeChange: props.onSelectionModeChange,
+  });
   const activeLabels = getActivePreferenceLabels(props.preferences);
   const targets = getPublicContentTargets(props.page);
   const player = librasAdapter.getSnapshot();
@@ -158,6 +178,16 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
     requestControllerRef.current = null;
     setBusy(false);
   }, [props.stateRevision]);
+
+  // O painel agora continua aberto ao trocar de etapa. Uma proposta feita na
+  // etapa anterior seria recusada pelo executor, porque `pageEpoch` mudou:
+  // melhor recolhê-la do que oferecer um botão que vai falhar.
+  useEffect(() => {
+    setProposal(null);
+    setAnswer(null);
+    setUndoOffered(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.pageEpoch]);
 
   // Troca de superfície: foco vai para o "Voltar" ao entrar e volta para o
   // cartão de origem ao sair. O foco da primeira abertura é do host.
@@ -183,6 +213,34 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
     setSurface(next);
   };
 
+  /**
+   * Libras e Voz não têm superfície intermediária: abrem a aplicação da
+   * Rybená, e a seleção de texto acontece na interface dela.
+   */
+  const startRybena = async (mode: 'libras' | 'voz') => {
+    const rotulo = mode === 'voz' ? 'narração em voz' : 'tradução em Libras';
+    announce(`Abrindo a ${rotulo}…`, 'busy');
+    const ready = await librasAdapter.initialize();
+    if (ready.status !== 'accepted') {
+      announce(ready.message, 'error');
+      return;
+    }
+    await librasAdapter.setMode(mode);
+    const opened = await librasAdapter.open();
+    announce(
+      opened.status === 'accepted'
+        ? `Pronto. Selecione um texto na página para a ${rotulo}.`
+        : opened.message,
+      opened.status === 'accepted' ? 'neutral' : 'error',
+    );
+  };
+
+  const handleCard = (id: CardId) => {
+    if (id === 'libras') { void startRybena('libras'); return; }
+    if (id === 'voice') { void startRybena('voz'); return; }
+    openSurface(id);
+  };
+
   const dependencies = (requestId: string) => ({
     requestId,
     getStateRevision: props.getStateRevision,
@@ -193,6 +251,34 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
     undoPreferences: props.onUndo,
     resetPreferences: props.onReset,
     resolveContent: (id: string) => resolvePublicContent(props.page, id),
+    // Glossário e simplificação revisada vêm antes de qualquer rede: são
+    // determinísticos, respondem na hora e não gastam cota. A explicação por IA
+    // ainda não passou em avaliação semântica, então ela é o caminho de exceção.
+    explainTerm: async (term: string) => {
+      const known = explainFromGlossary(term);
+      if (known) return { text: known.explanation, source: 'local' as const };
+      const contexto = targets[0];
+      if (!contexto) throw new Error('Esta etapa não tem trecho público para dar contexto à explicação.');
+      const response = await requestExplanation({
+        contractVersion: CONTRACT_VERSION,
+        requestId: createRequestId(),
+        term,
+        context: contexto.text,
+        contentRef: contexto.id,
+      });
+      return { text: response.text, source: 'service' as const };
+    },
+    simplifyContent: async (content: { id: string; text: string }) => {
+      const local = simplifyPublicContent(props.page, content.id);
+      if (local) return { text: local, source: 'local' as const };
+      const response = await requestSimplification({
+        contractVersion: CONTRACT_VERSION,
+        requestId: createRequestId(),
+        text: content.text,
+        contentRef: content.id,
+      });
+      return { text: response.text, source: 'service' as const };
+    },
     rybena: librasAdapter,
     capabilities,
   });
@@ -209,6 +295,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
   const execute = async (plan: PlannerResponse) => {
     try {
       const receipt = await executorRef.current.execute(plan, dependencies(plan.requestId));
+      setAnswer(receipt.actions.find((item) => item.answer)?.answer ?? null);
       const rejected = receipt.status === 'rejected';
       announce(
         formatExecutionReceipt(receipt) || plan.message,
@@ -233,6 +320,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
     setBusy(true);
     setProposal(null);
     setUndoOffered(false);
+    setAnswer(null);
     announce('Analisando seu pedido com o planejador seguro…', 'busy');
     try {
       const response = await requestPlan({
@@ -274,25 +362,36 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
     }
   };
 
-  const cards: readonly FeatureCard<Exclude<PanelSurface, 'root'>>[] = [
+  const playerNote = (mode: 'libras' | 'voz') => {
+    if (librasSimulated) return 'Simulação';
+    if (player.state === 'loading') return 'Abrindo…';
+    if (player.mode !== mode) return undefined;
+    if (player.state === 'translating') return mode === 'voz' ? 'Narrando' : 'Traduzindo';
+    if (player.state === 'ready' || player.state === 'paused') return 'Aberta';
+    return undefined;
+  };
+
+  const cards: readonly FeatureCard<CardId>[] = [
     {
       id: 'libras',
       label: 'Libras',
-      description: 'Traduzir um trecho público desta tela em Libras.',
+      description: 'Abre a tradução em Libras da Rybená. A seleção do texto acontece na interface dela.',
       icon: Languages,
-      note: librasSimulated ? 'Simulação ativa' : player.mode === 'libras' && player.state === 'translating' ? 'Traduzindo agora' : undefined,
+      note: playerNote('libras'),
     },
     {
       id: 'voice',
       label: 'Voz',
-      description: 'Ouvir a narração de um trecho público desta tela.',
+      description: 'Abre a narração em voz da Rybená. A seleção do texto acontece na interface dela.',
       icon: Volume2,
-      note: librasSimulated ? 'Simulação ativa' : player.mode === 'voz' && player.state === 'translating' ? 'Narrando agora' : undefined,
+      note: playerNote('voz'),
     },
-    { id: 'settings', label: 'Ajustes visuais', description: 'Contraste, tamanho do texto, espaçamento, guia e máscara.', icon: SlidersHorizontal },
-    { id: 'content', label: 'Conteúdo', description: 'Explicar um termo ou simplificar um trecho desta tela.', icon: BookOpenText },
-    { id: 'about', label: 'Sobre acessibilidade', description: 'O que este painel faz, seus limites e os créditos.', icon: Info },
+    { id: 'settings', label: 'Ajustes visuais', description: 'Contraste, tamanho do texto, cores, espaçamento, guia e máscara.', icon: SlidersHorizontal },
+    { id: 'about', label: 'Sobre', description: 'O que este painel faz, seus limites e os créditos.', icon: Info },
   ];
+
+  // Sugestões do chat. Só preenchem o campo: nada é enviado sem ação explícita.
+  const SUGGESTIONS = ['Aumentar o texto', 'Mais contraste', 'O que é viação?'];
 
   return (
     <section
@@ -301,7 +400,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       ref={panelRef}
     >
       <div className="accessibility-panel__heading">
-        <Accessibility aria-hidden="true" size={22} />
+        <UniversalAccessIcon className="accessibility-panel__mark" />
         <div><h2>Acessibilidade</h2><p>Ajustes que acompanham você.</p></div>
         <svg className="a11y-route-mark" viewBox="0 0 96 40" aria-hidden="true" focusable="false">
           <path d="M9 9h22c13 0 13 22 27 22h28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -324,13 +423,27 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       <div className="a11y-surface" ref={bodyRef}>
         {surface === 'root' ? (
           <>
-            <FeatureGrid cards={cards} onOpen={openSurface} />
-            <div className="active-preferences">
-              <div><strong>Agora na página</strong><span>Revisão {props.stateRevision}</span></div>
-              {activeLabels.length > 0
-                ? <div className="preference-chips">{activeLabels.map((label) => <span key={label}><Check aria-hidden="true" />{label}</span>)}</div>
-                : <p>Nenhum ajuste visual adicional está ativo.</p>}
-            </div>
+            <FeatureGrid cards={cards} onOpen={handleCard} />
+
+            {activeLabels.length > 0 ? (
+              <section className="active-preferences" aria-labelledby="active-preferences-title">
+                <div>
+                  <h3 id="active-preferences-title">
+                    <Check aria-hidden="true" />
+                    {activeLabels.length} {activeLabels.length === 1 ? 'ajuste ativo nesta página' : 'ajustes ativos nesta página'}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => announce(props.onReset() ? 'Aparência padrão restaurada.' : 'A aparência já está no padrão.')}
+                  >
+                    Remover todos
+                  </button>
+                </div>
+                <ul className="preference-chips">
+                  {activeLabels.map((label) => <li key={label}>{label}</li>)}
+                </ul>
+              </section>
+            ) : null}
             {!props.storageAvailable ? <p className="storage-warning" role="status">As preferências funcionam nesta sessão, mas este navegador bloqueou o salvamento local.</p> : null}
           </>
         ) : (
@@ -341,15 +454,6 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
               </button>
               <h3 className="a11y-surface__title">{SURFACE_TITLES[surface]}</h3>
             </div>
-
-            {surface === 'libras' || surface === 'voice' ? (
-              <PlayerSurface
-                mode={surface === 'voice' ? 'voz' : 'libras'}
-                playerSpeed={props.preferences.librasSpeed}
-                onSpeedChange={(librasSpeed) => props.onApply({ librasSpeed })}
-                page={props.page}
-              />
-            ) : null}
 
             {surface === 'settings' ? (
               <PreferenceControls
@@ -362,28 +466,61 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
               />
             ) : null}
 
-            {surface === 'content' ? (
-              <ContentTools page={props.page} onSelectionModeChange={props.onSelectionModeChange} />
-            ) : null}
-
             {surface === 'about' ? <AboutSurface /> : null}
           </>
         )}
       </div>
 
       <div className="a11y-chat">
+        {history.length > 0 ? (
+          <ol className="a11y-chat__log">
+            {history.slice(-4).map((turno, index) => (
+              <li key={`${turno.role}-${index}`} className={`a11y-chat__turn a11y-chat__turn--${turno.role}`}>
+                <span className="a11y-chat__who">{turno.role === 'user' ? 'Você' : 'Assistente'}</span>
+                <p>{turno.content}</p>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+
         <form className="a11y-chat__form" onSubmit={askAssistant}>
-          <label htmlFor="accessibility-request"><Bot aria-hidden="true" /> Peça uma adaptação</label>
+          <label htmlFor="accessibility-request"><Bot aria-hidden="true" /> Fale com o assistente</label>
+          <p className="a11y-chat__hint">
+            Escreva com suas palavras o que você precisa nesta página, ou pergunte o que uma palavra significa.
+          </p>
+          <div className="a11y-chat__suggestions" role="group" aria-label="Sugestões de pedido">
+            {SUGGESTIONS.map((suggestion) => (
+              <button
+                key={suggestion}
+                className="a11y-chat__suggestion"
+                type="button"
+                onClick={() => setRequest(suggestion.toLowerCase())}
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+
           <div className="a11y-chat__row">
             <textarea
               id="accessibility-request"
               value={request}
               onChange={(event) => setRequest(event.target.value)}
               maxLength={1000}
-              rows={2}
-              placeholder="Ex.: aumente o texto e reduza o movimento"
+              rows={4}
+              placeholder="Ex.: aumente o texto, ou: o que é embarque?"
             />
             <div className="a11y-chat__buttons">
+              <button
+                className="a11y-chat__icon-button"
+                type="button"
+                aria-pressed={pageSelection.active}
+                aria-label={pageSelection.active ? 'Cancelar a seleção na página' : 'Selecionar um texto na página'}
+                disabled={!pageSelection.available}
+                onClick={pageSelection.start}
+              >
+                <ScanText aria-hidden="true" />
+              </button>
               {voice.supported ? (
                 <button
                   className="a11y-chat__icon-button"
@@ -396,12 +533,11 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
                 </button>
               ) : null}
               <button
-                className="a11y-chat__icon-button a11y-chat__icon-button--send"
+                className="a11y-chat__send"
                 type="submit"
-                aria-label={busy ? 'Analisando o pedido' : 'Enviar pedido ao assistente'}
                 disabled={busy || request.trim().length === 0}
               >
-                <Sparkles aria-hidden="true" />
+                <Sparkles aria-hidden="true" /> {busy ? 'Analisando…' : 'Enviar'}
               </button>
             </div>
           </div>
@@ -422,11 +558,21 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
           <div className="assistant-proposal">
             <strong>Confirme antes de aplicar</strong>
             <p>{proposal.message}</p>
+            <p className="assistant-proposal__hint">O planejador propôs estas ações. Nada acontece até você confirmar:</p>
             <ul>{proposal.actions.map((action, index) => <li key={`${action.type}-${index}`}>{describeAction(action)}</li>)}</ul>
             <div>
               <Button variant="quiet" onClick={() => { setProposal(null); announce('Proposta cancelada. Nada foi alterado.'); }}>Cancelar</Button>
               <Button onClick={() => void execute(proposal)}>Aplicar proposta</Button>
             </div>
+          </div>
+        ) : null}
+
+        {answer ? (
+          <div className="a11y-chat__answer">
+            <span className="a11y-chat__answer-source">
+              {answer.source === 'local' ? 'Conteúdo revisado deste protótipo' : 'Gerado por IA — confira antes de usar'}
+            </span>
+            <p>{answer.text}</p>
           </div>
         ) : null}
 

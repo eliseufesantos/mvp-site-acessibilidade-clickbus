@@ -46,5 +46,8 @@ export interface AccessibilityPreferences {
   readingGuide: boolean;
   readingMask: boolean;
   reducedMotion: boolean;
+  saturation: 'default' | 'high' | 'low' | 'grayscale';
+  colorFilter: 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia';
+  dyslexiaFont: boolean;
   librasSpeed: 0.5 | 0.75 | 1 | 1.25 | 1.5;
 }

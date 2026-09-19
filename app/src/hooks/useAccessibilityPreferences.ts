@@ -68,6 +68,9 @@ export const useAccessibilityPreferences = () => {
     root.dataset.highlightLinks = String(preferences.highlightLinks);
     root.dataset.highlightHeadings = String(preferences.highlightHeadings);
     root.dataset.letterSpacing = preferences.letterSpacing;
+    root.dataset.saturation = preferences.saturation;
+    root.dataset.colorFilter = preferences.colorFilter;
+    root.dataset.dyslexiaFont = String(preferences.dyslexiaFont);
     root.dataset.lineHeight = preferences.lineHeight;
     root.dataset.textAlign = preferences.textAlign;
     root.dataset.readingGuide = String(preferences.readingGuide);

@@ -1,8 +1,10 @@
 import type { AccessibilityPreferences } from '../../../types.js';
 import {
+  COLOR_FILTERS,
   LIBRAS_SPEEDS,
   LINE_HEIGHTS,
   PREFERENCE_KEYS,
+  SATURATIONS,
   TEXT_ALIGNS,
   TEXT_SCALES,
   parsePreferencePatch,
@@ -10,13 +12,17 @@ import {
 } from './preferences.js';
 
 /**
+ * 2.2 acrescentou as ações de conteúdo, para que um único chat atenda tanto
+ * "aumente o texto" quanto "o que é viação". O roteamento continua vindo do
+ * plano: o cliente não adivinha a intenção por texto.
+ *
  * 2.1 acrescentou as ações de voz. O contrato não tem artefato persistido — as
  * preferências ficam em `clickbus-a11y-v3`, versionadas à parte —, então a
  * "migração" é simplesmente rejeitar o que não é desta versão: tanto o servidor
  * quanto o executor local revalidam `contractVersion` antes de qualquer efeito,
  * e um plano 2.0 em voo é descartado em vez de aplicado pela metade.
  */
-export const CONTRACT_VERSION = '2.1' as const;
+export const CONTRACT_VERSION = '2.2' as const;
 
 export type ActionType =
   | 'set_preferences'
@@ -38,7 +44,11 @@ export type ActionType =
   | 'speak_content'
   | 'pause_voice'
   | 'resume_voice'
-  | 'stop_voice';
+  | 'stop_voice'
+  // Conteúdo: respondem com texto em vez de alterar a tela. O executor tenta o
+  // glossário e a simplificação local antes de qualquer chamada de rede.
+  | 'explain_term'
+  | 'simplify_content';
 
 export type PlanAction =
   | { type: 'set_preferences'; patch: PreferencePatch }
@@ -57,7 +67,9 @@ export type PlanAction =
   | { type: 'speak_content'; contentRef: string }
   | { type: 'pause_voice' }
   | { type: 'resume_voice' }
-  | { type: 'stop_voice' };
+  | { type: 'stop_voice' }
+  | { type: 'explain_term'; term: string }
+  | { type: 'simplify_content'; contentRef: string };
 
 export interface ContentTargetMeta {
   id: string;
@@ -133,10 +145,14 @@ const actionTypes: readonly ActionType[] = [
   'open_libras', 'close_libras', 'translate_content', 'pause_libras', 'resume_libras',
   'stop_libras', 'set_libras_speed',
   'open_voice', 'close_voice', 'speak_content', 'pause_voice', 'resume_voice', 'stop_voice',
+  'explain_term', 'simplify_content',
 ];
 
 /** Ações que exigem um `contentRef` de `context.contentTargets`. */
-export const CONTENT_BOUND_ACTIONS = ['translate_content', 'speak_content'] as const;
+export const CONTENT_BOUND_ACTIONS = ['translate_content', 'speak_content', 'simplify_content'] as const;
+
+/** Ações que respondem com texto e não alteram a página. */
+export const TEXT_ANSWER_ACTIONS = ['explain_term', 'simplify_content'] as const;
 
 const parsePreferences = (value: unknown): AccessibilityPreferences | null => {
   if (!isRecord(value) || Object.keys(value).length !== PREFERENCE_KEYS.length) return null;
@@ -151,9 +167,15 @@ export const parsePlanAction = (value: unknown): PlanAction | null => {
     const patch = parsePreferencePatch(value.patch);
     return patch ? { type: 'set_preferences', patch } : null;
   }
-  if (value.type === 'translate_content' || value.type === 'speak_content') {
+  if (value.type === 'translate_content' || value.type === 'speak_content' || value.type === 'simplify_content') {
     return hasOnlyKeys(value, ['type', 'contentRef']) && isShortString(value.contentRef, 100)
       ? { type: value.type, contentRef: value.contentRef as string } as PlanAction : null;
+  }
+  if (value.type === 'explain_term') {
+    // O mesmo teto de `explainRequestSchema`, para o plano não propor um termo
+    // que o endpoint de explicação recusaria depois.
+    return hasOnlyKeys(value, ['type', 'term']) && isShortString(value.term, 120)
+      ? { type: 'explain_term', term: value.term as string } : null;
   }
   if (value.type === 'set_libras_speed') {
     return hasOnlyKeys(value, ['type', 'speed']) && LIBRAS_SPEEDS.includes(value.speed as never)
@@ -279,6 +301,9 @@ const preferencePatchJsonSchema = {
     readingGuide: { type: 'boolean' },
     readingMask: { type: 'boolean' },
     reducedMotion: { type: 'boolean' },
+    saturation: { type: 'string', enum: [...SATURATIONS] },
+    colorFilter: { type: 'string', enum: [...COLOR_FILTERS] },
+    dyslexiaFont: { type: 'boolean' },
     librasSpeed: { type: 'number', enum: [...LIBRAS_SPEEDS] },
   },
   additionalProperties: false,
@@ -294,7 +319,11 @@ const planActionJsonSchema = {
     },
     contentRef: {
       type: 'string',
-      description: 'Obrigatório e exclusivo de translate_content e speak_content. Use um id de context.contentTargets.',
+      description: 'Obrigatório e exclusivo de translate_content, speak_content e simplify_content. Use um id de context.contentTargets.',
+    },
+    term: {
+      type: 'string',
+      description: 'Obrigatório e exclusivo de explain_term. A palavra ou expressão que a pessoa quer entender.',
     },
     speed: {
       type: 'number',

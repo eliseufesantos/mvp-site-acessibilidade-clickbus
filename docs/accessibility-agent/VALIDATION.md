@@ -222,6 +222,88 @@ automatizável, não acessibilidade comprovada: a ferramenta cobre cerca de um
 terço dos critérios WCAG. O adaptador de desenvolvimento é ferramenta de
 desenvolvimento e não prova nada sobre a Rybená.
 
+### Resultado observado em 19/09/2026 — acionador no header e preferências v4
+
+Segunda rodada do mesmo dia, depois da revisão do padrão visual com o
+responsável. Build de produção em `127.0.0.1:4175`.
+
+| Caso | Status | Evidência |
+|---|---|---|
+| acionador no `Header`, à direita, com pictograma universal | PASS | visível de 320 a 1440 px; `Header` é sticky, então segue alcançável na rolagem |
+| raiz em grade 2×2 com "Sobre" como link | PASS | 4 cartões + link; descrição de cada cartão em `aria-describedby` |
+| chips de sugestão preenchem sem enviar | PASS | após o clique, campo preenchido e região de estado vazia, sem chamada ao planejador |
+| chat aplica plano com preferência da v4 | PASS | `saturation=low` e `dyslexiaFont=true` chegam ao DOM, camada de filtro aparece e desfazer é oferecido |
+| retorno de foco ao sair de cada superfície | PASS após correção | sair de "Sobre" caía no `body`; o link recebeu `id="a11y-card-about"` e as 5 entradas voltaram a devolver o foco à origem |
+| axe em 5 telas e no painel em 5 larguras | PASS | 0 violações |
+| reflow 1440/390/320, painel aberto e fechado | PASS | 0 px de overflow |
+| breakpoints 820/821 | PASS | diálogo modal com backdrop vs. região não modal |
+| Escape, armadilha de foco, aba oculta sem `rAF` | PASS | o acionador no header recebe o foco de volta |
+| camada de saturação/correção não quebra `position: fixed` | PASS | 6 estados, incluindo combinações; painel ancorado e botão da busca clicável |
+| camada de filtro não intercepta ponteiro | PASS | `pointer-events: none`; `elementFromPoint` devolve o botão |
+| guia e máscara com preferências vindas de v3 migrado e de v4 | PASS | 4 camadas com `pointer-events: none` nos dois caminhos |
+| migração v3 → v4 sem perder o que estava salvo | PASS | teste confere as 13 chaves antigas uma a uma e o padrão das 3 novas |
+| servidor recusa preferências incompletas | PASS | 16 chaves → `503` honesto; sem as 3 novas → `400` |
+| jornada completa | PASS | 0 erro e 0 exceção de console |
+| captura de evidência em 320 px | PASS | 3 PNG regenerados e revisados |
+| correção de cores validada com pessoas com dicromacia | NOT RUN | as matrizes são aproximação, não simulação clínica |
+| fonte para dislexia validada com pessoas disléxicas | NOT RUN | usa famílias já instaladas no sistema; o ganho presumido vem de espaçamento e peso |
+
+**Decisão registrada.** Os ajustes visuais continuam sendo responsabilidade
+exclusiva do executor local. A alternativa de delegá-los aos toggles da Rybená
+foi avaliada e recusada: os métodos do fornecedor são relativos, não
+declarativos, o que quebraria idempotência, desfazer e funcionamento offline —
+ver a seção 7.7 do plano. Três recursos que só a Rybená tinha foram portados
+localmente.
+
+### Resultado observado em 19/09/2026 — terceira rodada
+
+| Caso | Status | Evidência |
+|---|---|---|
+| correção de cores aumenta a separação em vez de simular a deficiência | **FAIL corrigido** | as matrizes originais eram de simulação: vermelho–verde caía de 1,414 para 0,559 na deuteranopia. Substituídas por daltonização escolhida por medição; teste novo reprova qualquer matriz que baixe a média ou piore o pior par, e a eficácia foi verificada reintroduzindo as antigas |
+| contador de ajustes estilizado após o portal | **FAIL corrigido** | o seletor ancorado em `.accessibility-plugin` deixou de casar, e o contador virou uma segunda linha dentro do círculo. Escopado em `.accessibility-plugin__trigger-badge`; medido `position: absolute`, 22×22 |
+| ícone do acionador | PASS | pictograma universal de acesso próprio, no lugar do ícone de cadeira de rodas do Lucide |
+| Libras e Voz abrem a Rybená sem superfície intermediária | PASS | sem token: mensagem honesta e permanece na raiz; com o adaptador simulado: "Pronto. Selecione um texto na página…" |
+| URL do CDN em `mode=full` com `disableAccessibilityButton=true` | PASS de contrato | validadores do servidor e do navegador e teste de formato atualizados. **Funcionamento real: NOT RUN** — depende do domínio autorizado |
+| chat maior com histórico visível | PASS | últimos quatro turnos, com quem falou |
+| superfície Conteúdo simplificada | PASS | um fluxo em vez de duas seções paralelas; seletor só com mais de um trecho; um resultado por vez |
+| indicador de ajustes ativos | PASS | "N ajustes ativos nesta página" com nomes e "Remover todos", sem o número interno de revisão |
+| axe, reflow, breakpoints, foco, teclado, jornada, endpoints | PASS | 0 violações, 0 px de overflow, 39 testes |
+| `mode=full` com o token real | NOT RUN | não verificável fora do domínio autorizado; se falhar, Libras e voz não abrem |
+| correção de cores com pessoas com dicromacia | NOT RUN | as matrizes são aproximação medida, não validação com pessoas |
+
+**Exposição de dados registrada.** Com a seleção dentro da barra da Rybená,
+qualquer texto da página pode chegar ao fornecedor, inclusive nome e CPF no
+checkout. O responsável optou por manter Libras e Voz em todas as etapas. A
+exclusão de dados de checkout continua valendo para o planejador de IA e para
+as ferramentas de conteúdo, e não alcança essa seleção livre.
+
+### Resultado observado em 19/09/2026 — chat unificado, contrato 2.2
+
+| Caso | Status | Evidência |
+|---|---|---|
+| um chat atende ajuste e dicionário | PASS | quatro casos medidos no navegador com planejador substituído e executor real |
+| termo do glossário responde sem rede | PASS | só `/plan` na aba de rede; origem "Conteúdo revisado deste protótipo" |
+| termo desconhecido cai em `/explain` com origem declarada | PASS | `/plan` e `/explain`; origem "Gerado por IA — confira antes de usar" |
+| simplificação usa a versão revisada local | PASS | só `/plan` |
+| roteamento vem do plano, não de heurística de string | PASS | ações `explain_term` e `simplify_content` no contrato 2.2 |
+| capacidade ausente recusada antes de efeito | PASS | teste |
+| ação de conteúdo não toca no player nem em preferências | PASS | teste |
+| seleção na página restrita a alvos públicos | PASS | hook `usePageSelection`, mesma restrição da superfície anterior |
+| axe, reflow, breakpoints, foco, teclado, jornada, endpoints | PASS | 0 violações, 0 px, 40 testes |
+| qualidade semântica da explicação por IA | NOT RUN | T1.8 segue aberta; por isso o glossário vem primeiro e a origem é declarada |
+
+### Resultado observado em 19/09/2026 — seleção, persistência e chat
+
+| Caso | Status | Evidência |
+|---|---|---|
+| painel permanece aberto durante a seleção no desktop | **FAIL corrigido** | fechava por herança da gaveta lateral; agora só se recolhe no mobile |
+| `aria-hidden` só quando o painel está oculto | PASS | ausente no desktop, `true` no mobile; axe segue sem `aria-hidden-focus` |
+| painel sobrevive à troca de etapa | **FAIL corrigido** | `search → results` com o painel no DOM e visível; proposta pendente é recolhida |
+| foco volta ao campo do chat após a seleção | **FAIL corrigido** | apontava para `term-to-explain`, removido com o `ContentTools`; o foco caía no `body` sem erro |
+| termo selecionado chega ao campo | PASS | `o que significa "…"?`, pronto para revisão antes do envio |
+| chat como ação principal | PASS | cartão elevado, título, campo maior e botão de envio rotulado |
+| axe, reflow, breakpoints, foco, teclado, jornada | PASS | 0 violações, 0 px, 40 testes, 0 erro de console |
+
 ## 8. Registro
 
 ```text

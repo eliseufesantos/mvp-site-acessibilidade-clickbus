@@ -13,6 +13,7 @@ import {
 } from '../adapters/libras/rybenaBrowser';
 import { RybenaUnavailableAdapter, RYBENA_UNAVAILABLE_MESSAGE } from '../adapters/libras/rybenaUnavailable';
 import { RybenaDevelopmentAdapter } from '../adapters/libras/rybenaDevelopment';
+import { COLOR_CORRECTION_MATRICES } from '../../../components/accessibility/ColorFilters';
 import {
   LIBRAS_SIMULATION_ENABLED_VALUE,
   LIBRAS_SIMULATION_ENV_VAR,
@@ -40,6 +41,7 @@ import { explainFromGlossary } from '../core/glossary';
 import {
   COMFORTABLE_READING_PATCH,
   applyPreferencePatch,
+  getActivePreferenceLabels,
   getDefaultPreferences,
   loadPreferences,
   parsePreferencePatch,
@@ -150,12 +152,115 @@ await test('migrates legacy v1 elderly mode', () => {
   assert(loaded.preferences.textScale === 1.125 && loaded.preferences.controlSize === 'large');
 });
 
-await test('falls back safely on invalid storage and serializes v3', () => {
+await test('falls back safely on invalid storage and serializes v4', () => {
   const storage = new MemoryStorage();
-  storage.setItem('clickbus-a11y-v3', '{bad json');
+  storage.setItem('clickbus-a11y-v4', '{bad json');
   equal(loadPreferences(storage).preferences, getDefaultPreferences());
   const encoded = serializePreferences({ ...getDefaultPreferences(), cursor: 'large' });
-  assert(encoded.includes('"version":3') && encoded.includes('"cursor":"large"'));
+  assert(encoded.includes('"version":4') && encoded.includes('"cursor":"large"'));
+});
+
+await test('migrates v3 preferences to v4 without losing what was saved', () => {
+  // v4 so acrescentou saturacao, correcao de cores e fonte para dislexia. Quem
+  // ja tinha preferencias salvas nao pode perde-las na atualizacao.
+  const storage = new MemoryStorage();
+  const v3 = {
+    version: 3,
+    visual: {
+      contrast: 'high', textScale: 1.25, controlSize: 'large', cursor: 'large',
+      highlightLinks: true, highlightHeadings: false, letterSpacing: 'wide',
+      lineHeight: 'comfortable', textAlign: 'left', readingGuide: true,
+      readingMask: false, reducedMotion: true,
+    },
+    libras: { speed: 0.75 },
+  };
+  storage.setItem('clickbus-a11y-v3', JSON.stringify(v3));
+  const loaded = loadPreferences(storage);
+  assert(loaded.migratedFrom === 3, 'deveria reportar migracao de v3');
+  assert(loaded.preferences.contrast === 'high' && loaded.preferences.textScale === 1.25);
+  assert(loaded.preferences.controlSize === 'large' && loaded.preferences.cursor === 'large');
+  assert(loaded.preferences.highlightLinks === true && loaded.preferences.letterSpacing === 'wide');
+  assert(loaded.preferences.lineHeight === 'comfortable' && loaded.preferences.textAlign === 'left');
+  assert(loaded.preferences.readingGuide === true && loaded.preferences.reducedMotion === true);
+  assert(loaded.preferences.librasSpeed === 0.75);
+  // As chaves novas entram no padrao, nunca indefinidas.
+  assert(loaded.preferences.saturation === 'default');
+  assert(loaded.preferences.colorFilter === 'none');
+  assert(loaded.preferences.dyslexiaFont === false);
+
+  // v4 tem precedencia sobre um v3 remanescente.
+  storage.setItem('clickbus-a11y-v4', serializePreferences({ ...getDefaultPreferences(), saturation: 'grayscale' }));
+  const atual = loadPreferences(storage);
+  assert(atual.migratedFrom === null && atual.preferences.saturation === 'grayscale');
+});
+
+await test('colour correction increases separation instead of simulating the deficiency', () => {
+  // Esta suite existe por causa de um defeito real: a primeira versao usava as
+  // matrizes de SIMULACAO de dicromacia, que tornam as cores menos
+  // distinguiveis justamente para quem escolhe o controle "correcao".
+  const SIMULACAO: Record<string, number[][]> = {
+    protanopia: [[0.817, 0.183, 0], [0.333, 0.667, 0], [0, 0.125, 0.875]],
+    deuteranopia: [[0.625, 0.375, 0], [0.700, 0.300, 0], [0, 0.300, 0.700]],
+    tritanopia: [[0.950, 0.050, 0], [0, 0.433, 0.567], [0, 0.475, 0.525]],
+  };
+  // Pares comumente confundidos, nao so primarias puras.
+  const PARES: [number[], number[]][] = [
+    [[1, 0, 0], [0, 1, 0]], [[1, 0.5, 0], [0.6, 0.8, 0]], [[0.8, 0, 0], [0.5, 0.35, 0.1]],
+    [[0, 0.6, 0], [0.5, 0.35, 0.1]], [[0.9, 0.1, 0.1], [0.1, 0.6, 0.1]], [[0, 0, 1], [0.5, 0, 0.8]],
+    [[0, 0.7, 0.7], [0.6, 0.7, 0.2]], [[1, 1, 0], [0.6, 1, 0.2]],
+  ];
+
+  const parseMatriz = (valores: string): number[][] => {
+    const n = valores.trim().split(/\s+/).map(Number);
+    assert(n.length === 20 && n.every((v) => Number.isFinite(v)), 'feColorMatrix precisa de 20 numeros finitos');
+    return [n.slice(0, 3), n.slice(5, 8), n.slice(10, 13)];
+  };
+  const aplicar = (m: number[][], v: number[]) =>
+    m.map((r) => Math.min(1, Math.max(0, r[0] * v[0] + r[1] * v[1] + r[2] * v[2])));
+  const separacao = (a: number[], b: number[]) =>
+    Math.sqrt(a.reduce((soma, x, i) => soma + (x - b[i]) ** 2, 0));
+
+  for (const tipo of Object.keys(SIMULACAO)) {
+    const correcao = parseMatriz(COLOR_CORRECTION_MATRICES[tipo as keyof typeof COLOR_CORRECTION_MATRICES]);
+    const simula = SIMULACAO[tipo];
+    // Percebido por quem tem a deficiencia: com e sem a correcao aplicada antes.
+    const semFiltro = PARES.map(([a, b]) => separacao(aplicar(simula, a), aplicar(simula, b)));
+    const comFiltro = PARES.map(([a, b]) =>
+      separacao(aplicar(simula, aplicar(correcao, a)), aplicar(simula, aplicar(correcao, b))));
+
+    const media = (v: number[]) => v.reduce((x, y) => x + y, 0) / v.length;
+    assert(media(comFiltro) > media(semFiltro),
+      `${tipo}: a correcao precisa aumentar a separacao media, mediu ${media(comFiltro).toFixed(3)} contra ${media(semFiltro).toFixed(3)}`);
+    assert(Math.min(...comFiltro) >= Math.min(...semFiltro) - 1e-9,
+      `${tipo}: a correcao nao pode piorar o pior par`);
+
+    // E a matriz de simulacao precisa REPROVAR nesse mesmo criterio, senao o
+    // teste nao estaria medindo nada.
+    const comSimulacao = PARES.map(([a, b]) =>
+      separacao(aplicar(simula, aplicar(simula, a)), aplicar(simula, aplicar(simula, b))));
+    assert(media(comSimulacao) < media(semFiltro),
+      `${tipo}: a matriz de simulacao deveria reprovar neste criterio`);
+  }
+});
+
+await test('accepts the new colour and dyslexia preferences and rejects invalid values', () => {
+  equal(parsePreferencePatch({ saturation: 'grayscale' }), { saturation: 'grayscale' });
+  equal(parsePreferencePatch({ colorFilter: 'deuteranopia' }), { colorFilter: 'deuteranopia' });
+  equal(parsePreferencePatch({ dyslexiaFont: true }), { dyslexiaFont: true });
+  assert(parsePreferencePatch({ saturation: 'neon' }) === null);
+  assert(parsePreferencePatch({ colorFilter: 'qualquer' }) === null);
+  assert(parsePreferencePatch({ dyslexiaFont: 'sim' }) === null);
+
+  // O esquema enviado ao provedor deriva das mesmas constantes.
+  const props = PLANNER_RESPONSE_JSON_SCHEMA.properties.actions.items.properties.patch.properties;
+  equal([...props.saturation.enum], ['default', 'high', 'low', 'grayscale']);
+  equal([...props.colorFilter.enum], ['none', 'protanopia', 'deuteranopia', 'tritanopia']);
+  assert(props.dyslexiaFont.type === 'boolean');
+
+  const labels = getActivePreferenceLabels({
+    ...getDefaultPreferences(), saturation: 'low', colorFilter: 'protanopia', dyslexiaFont: true,
+  });
+  assert(labels.includes('Saturação baixa') && labels.includes('Correção protanopia') && labels.includes('Fonte para dislexia'));
 });
 
 await test('rejects unknown and invalid preference values', () => {
@@ -451,6 +556,8 @@ await test('executor validates revision and applies each plan only once', async 
     undoPreferences: () => false,
     resetPreferences: () => false,
     resolveContent: () => null,
+    explainTerm: async () => ({ text: 'nao usado', source: 'local' as const }),
+    simplifyContent: async () => ({ text: 'nao usado', source: 'local' as const }),
     rybena: libras as RybenaAdapter,
     capabilities: ['set_preferences'] as const,
   };
@@ -472,17 +579,17 @@ await test('Rybená adapter stays unavailable without network behavior', async (
 
 await test('Rybená accepts only the expected tokenized API script URL', () => {
   const testToken = 'a'.repeat(64);
-  const expected = `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=api&doNotTrack=true`;
+  const expected = `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=full&disableAccessibilityButton=true&doNotTrack=true`;
   assert(parseRybenaScriptUrl(expected) === expected);
 
   for (const invalid of [
-    `https://attacker.example/dom/master/latest/rybena.js?token=${testToken}&mode=api&doNotTrack=true`,
-    'https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=short&mode=api&doNotTrack=true',
+    `https://attacker.example/dom/master/latest/rybena.js?token=${testToken}&mode=full&disableAccessibilityButton=true&doNotTrack=true`,
+    'https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=short&mode=full&disableAccessibilityButton=true&doNotTrack=true',
     `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=full&doNotTrack=true`,
     `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=api&doNotTrack=false`,
-    `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=api&doNotTrack=true&extra=value`,
-    `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&token=${testToken}&mode=api&doNotTrack=true`,
-    `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=api&doNotTrack=true#unexpected`,
+    `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=full&disableAccessibilityButton=true&doNotTrack=true&extra=value`,
+    `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&token=${testToken}&mode=full&disableAccessibilityButton=true&doNotTrack=true`,
+    `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=full&disableAccessibilityButton=true&doNotTrack=true#unexpected`,
   ]) {
     let rejected = false;
     try { parseRybenaScriptUrl(invalid); } catch { rejected = true; }
@@ -677,8 +784,8 @@ await test('the planner prompt announces the version the validator enforces', ()
   }
 });
 
-await test('contract 2.1 carries the voice actions and rejects the previous version', () => {
-  assert(CONTRACT_VERSION === '2.1');
+await test('contract 2.2 carries the voice and content actions and rejects the previous version', () => {
+  assert(CONTRACT_VERSION === '2.2');
   for (const type of ['open_voice', 'close_voice', 'speak_content', 'pause_voice', 'resume_voice', 'stop_voice']) {
     assert(ALL_ACTION_TYPES.includes(type as never), `${type} deveria estar no contrato`);
   }
@@ -690,15 +797,23 @@ await test('contract 2.1 carries the voice actions and rejects the previous vers
   assert(parsePlanAction({ type: 'speak_content', contentRef: 'a', extra: 1 }) === null);
   assert(parsePlanAction({ type: 'narrate_everything' }) === null, 'ação inventada é rejeitada');
 
-  // Um plano 2.0 em voo não pode ser aplicado pela metade: é descartado.
-  const legacy = { ...plannerResponseBody('request-legacy'), contractVersion: '2.0' };
-  assert(plannerResponseSchema.safeParse(legacy).success === false, 'plano 2.0 deve ser rejeitado');
+  for (const type of ['explain_term', 'simplify_content']) {
+    assert(ALL_ACTION_TYPES.includes(type as never), `${type} deveria estar no contrato`);
+  }
+  equal(parsePlanAction({ type: 'explain_term', term: 'viação' }), { type: 'explain_term', term: 'viação' });
+  assert(parsePlanAction({ type: 'explain_term' }) === null, 'explain_term sem term é inválido');
+  assert(parsePlanAction({ type: 'explain_term', term: 'x'.repeat(121) }) === null, 'term respeita o teto de explain');
+  equal(parsePlanAction({ type: 'simplify_content', contentRef: 'search-help' }), { type: 'simplify_content', contentRef: 'search-help' });
+
+  // Um plano de versão anterior em voo não pode ser aplicado pela metade.
+  const legacy = { ...plannerResponseBody('request-legacy'), contractVersion: '2.1' };
+  assert(plannerResponseSchema.safeParse(legacy).success === false, 'plano de versão anterior deve ser rejeitado');
   assert(plannerResponseSchema.safeParse(plannerResponseBody('request-current')).success === true);
 
   // O esquema enviado ao provedor deriva das mesmas constantes.
   const schemaTypes = PLANNER_RESPONSE_JSON_SCHEMA.properties.actions.items.properties.type.enum;
   equal([...schemaTypes].sort(), [...ALL_ACTION_TYPES].sort());
-  equal(PLANNER_RESPONSE_JSON_SCHEMA.properties.contractVersion.enum, ['2.1']);
+  equal(PLANNER_RESPONSE_JSON_SCHEMA.properties.contractVersion.enum, ['2.2']);
 });
 
 await test('executor routes voice and Libras to the same player in the right mode', async () => {
@@ -730,6 +845,8 @@ await test('executor routes voice and Libras to the same player in the right mod
     undoPreferences: () => false,
     resetPreferences: () => false,
     resolveContent: (id: string) => resolvePublicContent('search', id),
+    explainTerm: async () => ({ text: 'nao usado', source: 'local' as const }),
+    simplifyContent: async () => ({ text: 'nao usado', source: 'local' as const }),
     rybena: traced,
     capabilities,
   };
@@ -762,6 +879,71 @@ await test('executor routes voice and Libras to the same player in the right mod
   assert(!calls.includes('mode:voz;mode:voz'));
 });
 
+await test('content actions answer with text and prefer the deterministic path', async () => {
+  const chamadas: string[] = [];
+  const base = {
+    requestId: 'request-conteudo',
+    getStateRevision: () => 0,
+    getPageEpoch: () => 1,
+    getPanelSession: () => 1,
+    getPreferences: () => getDefaultPreferences(),
+    applyPreferences: () => false,
+    undoPreferences: () => false,
+    resetPreferences: () => false,
+    resolveContent: (id: string) => resolvePublicContent('search', id),
+    explainTerm: async (term: string) => {
+      const conhecido = explainFromGlossary(term);
+      chamadas.push(conhecido ? 'glossario' : 'rede:explain');
+      return conhecido
+        ? { text: conhecido.explanation, source: 'local' as const }
+        : { text: 'explicacao remota', source: 'service' as const };
+    },
+    simplifyContent: async (content: { id: string; text: string }) => {
+      const local = simplifyPublicContent('search', content.id);
+      chamadas.push(local ? 'local' : 'rede:simplify');
+      return local
+        ? { text: local, source: 'local' as const }
+        : { text: 'simplificacao remota', source: 'service' as const };
+    },
+    rybena: new RybenaDevelopmentAdapter({ delay: async () => undefined, schedule: () => () => undefined }),
+    capabilities: ['explain_term', 'simplify_content'] as const,
+  };
+  const executor = new AccessibilityExecutor();
+  const plano = (planId: string, actions: unknown[]) => executor.execute({
+    ...plannerResponseBody('request-conteudo'), planId, mode: 'apply', actions,
+  }, base);
+
+  // Termo do glossario: responde local, sem tocar na rede.
+  const conhecido = await plano('plan-glossario', [{ type: 'explain_term', term: 'viação' }]);
+  assert(conhecido.status === 'applied');
+  assert(conhecido.actions[0].answer?.source === 'local');
+  assert(conhecido.actions[0].answer?.text.includes('empresa responsável'), conhecido.actions[0].answer?.text);
+
+  // Termo desconhecido: so entao cai na rede, e a origem e declarada.
+  const desconhecido = await plano('plan-rede', [{ type: 'explain_term', term: 'nefelibata' }]);
+  assert(desconhecido.actions[0].answer?.source === 'service');
+  assert(desconhecido.actions[0].message.includes('IA'), desconhecido.actions[0].message);
+
+  // Simplificacao revisada local tem precedencia.
+  const simples = await plano('plan-simples', [{ type: 'simplify_content', contentRef: 'search-help' }]);
+  assert(simples.actions[0].answer?.source === 'local');
+
+  equal(chamadas, ['glossario', 'rede:explain', 'local']);
+
+  // Conteudo nao altera preferencia nem toca no player.
+  assert(base.rybena.getSnapshot().state === 'idle', 'o player não pode ter sido acionado');
+
+  // Sem a capacidade, recusa antes de qualquer efeito.
+  let recusado = false;
+  try {
+    await executor.execute({
+      ...plannerResponseBody('request-conteudo'), planId: 'plan-sem-cap', mode: 'apply',
+      actions: [{ type: 'simplify_content', contentRef: 'search-help' }],
+    }, { ...base, capabilities: ['explain_term'] as const });
+  } catch (error) { recusado = error instanceof PlanExecutionError; }
+  assert(recusado, 'simplify_content sem capacidade deve ser recusado');
+});
+
 await test('executor refuses player actions that are not in the capability list', async () => {
   const player = new RybenaDevelopmentAdapter({ delay: async () => undefined, schedule: () => () => undefined });
   const dependencies = {
@@ -774,6 +956,8 @@ await test('executor refuses player actions that are not in the capability list'
     undoPreferences: () => false,
     resetPreferences: () => false,
     resolveContent: (id: string) => resolvePublicContent('search', id),
+    explainTerm: async () => ({ text: 'nao usado', source: 'local' as const }),
+    simplifyContent: async () => ({ text: 'nao usado', source: 'local' as const }),
     rybena: player,
     // Voz ausente de propósito: é o caso de "capacidade indisponível".
     capabilities: ['open_libras'] as const,
@@ -832,6 +1016,8 @@ await test('the Rybena port never exposes the vendor visual controls to the exec
     undoPreferences: () => false,
     resetPreferences: () => false,
     resolveContent: (id: string) => resolvePublicContent('search', id),
+    explainTerm: async () => ({ text: 'nao usado', source: 'local' as const }),
+    simplifyContent: async () => ({ text: 'nao usado', source: 'local' as const }),
     rybena: adapter,
     capabilities: [
       'set_preferences', 'apply_comfortable_reading', 'open_libras', 'translate_content',

@@ -1,9 +1,12 @@
-import { Accessibility, MousePointer2 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { MousePointer2 } from 'lucide-react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { PreferencePatch } from '../../features/accessibility-agent/core/preferences';
 import { getActivePreferenceLabels } from '../../features/accessibility-agent/core/preferences';
 import type { AccessibilityPreferences, JourneyStep } from '../../types';
 import { AccessibilityPanel } from './AccessibilityPanel';
+import { ACCESSIBILITY_SLOT_ID } from '../layout/Header';
+import { UniversalAccessIcon } from './UniversalAccessIcon';
 import { focusAfterRender } from '../../utils/focus';
 
 interface AccessibilityPluginProps {
@@ -28,6 +31,7 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
   const [isSelectingPage, setIsSelectingPage] = useState(false);
   const [panelSession, setPanelSession] = useState(0);
   const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_QUERY).matches);
+  const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
   const wasSelectingPageRef = useRef(false);
@@ -42,6 +46,13 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
   const openPanel = useCallback(() => {
     setPanelSession((current) => current + 1);
     setIsPanelOpen(true);
+  }, []);
+
+  // `useLayoutEffect` para o acionador já nascer no header, sem um quadro no
+  // lugar de reserva. Se o encaixe faltar, ele ainda é renderizado no host:
+  // o controle de acessibilidade nunca pode simplesmente sumir.
+  useLayoutEffect(() => {
+    setHeaderSlot(document.getElementById(ACCESSIBILITY_SLOT_ID));
   }, []);
 
   useEffect(() => {
@@ -83,14 +94,16 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
     }
     if (isSelectingPage) {
       wasSelectingPageRef.current = true;
-      focusAfterRender(() => document.getElementById('main-content'), { preventScroll: true });
+      // No desktop o painel continua visível e o foco fica onde está; mover
+      // para o conteúdo só faz sentido quando o painel se recolhe.
+      if (isMobile) focusAfterRender(() => document.getElementById('main-content'), { preventScroll: true });
       return;
     }
     if (wasSelectingPageRef.current) {
       wasSelectingPageRef.current = false;
-      focusAfterRender(() => document.getElementById('term-to-explain'), { preventScroll: true });
+      focusAfterRender(() => document.getElementById('accessibility-request'), { preventScroll: true });
     }
-  }, [isPanelOpen, isSelectingPage]);
+  }, [isMobile, isPanelOpen, isSelectingPage]);
 
   useEffect(() => {
     if (!isPanelOpen || isSelectingPage) return undefined;
@@ -124,8 +137,10 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
   }, [isMobile, isPanelOpen, isSelectingPage]);
 
   useEffect(() => {
-    if (isPanelOpen) closePanel(false);
-    // A troca de etapa invalida planos pendentes e desmonta o painel.
+    // Só o modo de seleção termina: os alvos públicos são outros nesta etapa.
+    // O painel permanece aberto, e o executor continua recusando qualquer plano
+    // pendente porque `pageEpoch` mudou.
+    setIsSelectingPage(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.pageEpoch]);
 
@@ -135,20 +150,27 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
 
   const triggerLabel = `${isSelectingPage ? 'Cancelar seleção e fechar' : isPanelOpen ? 'Fechar' : 'Abrir'} acessibilidade${activeModes > 0 ? `, ${activeModes} ${activeModes === 1 ? 'ajuste ativo' : 'ajustes ativos'}` : ''}`;
 
+  const trigger = (
+    <button
+      className="accessibility-plugin__trigger accessibility-trigger"
+      type="button"
+      aria-label={triggerLabel}
+      aria-expanded={isPanelOpen}
+      aria-controls="accessibility-panel"
+      ref={triggerRef}
+      onClick={() => (isPanelOpen ? closePanel() : openPanel())}
+    >
+      <span className="accessibility-plugin__trigger-text" aria-hidden="true">Acessibilidade</span>
+      <span className="accessibility-plugin__trigger-badge">
+        <UniversalAccessIcon className="accessibility-plugin__trigger-icon" />
+        {activeModes > 0 ? <span className="mode-count" aria-hidden="true">{activeModes}</span> : null}
+      </span>
+    </button>
+  );
+
   return (
     <aside className={`accessibility-plugin${isPanelOpen ? ' accessibility-plugin--open' : ''}${isSelectingPage ? ' accessibility-plugin--selecting' : ''}`} aria-label="Recursos de acessibilidade">
-      <button
-        className="accessibility-plugin__trigger accessibility-trigger"
-        type="button"
-        aria-label={triggerLabel}
-        aria-expanded={isPanelOpen}
-        aria-controls="accessibility-panel"
-        ref={triggerRef}
-        onClick={() => (isPanelOpen ? closePanel() : openPanel())}
-      >
-        <Accessibility className="accessibility-plugin__trigger-icon" aria-hidden="true" />
-        {activeModes > 0 ? <span className="mode-count" aria-hidden="true">{activeModes}</span> : null}
-      </button>
+      {headerSlot ? createPortal(trigger, headerSlot) : trigger}
 
       {isPanelOpen ? (
         <>
@@ -164,7 +186,7 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
             className="accessibility-plugin__surface accessibility-menu__popover"
             role={isMobile ? 'dialog' : 'region'}
             aria-modal={isMobile && !isSelectingPage ? true : undefined}
-            aria-hidden={isSelectingPage ? true : undefined}
+            aria-hidden={isSelectingPage && isMobile ? true : undefined}
             aria-label="Painel de acessibilidade"
             ref={surfaceRef}
           >

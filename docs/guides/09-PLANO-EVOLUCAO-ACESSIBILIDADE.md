@@ -973,6 +973,316 @@ painel de acessibilidade". E as seções internas das superfícies desceram de
 `h3` para `h4`, porque o título da superfície agora ocupa o `h3` — a hierarquia
 do painel é `h2` (painel) → `h3` (superfície) → `h4` (seção).
 
+### 7.7 Revisão do padrão visual e portabilidade de recursos — 19/09/2026
+
+Decisão do responsável depois de comparar com o portal de referência.
+
+#### O acionador sai da lateral e vai para o header
+
+Ele passa a ficar no fim da barra, com o pictograma universal de acessibilidade
+e o rótulo "ACESSIBILIDADE", como na referência. O `Header` é
+`position: sticky`, então a alcançabilidade não piora — **essa é a condição que
+sustenta a mudança**. Se a barra deixar de ser sticky, o acionador precisa
+voltar a ser fixo, ou a pessoa terá de rolar até o topo para achar os controles
+de acessibilidade.
+
+Mecanismo: o `AccessibilityPlugin` continua dono de todo o estado e projeta o
+botão para `#accessibility-trigger-slot` com `createPortal`. Assim o estado do
+painel não precisa subir para o `App`. Se o encaixe faltar, o botão é
+renderizado no próprio host — um controle de acessibilidade não pode
+simplesmente desaparecer por causa de um seletor que não casou.
+
+**Isto revoga uma invariante do `AGENTS.md`**, que dizia que o acionador
+pertence ao host fixo lateral, fora do `Header`. O documento foi atualizado.
+
+#### A raiz fica mais enxuta
+
+Grade 2×2 de cartões quadrados — Libras, Voz, Ajustes visuais, Conteúdo — com
+"Sobre acessibilidade" como link abaixo. A referência usa um cartão "Mais
+Ferramentas" que enterra o resto um nível mais fundo; 2×2 fica igualmente
+simples e mais raso. O cartão mostra só o rótulo, e a descrição vai em
+`aria-describedby`, então quem usa leitor de tela continua ouvindo o que cada
+recurso faz antes de entrar.
+
+O chat ganhou três chips de sugestão. Um campo vazio não comunica o que ele
+aceita. Os chips **apenas preenchem** o campo — verificado no navegador:
+clicar num chip deixa o campo com o texto e a região de estado vazia, sem
+nenhuma chamada ao planejador.
+
+**Propriedade intelectual.** O pictograma de acessibilidade é símbolo padrão e
+foi copiado deliberadamente. A paleta, os ícones e os textos do portal de
+referência **não** foram: valem os tokens de `tokens.css` e os ícones Lucide,
+como manda a seção 7.1.
+
+#### Recursos da Rybená portados para o executor local, não delegados
+
+Surgiu a ideia de usar a LLM para acionar as ferramentas visuais da Rybená e
+assim aproveitar a lista inteira do fornecedor. **Tecnicamente é possível** — a
+LLM continuaria só planejando, e o executor é que chamaria os métodos. A
+decisão foi **não delegar**, e a seção 7.4 continua valendo. Três razões:
+
+1. **Os métodos visuais da Rybená são toggles, não valores.** `toggleZoom()`,
+   `nextZoom()`, `toggleDarkContrast()`. Nosso contrato é declarativo —
+   `set_preferences: { textScale: 1.25 }`. Com toggle não dá para exprimir
+   "texto a 125%" sem conhecer o estado atual do fornecedor e calcular a
+   diferença, e não há como ler esse estado com confiança. Quebra a idempotência
+   por `planId`, o desfazer e o recibo "já estava nesse estado".
+2. **O token é preso ao domínio e é temporário.** Os ajustes visuais hoje
+   funcionam sem rede e em `localhost`. Delegando, parariam em desenvolvimento,
+   parariam na rotação do token e cairiam junto com o fornecedor.
+3. **Não reduz complexidade, troca complexidade própria por dependência.** O
+   executor local já passou na auditoria. E como os efeitos somam, não é "usar
+   os dois": é substituir.
+
+**O que foi aproveitado da ideia:** a Rybená tem recursos que nós não tínhamos.
+Três foram portados como preferências declarativas locais — **saturação**
+(padrão, alta, baixa, tons de cinza), **correção de cores** (protanopia,
+deuteranopia, tritanopia) e **fonte para dislexia**. Ficam offline, entram no
+desfazer e o chat os comanda pelo mesmo contrato.
+
+#### Preferências v4
+
+As três chaves novas exigiram `clickbus-a11y-v4`, porque o leitor da v3 valida
+a contagem exata de chaves e um registro antigo cairia no padrão, perdendo o
+que a pessoa tinha salvo. A migração v3 → v4 preenche as novas com o padrão e
+preserva o resto; coberta por teste que confere as treze chaves antigas uma a
+uma. Medido no servidor local: um pedido com as dezesseis chaves responde `503`
+honesto, e um pedido sem as três novas responde `400`.
+
+**Armadilha registrada.** Saturação e correção de cores **não** podem usar
+`filter` num ancestral: `filter` torna o elemento bloco de contenção para
+descendentes `position: fixed`, e o painel, os diálogos de filtro e itinerário
+e a máscara de leitura parariam de se posicionar pela viewport. O efeito vem de
+`backdrop-filter` numa camada fixa em z-index 898, abaixo do painel (950), do
+guia (900) e da máscara (899) — os controles de acessibilidade seguem legíveis.
+Verificado nos seis estados, incluindo saturação e correção combinadas: o
+painel continua ancorado, o botão da busca continua clicável e o overflow
+permanece em 0 px.
+
+#### Defeito de foco encontrado e corrigido
+
+Tirar "Sobre acessibilidade" da grade quebrou o retorno de foco: ao voltar para
+a raiz o foco caía no `body`, porque o seletor de retorno procura
+`#a11y-card-<superfície>` e o link não tinha id. O link recebeu
+`id="a11y-card-about"`, e as cinco entradas voltaram a devolver o foco à origem.
+
+#### Validação desta rodada
+
+| Verificação | Resultado |
+|---|---|
+| typecheck, build, suíte, typecheck de `api/` | **PASS** — 38 testes |
+| axe em 5 telas e no painel em 1440, 821, 820, 390 e 320 px | **PASS** — 0 violações |
+| reflow nos três tamanhos, painel aberto e fechado | **PASS** — 0 px |
+| breakpoints 820/821 | **PASS** — diálogo modal vs. região |
+| Escape, armadilha de foco, aba oculta sem `rAF` | **PASS** — acionador no header recebe o foco de volta |
+| teclado da raiz a cada superfície e de volta | **PASS** — 5 entradas |
+| chips preenchem sem enviar | **PASS** |
+| chat aplica plano com preferência da v4 e oferece desfazer | **PASS** — `saturation` e `dyslexiaFont` chegam ao DOM |
+| camada de filtro não quebra `fixed` nem intercepta ponteiro | **PASS** — 6 estados |
+| guia e máscara, via v3 migrado e via v4 | **PASS** — `pointer-events: none` nas 4 camadas |
+| jornada completa | **PASS** — 0 erro de console |
+| endpoints 405/403/415/413/503 e recusa de preferências incompletas | **PASS** |
+
+`passes` do axe: 304 na linha de base, 291 agora. A diferença continua sendo
+inaplicabilidade, não reprovação: `aria-required-children` e
+`aria-required-parent` saíram com o `tablist`, e `scrollable-region-focusable`
+deixou de ter nó a examinar em 320 px com texto a 150%, porque a raiz 2×2 cabe
+sem rolagem. Nenhuma regra passou de aprovada a violada, e as violações
+seguem em zero.
+
+### 7.8 Segunda revisão de UX e um defeito nocivo — 19/09/2026
+
+#### Defeito grave: a "correção de cores" simulava a deficiência
+
+A primeira implementação usou as matrizes que circulam em ferramentas de
+*simulação* de daltonismo. Medida a separação euclidiana entre vermelho e verde
+puros, o filtro chamado "correção" fazia isto:
+
+| Filtro | Separação vermelho–verde |
+|---|---|
+| sem filtro | 1,414 |
+| "correção" de protanopia | 0,727 |
+| "correção" de deuteranopia | **0,559** |
+
+Ou seja: quem escolhesse o controle para distinguir melhor as cores passava a
+distingui-las **pior**. Isso é pior do que não ter o recurso.
+
+A troca foi para daltonização de verdade, `D = I + E·(I − S)`. A matriz de
+redistribuição `E` não foi escolhida por intuição: foram medidos sete
+candidatos sobre oito pares de cores comumente confundidos, avaliando a
+separação **percebida através da deficiência**. A daltonização clássica de
+livro reprovou na deuteranopia — piorou os oito pares —, e o que venceu foi
+redistribuir o erro para um único canal.
+
+E a medição virou teste: a suíte reprova qualquer matriz que reduza a separação
+média ou piore o pior par, e confirma que a matriz de simulação reprovaria
+nesse mesmo critério. A eficácia foi verificada reintroduzindo as matrizes
+antigas de propósito — o teste acusou.
+
+**Limite que permanece:** continua sendo aproximação sobre um modelo linear
+simples e um conjunto pequeno de pares, **não validada com pessoas com
+dicromacia**.
+
+#### Defeito de estilo depois do portal
+
+O contador de ajustes ativos estava estilizado por `.accessibility-plugin
+.mode-count`. Como o portal leva o acionador para fora desse host, o seletor
+deixou de casar e o contador voltou ao estilo genérico: virou uma segunda linha
+dentro do círculo de 42 px em vez de um selo de canto, esticando o acionador
+para 58 px de altura. Medido: `position: static`, fora de `.accessibility-plugin`.
+Corrigido escopando em `.accessibility-plugin__trigger-badge`.
+
+Foi removida também a regra que escondia o contador durante o modo de seleção:
+ela existia para o acionador flutuante, que encolhia, e o do header não muda de
+forma.
+
+#### Mudanças de UX pedidas pelo responsável
+
+| Pedido | O que foi feito |
+|---|---|
+| trocar o ícone | Pictograma universal de acesso desenhado em `UniversalAccessIcon.tsx`. O ícone anterior era o de cadeira de rodas do Lucide, que representa mobilidade e comunica menos do que o painel oferece |
+| Libras e Voz abrem a Rybená direto | Os cartões deixaram de navegar para uma superfície: eles inicializam o player, trocam o modo e abrem. `PlayerSurface.tsx` foi removido |
+| seleção de texto na própria Rybená | A URL do CDN passou de `mode=api` para `mode=full`, com `disableAccessibilityButton=true` |
+| chat maior e mais didático | Campo mais alto e histórico dos últimos quatro turnos visível, com quem falou. A proposta passou a explicitar que nada acontece até confirmar |
+| Conteúdo mais simples | Era duas seções paralelas com seletores repetidos. Virou um fluxo: trecho, termo opcional e dois botões. O seletor só aparece quando a etapa tem mais de um trecho, e um resultado por vez |
+| indicador de ajustes | "Agora na página / Revisão 5" virou "7 ajustes ativos nesta página" com os nomes e um botão "Remover todos". O número de revisão era artefato interno e não dizia nada |
+
+#### `mode=full`: o que muda e o que fica em aberto
+
+`disableAccessibilityButton=true` é o que impede a colisão da seção 7.4: sem
+ele a barra do fornecedor traria contraste, zoom e espaçamento, que somariam
+com o executor local. A decisão de manter os ajustes visuais locais continua
+valendo.
+
+**Não é possível verificar isto fora do domínio autorizado.** O token é preso
+ao domínio, e o que foi exercitado aqui é o adaptador simulado e o contrato da
+URL. Se `mode=full` não funcionar com o token, Libras e voz não abrem — e isso
+só aparece em T0.4.
+
+**Exposição de dados aceita pelo responsável.** Com a seleção dentro da barra
+do fornecedor, qualquer texto da página pode ser enviado a ele, inclusive nome
+e CPF no checkout. A opção escolhida foi manter Libras e Voz disponíveis em
+todas as etapas. A exclusão de dados de checkout continua aplicada onde o
+código a aplica — capacidades do planejador e alvos públicos registrados — e
+**não** alcança a seleção livre feita na Rybená. Registrado no `AGENTS.md`.
+
+#### Validação desta rodada
+
+| Verificação | Resultado |
+|---|---|
+| typecheck, build, suíte, typecheck de `api/` | **PASS** — 39 testes |
+| axe em 5 telas e no painel em 5 larguras | **PASS** — 0 violações |
+| reflow nos três tamanhos | **PASS** — 0 px |
+| breakpoints, Escape, armadilha de foco, aba oculta | **PASS** |
+| teclado da raiz às três superfícies e de volta | **PASS** |
+| cartão Libras/Voz sem token | **PASS** — "A Rybená ainda não foi configurada neste ambiente.", sem abrir superfície |
+| cartão Libras/Voz com o adaptador simulado | **PASS** — "Pronto. Selecione um texto na página…", permanece na raiz |
+| contador de ajustes no acionador | **PASS** — `position: absolute`, 22×22 |
+| matrizes de correção aumentam a separação | **PASS** — coberto por teste, eficácia verificada por reversão |
+| jornada, guia/máscara, endpoints | **PASS** |
+
+### 7.9 Um chat só, para ajuste e para dicionário — 19/09/2026
+
+Pergunta do responsável: o chat que pede alterações não poderia ser também o
+chat de dicionário? Sim — e a arquitetura já estava quase lá, porque o
+planejador **já recebia `contentTargets`** no contexto. Faltava o contrato
+saber falar de conteúdo.
+
+#### Por que não foi feito com heurística de string
+
+O caminho óbvio seria detectar "o que é…" no cliente e mandar para `/explain`.
+Isso quebraria a regra da T2.4: **o roteamento vem do plano, não de heurística
+de string no cliente**. O contrato subiu para 2.2 com `explain_term { term }` e
+`simplify_content { contentRef }`, e o planejador escolhe.
+
+#### Determinístico antes de rede
+
+O executor tenta o glossário e a simplificação revisada **antes** de qualquer
+chamada. Medido no navegador, com o planejador substituído e o executor real:
+
+| Pedido | Chamadas a `/api/` | Origem declarada |
+|---|---|---|
+| termo do glossário | só `/plan` | Conteúdo revisado deste protótipo |
+| termo fora do glossário | `/plan` e `/explain` | Gerado por IA — confira antes de usar |
+| simplificar trecho | só `/plan` | Conteúdo revisado deste protótipo |
+| ajuste visual | só `/plan` | — aplica, não responde texto |
+
+Isso importa por dois motivos além de velocidade: os nove termos do glossário
+não gastam cota, e a explicação por IA — cuja qualidade semântica segue
+`PARCIAL` pela T1.8 — vira o caminho de exceção, não o padrão. A interface
+declara a origem em cada resposta.
+
+#### O que saiu e o que entrou
+
+`ContentTools.tsx` foi removido. A superfície de Conteúdo não existe mais: a
+grade 2×2 passou a ser **Libras, Voz, Ajustes visuais e Sobre**, e o link
+separado de "Sobre" sumiu junto.
+
+O modo de seleção de texto virou o hook `usePageSelection`, usado pelo chat —
+apontar para um trecho é a única coisa que digitar não resolve. O botão vive ao
+lado do microfone, e a seleção continua **restrita aos alvos públicos
+registrados**, que é o que mantém checkout e dados de passageiro fora das
+ferramentas de conteúdo.
+
+Capacidades enviadas ao planejador: `explain_term` vai sempre, porque o
+glossário responde por termo; `simplify_content` só quando a etapa tem trecho
+público.
+
+#### Validação
+
+| Verificação | Resultado |
+|---|---|
+| typecheck, build, suíte, typecheck de `api/` | **PASS** — 40 testes |
+| chat responde termo do glossário sem tocar na rede | **PASS** |
+| chat cai em `/explain` só para termo desconhecido, declarando a origem | **PASS** |
+| chat simplifica trecho com a versão revisada local | **PASS** |
+| chat continua aplicando ajuste visual | **PASS** |
+| capacidade ausente recusada antes de qualquer efeito | **PASS** — coberto por teste |
+| ação de conteúdo não toca no player nem em preferências | **PASS** — coberto por teste |
+| axe em 5 telas e no painel em 5 larguras | **PASS** — 0 violações |
+| reflow, breakpoints, foco, teclado, jornada | **PASS** — 0 px de overflow, 0 erro de console |
+
+### 7.10 Seleção sem perder o painel, e o chat como protagonista — 19/09/2026
+
+Três defeitos e um ajuste de hierarquia visual, a partir do uso real.
+
+**O painel fechava ao entrar no modo de seleção.** Era herança da gaveta
+lateral, que cobria a página e precisava sair da frente. O painel de hoje é um
+popover compacto ancorado no header: no desktop ele não atrapalha e passa a
+permanecer aberto. No **mobile** ele continua se recolhendo, porque ali é um
+diálogo de tela cheia e a pessoa não conseguiria alcançar o texto. O
+`aria-hidden` passou a acompanhar essa condição — num painel visível ele seria
+violação de `aria-hidden-focus`.
+
+**O painel fechava ao trocar de etapa.** O `closePanel` no `pageEpoch` também
+era efeito colateral da gaveta. A proteção contra plano velho nunca foi fechar
+o painel: é o executor comparando `pageEpoch` e recusando. Agora o painel
+sobrevive à navegação, o modo de seleção se encerra — os alvos públicos são
+outros — e propostas pendentes são recolhidas, porque seriam recusadas ao
+confirmar.
+
+**O foco não voltava a lugar nenhum depois da seleção.** `AccessibilityPlugin`
+devolvia o foco para `#term-to-explain`, campo que deixou de existir quando
+`ContentTools` foi removido na unificação do chat. Regressão silenciosa:
+nenhuma exceção, o foco simplesmente caía no `body`. Agora volta para
+`#accessibility-request`.
+
+Medido no navegador, nos dois tamanhos:
+
+| | painel durante a seleção | `aria-hidden` | foco após selecionar |
+|---|---|---|---|
+| desktop 1440 | visível | ausente | `accessibility-request` |
+| mobile 390 | recolhido | `true` | `accessibility-request` |
+
+E a troca de etapa com o painel aberto: `search → results`, painel segue no DOM
+e visível.
+
+**O chat não parecia o lugar de agir.** Era uma faixa apagada no rodapé, com
+campo estreito dividindo a linha com três botões de ícone. Virou um cartão
+elevado, com borda de acento no topo, título "Fale com o assistente", uma linha
+explicando o que dá para escrever, campo em largura total e mais alto, e o
+envio com **rótulo visível** em vez de só um ícone.
+
 ## 8. Fase 3 — Validação e evidências
 
 ### T3.1 — Regressão integral

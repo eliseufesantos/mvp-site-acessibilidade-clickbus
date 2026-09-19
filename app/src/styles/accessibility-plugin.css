@@ -8,60 +8,73 @@
   pointer-events: none;
 }
 
+/* O acionador vive no header, que é sticky: fica sempre alcançável sem flutuar
+   sobre o conteúdo. O plugin o projeta para lá; estas regras valem nos dois
+   lugares, porque ele volta ao host se o encaixe faltar. */
 .accessibility-plugin__trigger {
-  position: absolute;
-  top: 50%;
-  left: 14px;
-  z-index: 3;
-  display: grid;
-  width: 60px;
-  min-width: 60px;
-  height: 60px;
-  min-height: 60px;
-  padding: 0;
-  border: 2px solid #ffffff;
-  border-radius: 50%;
-  background: var(--a11y-accent);
-  box-shadow: 0 12px 28px rgba(67, 8, 103, 0.34);
-  color: #ffffff;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--a11y-accent-strong);
+  gap: 9px;
   pointer-events: auto;
-  transform: translateY(-50%);
-  transition: background 180ms ease, transform 180ms ease;
+  cursor: pointer;
 }
 
-.accessibility-plugin__trigger:hover {
+.accessibility-plugin__trigger-text {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.accessibility-plugin__trigger-badge {
+  position: relative;
+  display: grid;
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--a11y-accent);
+  color: #ffffff;
+  place-items: center;
+}
+
+.accessibility-plugin__trigger:hover .accessibility-plugin__trigger-badge {
   background: var(--a11y-accent-strong);
 }
 
 .accessibility-plugin__trigger:focus-visible {
-  outline: 0;
-  box-shadow: inset 0 0 0 3px var(--cb-focus), 0 12px 28px rgba(67, 8, 103, 0.28);
+  outline: 3px solid var(--cb-focus);
+  outline-offset: 2px;
 }
 
 .accessibility-plugin__trigger-icon {
-  width: 32px;
-  height: 32px;
+  width: 25px;
+  height: 25px;
   stroke-width: 2;
 }
 
-.accessibility-plugin .mode-count {
+/* Escopo na classe do proprio acionador: o portal leva o botao para fora de
+   `.accessibility-plugin`, entao um seletor ancorado no host nao casaria e o
+   contador voltaria ao estilo generico, virando uma segunda linha dentro do
+   circulo em vez de um selo de canto. */
+.accessibility-plugin__trigger-badge .mode-count {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 24px;
-  min-width: 24px;
-  height: 24px;
+  top: -5px;
+  right: -5px;
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
   margin-top: 0;
-  border: 2px solid var(--a11y-accent);
-  background: #ffffff;
-  color: var(--a11y-accent-strong);
-  font-size: 0.72rem;
-}
-
-.accessibility-plugin--open .accessibility-plugin__trigger {
-  top: 84px;
-  transform: none;
+  border: 2px solid var(--cb-header);
+  background: var(--a11y-plum);
+  color: #ffffff;
+  font-size: 0.7rem;
 }
 
 .accessibility-plugin__backdrop {
@@ -74,12 +87,11 @@
 
 .accessibility-plugin__surface {
   position: absolute;
-  top: 84px;
-  bottom: 16px;
-  left: 88px;
+  top: 78px;
+  right: 16px;
   z-index: 2;
-  width: min(448px, calc(100vw - 104px));
-  max-height: none;
+  width: min(392px, calc(100vw - 32px));
+  max-height: calc(100vh - 94px);
   overflow: visible;
   pointer-events: auto;
   animation: accessibility-drawer-in 180ms ease-out;
@@ -88,12 +100,10 @@
 .accessibility-plugin .accessibility-panel {
   display: grid;
   width: 100%;
-  height: 100%;
-  max-height: none;
+  max-height: calc(100vh - 94px);
   padding: 0;
   border: 1px solid var(--a11y-border);
-  border-left: 0;
-  border-radius: 0 18px 18px 0;
+  border-radius: 18px;
   background: var(--cb-surface);
   box-shadow: var(--a11y-shadow);
   grid-template-rows: auto minmax(0, 1fr) auto;
@@ -106,8 +116,8 @@
   top: auto;
   z-index: auto;
   display: grid;
-  min-height: 104px;
-  padding: 20px 18px 19px 20px;
+  min-height: 72px;
+  padding: 15px 15px 15px 18px;
   border: 0;
   background: var(--a11y-plum);
   color: #ffffff;
@@ -117,8 +127,8 @@
 }
 
 .accessibility-plugin .accessibility-panel__heading > svg:not(.a11y-route-mark) {
-  width: 22px;
-  height: 22px;
+  width: 23px;
+  height: 23px;
   margin-top: 2px;
   color: #ffffff;
 }
@@ -130,29 +140,20 @@
 }
 
 .accessibility-plugin .accessibility-panel__heading h2 {
-  margin: 0 0 4px;
+  margin: 0;
   color: #ffffff;
-  font-size: 1.32rem;
+  font-size: 1.14rem;
   font-weight: 700;
   letter-spacing: -0.025em;
   line-height: 1.15;
 }
 
 .accessibility-plugin .accessibility-panel__heading p {
-  max-width: 230px;
-  margin: 0;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.8rem;
-  line-height: 1.4;
+  display: none;
 }
 
 .accessibility-plugin .a11y-route-mark {
-  position: absolute;
-  right: 58px;
-  bottom: 13px;
-  width: 86px;
-  height: 38px;
-  color: rgba(255, 255, 255, 0.72);
+  display: none;
 }
 
 .accessibility-plugin .accessibility-panel__heading .panel-close {
@@ -209,7 +210,7 @@
 .accessibility-plugin .a11y-surface {
   min-width: 0;
   min-height: 0;
-  padding: 20px 20px 24px;
+  padding: 16px;
   background: var(--cb-surface);
   overflow-x: hidden;
   overflow-y: auto;
@@ -262,23 +263,23 @@
 /* Grade de cartoes: botoes percorridos por Tab, nunca abas. */
 .accessibility-plugin .a11y-card-grid {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  margin-bottom: 18px;
 }
 
 .accessibility-plugin .a11y-card {
-  display: grid;
-  width: 100%;
-  min-height: 74px;
-  padding: 14px 13px;
+  display: flex;
+  min-height: 108px;
+  padding: 15px 10px 13px;
   border: 1px solid var(--a11y-border);
   border-radius: 14px;
   background: var(--cb-surface);
   color: var(--a11y-text);
+  flex-direction: column;
   align-items: center;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 13px;
-  text-align: left;
+  justify-content: center;
+  gap: 9px;
+  text-align: center;
 }
 
 .accessibility-plugin .a11y-card:hover {
@@ -288,51 +289,56 @@
 
 .accessibility-plugin .a11y-card__icon {
   display: grid;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: var(--a11y-soft-strong);
   color: var(--a11y-accent-strong);
   place-items: center;
 }
 
 .accessibility-plugin .a11y-card__icon svg {
-  width: 21px;
-  height: 21px;
-  stroke-width: 2;
+  width: 30px;
+  height: 30px;
+  stroke-width: 1.8;
 }
 
-.accessibility-plugin .a11y-card__body {
-  display: grid;
-  min-width: 0;
-  gap: 2px;
-}
-
-.accessibility-plugin .a11y-card__body strong {
+.accessibility-plugin .a11y-card__label {
   color: var(--a11y-text);
-  font-size: 0.94rem;
+  font-size: 0.85rem;
   font-weight: 650;
   line-height: 1.25;
 }
 
-.accessibility-plugin .a11y-card__body small {
-  color: var(--a11y-muted);
-  font-size: 0.75rem;
-  line-height: 1.4;
-}
-
-.accessibility-plugin .a11y-card__body em {
+.accessibility-plugin .a11y-card__note {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--a11y-soft-strong);
   color: var(--a11y-accent-strong);
-  font-size: 0.7rem;
-  font-style: normal;
+  font-size: 0.66rem;
   font-weight: 700;
 }
 
-.accessibility-plugin .a11y-card__chevron {
-  width: 19px;
-  height: 19px;
-  color: var(--a11y-muted);
-  stroke-width: 2;
+.accessibility-plugin .a11y-about-link {
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  min-height: 42px;
+  margin-top: 10px;
+  padding: 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--a11y-accent-strong);
+  font-size: 0.78rem;
+  font-weight: 650;
+  gap: 7px;
+  justify-content: center;
+}
+
+.accessibility-plugin .a11y-about-link:hover {
+  background: var(--a11y-soft);
+}
+
+.accessibility-plugin .a11y-about-link svg {
+  width: 16px;
+  height: 16px;
 }
 
 .accessibility-plugin .a11y-about__list {
@@ -348,45 +354,125 @@
 }
 
 /* Faixa fixa do chat na base, visivel em todas as superficies. */
+/* O chat é a porta de entrada do assistente e precisa parecer isso. Antes ele
+   se confundia com um rodapé: faixa apagada, campo estreito e botão só de
+   ícone. Agora é um cartão elevado, com contorno de acento e ação rotulada. */
 .accessibility-plugin .a11y-chat {
-  padding: 13px 16px 15px;
-  border-top: 1px solid var(--a11y-border);
+  padding: 15px 16px 16px;
+  border-top: 3px solid var(--a11y-accent);
   background: var(--a11y-soft);
+  box-shadow: 0 -10px 22px -18px rgba(43, 3, 68, 0.55);
+}
+
+/* O painel é um MVP didático: ver o pedido e a resposta lado a lado explica o
+   que o planejador fez melhor do que qualquer texto de ajuda. */
+.accessibility-plugin .a11y-chat__log {
+  max-height: 168px;
+  margin: 0 0 11px;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.accessibility-plugin .a11y-chat__turn {
+  margin-bottom: 8px;
+  padding: 9px 11px;
+  border-radius: 11px;
+  background: var(--cb-surface);
+}
+
+.accessibility-plugin .a11y-chat__turn--user {
+  background: var(--a11y-soft-strong);
+}
+
+.accessibility-plugin .a11y-chat__who {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--a11y-accent-strong);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.accessibility-plugin .a11y-chat__turn p {
+  margin: 0;
+  color: var(--a11y-text);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.accessibility-plugin .assistant-proposal__hint {
+  margin: 8px 0 0;
+  color: var(--a11y-muted);
+  font-size: 0.72rem;
 }
 
 .accessibility-plugin .a11y-chat__form > label {
   display: flex;
   align-items: center;
-  margin-bottom: 7px;
+  margin-bottom: 3px;
   color: var(--a11y-text);
-  font-size: 0.78rem;
-  font-weight: 650;
-  gap: 6px;
+  font-size: 0.97rem;
+  font-weight: 700;
+  gap: 7px;
+  letter-spacing: -0.01em;
 }
 
 .accessibility-plugin .a11y-chat__form > label svg {
-  width: 16px;
-  height: 16px;
+  width: 19px;
+  height: 19px;
   color: var(--a11y-accent-strong);
+}
+
+.accessibility-plugin .a11y-chat__hint {
+  margin: 0 0 10px;
+  color: var(--a11y-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.accessibility-plugin .a11y-chat__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 9px;
+  gap: 6px;
+}
+
+.accessibility-plugin .a11y-chat__suggestion {
+  min-height: 32px;
+  padding: 5px 11px;
+  border: 1px solid var(--a11y-border);
+  border-radius: 999px;
+  background: var(--cb-surface);
+  color: var(--a11y-accent-strong);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.accessibility-plugin .a11y-chat__suggestion:hover {
+  border-color: var(--a11y-accent);
+  background: var(--a11y-soft-strong);
 }
 
 .accessibility-plugin .a11y-chat__row {
   display: grid;
-  align-items: end;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px;
 }
 
 .accessibility-plugin .a11y-chat__row textarea {
   width: 100%;
   min-width: 0;
-  min-height: 56px;
-  padding: 11px 12px;
-  border: 1px solid var(--a11y-border);
-  border-radius: 11px;
+  min-height: 108px;
+  padding: 12px 13px;
+  border: 2px solid color-mix(in srgb, var(--a11y-accent) 38%, var(--a11y-border));
+  border-radius: 12px;
   background: var(--cb-surface);
   color: var(--a11y-text);
-  font-size: 0.85rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
   resize: vertical;
 }
 
@@ -398,7 +484,39 @@
 
 .accessibility-plugin .a11y-chat__buttons {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 7px;
+}
+
+/* O envio é a ação principal: fica rotulado e ocupa o resto da linha. */
+.accessibility-plugin .a11y-chat__send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--a11y-accent);
+  color: #ffffff;
+  font-size: 0.87rem;
+  font-weight: 700;
+  gap: 8px;
+  flex: 1 1 auto;
+}
+
+.accessibility-plugin .a11y-chat__send svg {
+  width: 18px;
+  height: 18px;
+}
+
+.accessibility-plugin .a11y-chat__send:hover:not(:disabled) {
+  background: var(--a11y-accent-strong);
+}
+
+.accessibility-plugin .a11y-chat__send:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .accessibility-plugin .a11y-chat__icon-button {
@@ -479,6 +597,31 @@
   width: 100%;
   border: 1px solid var(--a11y-border);
   background: var(--cb-surface);
+}
+
+.accessibility-plugin .a11y-chat__answer {
+  margin-top: 10px;
+  padding: 11px 13px;
+  border-left: 4px solid var(--cb-success);
+  border-radius: 0 11px 11px 0;
+  background: color-mix(in srgb, var(--cb-success) 7%, var(--cb-surface));
+}
+
+.accessibility-plugin .a11y-chat__answer-source {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--a11y-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.accessibility-plugin .a11y-chat__answer p {
+  margin: 0;
+  color: var(--a11y-text);
+  font-size: 0.83rem;
+  line-height: 1.55;
 }
 
 /* Tom do estado. A cor nunca e o unico sinal: o texto ja diz o que houve. */
@@ -601,10 +744,108 @@
 }
 
 .accessibility-plugin .active-preferences {
-  padding: 16px;
+  margin-top: 12px;
+  padding: 13px;
   border: 1px solid color-mix(in srgb, var(--a11y-accent) 24%, var(--a11y-border));
   border-radius: 14px;
   background: var(--a11y-soft);
+}
+
+.accessibility-plugin .active-preferences h3 {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  color: var(--a11y-text);
+  font-size: 0.84rem;
+  font-weight: 650;
+  gap: 6px;
+}
+
+.accessibility-plugin .active-preferences h3 svg {
+  width: 16px;
+  height: 16px;
+  color: var(--cb-success);
+}
+
+.accessibility-plugin .active-preferences > div:first-child button {
+  padding: 4px 9px;
+  border: 1px solid var(--a11y-border);
+  border-radius: 999px;
+  background: var(--cb-surface);
+  color: var(--a11y-accent-strong);
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.accessibility-plugin .active-preferences > div:first-child button:hover {
+  border-color: var(--a11y-accent);
+  background: var(--a11y-soft-strong);
+}
+
+.accessibility-plugin .active-preferences ul.preference-chips {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.accessibility-plugin .active-preferences ul.preference-chips li {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 5px 5px 0;
+  padding: 4px 9px;
+  border: 1px solid var(--a11y-border);
+  border-radius: 999px;
+  background: var(--cb-surface);
+  color: var(--a11y-text);
+  font-size: 0.71rem;
+  font-weight: 600;
+}
+
+/* Conteudo: um fluxo so. */
+.accessibility-plugin .field-label span {
+  margin-left: 6px;
+  color: var(--a11y-muted);
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+
+.accessibility-plugin .content-tools__actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  margin-top: 13px;
+  gap: 8px;
+}
+
+.accessibility-plugin .content-tools__actions .button {
+  font-size: 0.82rem;
+}
+
+.accessibility-plugin .content-tools__term {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+}
+
+.accessibility-plugin .content-tools__term .button {
+  min-width: 48px;
+  padding-inline: 12px;
+}
+
+.accessibility-plugin p.content-original {
+  margin: 4px 0 0;
+  padding: 11px 12px;
+  border-left: 3px solid var(--a11y-border);
+  border-radius: 0 9px 9px 0;
+  background: var(--a11y-soft);
+  color: var(--a11y-muted);
+  font-size: 0.79rem;
+  line-height: 1.5;
+}
+
+.accessibility-plugin .content-tools__empty {
+  margin: 0;
+  color: var(--a11y-muted);
+  font-size: 0.8rem;
 }
 
 .accessibility-plugin .accessibility-assistant {
@@ -861,21 +1102,6 @@
   line-height: 1.4;
 }
 
-.accessibility-plugin--selecting .accessibility-plugin__surface {
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.accessibility-plugin--selecting .accessibility-plugin__trigger {
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.accessibility-plugin--selecting .mode-count {
-  display: none;
-}
-
 html[data-contrast='high'] .accessibility-plugin__trigger,
 html[data-contrast='high'] .accessibility-plugin .segmented-control button[aria-pressed='true'] {
   color: #080808;
@@ -902,29 +1128,30 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
 }
 
 @media (max-width: 820px) {
-  .accessibility-plugin__trigger {
-    left: 10px;
-    width: 54px;
-    min-width: 54px;
-    height: 54px;
-    min-height: 54px;
-  }
-
-  .accessibility-plugin__trigger-icon {
-    width: 28px;
-    height: 28px;
-  }
-
-  .accessibility-plugin--open .accessibility-plugin__trigger {
-    top: 12px;
+  .accessibility-plugin__trigger-text {
+    display: none;
   }
 
   .accessibility-plugin__surface {
     top: 8px;
     right: 8px;
     bottom: 8px;
-    left: 72px;
+    left: 8px;
     width: auto;
+    max-height: none;
+  }
+
+  /* No mobile o painel cobre a tela inteira: precisa sair da frente para a
+     pessoa conseguir selecionar o texto. No desktop ele fica ao lado. */
+  .accessibility-plugin--selecting .accessibility-plugin__surface {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .accessibility-plugin .accessibility-panel {
+    max-height: none;
+    height: 100%;
   }
 
   .accessibility-plugin .accessibility-panel {
@@ -942,10 +1169,6 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
 }
 
 @media (max-width: 480px) {
-  .accessibility-plugin--open:not(.accessibility-plugin--selecting) .accessibility-plugin__trigger {
-    visibility: hidden;
-  }
-
   .accessibility-plugin__surface {
     inset: 0;
   }
@@ -953,11 +1176,6 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
   .accessibility-plugin .accessibility-panel {
     border: 0;
     border-radius: 0;
-  }
-
-  .accessibility-plugin .accessibility-panel__heading {
-    min-height: 96px;
-    padding: 18px 13px 17px 15px;
   }
 
   .accessibility-plugin .a11y-route-mark {
@@ -974,13 +1192,18 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
   }
 
   .accessibility-plugin .a11y-chat__row textarea {
-    min-height: 46px;
+    min-height: 84px;
   }
 
   .accessibility-plugin .a11y-chat__icon-button {
-    width: 44px;
-    min-width: 44px;
+    width: 46px;
+    min-width: 46px;
     height: 46px;
+  }
+
+  .accessibility-plugin .a11y-chat__send {
+    min-height: 46px;
+    padding-inline: 14px;
   }
 
   .accessibility-plugin .content-tools__actions {

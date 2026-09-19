@@ -14,6 +14,12 @@
   gap: 28px;
 }
 
+.site-header__a11y {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
 .brand-button {
   flex: 0 0 auto;
   padding: 4px;
@@ -66,21 +72,6 @@ html[data-contrast='true'] .clickbus-logo__mark {
 
 .accessibility-menu {
   position: relative;
-}
-
-.accessibility-trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: var(--control-height);
-  padding: 10px 14px;
-  border: 2px solid var(--cb-primary);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--cb-primary-strong);
-  font-weight: 700;
-  cursor: pointer;
 }
 
 .mode-count {
@@ -1425,10 +1416,6 @@ html[data-contrast='true'] .summary-route > svg:first-child {
     gap: 12px;
   }
 
-  .accessibility-trigger {
-    padding-inline: 10px;
-  }
-
   .search-hero {
     padding: 46px 0 58px;
   }
@@ -2352,12 +2339,6 @@ html[data-contrast='high'] .campaign-hero > img { opacity: 0.28; }
     display: block;
     flex: 0 0 auto;
     margin-left: auto;
-  }
-
-  .accessibility-trigger {
-    width: 48px;
-    min-width: 48px;
-    padding-inline: 6px;
   }
 
   .campaign-hero__notice {
