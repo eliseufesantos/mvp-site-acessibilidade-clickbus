@@ -1,4 +1,4 @@
-import type { AccessibilityPreferences } from '../../../types';
+import type { AccessibilityPreferences } from '../../../types.js';
 
 export const STORAGE_KEY = 'clickbus-a11y-v3';
 export const LEGACY_V2_STORAGE_KEY = 'clickbus-a11y-v2';

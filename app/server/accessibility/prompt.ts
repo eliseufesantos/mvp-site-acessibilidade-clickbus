@@ -1,4 +1,4 @@
-import type { ExplainRequest, PlannerRequest, SimplifyRequest } from '../../src/features/accessibility-agent/core/contracts';
+import type { ExplainRequest, PlannerRequest, SimplifyRequest } from '../../src/features/accessibility-agent/core/contracts.js';
 
 export const PLANNER_SYSTEM_PROMPT = `Você é um planejador de acessibilidade para uma demonstração acadêmica da ClickBus.
 Responda somente com JSON no contrato 2.0 recebido. Nunca compre, reserve, navegue, preencha dados, altere busca, assento, passageiro ou pagamento.

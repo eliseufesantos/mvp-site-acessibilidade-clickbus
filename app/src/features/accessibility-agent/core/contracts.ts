@@ -1,5 +1,5 @@
-import type { AccessibilityPreferences } from '../../../types';
-import { LIBRAS_SPEEDS, PREFERENCE_KEYS, parsePreferencePatch, type PreferencePatch } from './preferences';
+import type { AccessibilityPreferences } from '../../../types.js';
+import { LIBRAS_SPEEDS, PREFERENCE_KEYS, parsePreferencePatch, type PreferencePatch } from './preferences.js';
 
 export const CONTRACT_VERSION = '2.0' as const;
 

@@ -7,8 +7,8 @@ import {
   type ExplainRequest,
   type PlannerRequest,
   type SimplifyRequest,
-} from '../../src/features/accessibility-agent/core/contracts';
-import { getConfiguredProvider, type LlmProvider } from './provider';
+} from '../../src/features/accessibility-agent/core/contracts.js';
+import { getConfiguredProvider, type LlmProvider } from './provider.js';
 import {
   EXPLAIN_SYSTEM_PROMPT,
   PLANNER_SYSTEM_PROMPT,
@@ -16,7 +16,7 @@ import {
   explainUserPrompt,
   plannerUserPrompt,
   simplifyUserPrompt,
-} from './prompt';
+} from './prompt.js';
 
 export type AccessibilityEndpoint = 'plan' | 'explain' | 'simplify';
 
