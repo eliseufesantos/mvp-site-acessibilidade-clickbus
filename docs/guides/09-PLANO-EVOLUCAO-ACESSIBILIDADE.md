@@ -53,14 +53,14 @@ Para tarefas que tocam funções de `api/`, adicionalmente:
 | T0.2 | Smoke real do Gemini | 0 | PASS 19/09 em produção, ver 5.2 — `.env` local segue pendente |
 | T0.3 | Adaptador Libras de desenvolvimento (fake) | 0 | pendente |
 | T0.4 | Deploy e smoke real da Rybená no domínio autorizado | 0 | endpoint 200 e player aberto no navegador 19/09 — falta evidência registrada |
-| T1.1 | `aria-label` descartado em `<div>` (14 casos) | 1 | pendente |
-| T1.2 | Anúncio de filtragem nos resultados | 1 | pendente |
+| T1.1 | `aria-label` descartado em `<div>` (14 casos) | 1 | PASS 19/09 — rótulos presentes na árvore |
+| T1.2 | Anúncio de filtragem nos resultados | 1 | PASS 19/09 — 1 anúncio atômico por filtro |
 | T1.3 | ~~`.vercelignore`~~ — promovida para **T0.0** | 1 | reclassificada |
-| T1.4 | Remover diretório morto `app/api/` | 1 | pendente |
-| T1.5 | Atualizar snapshot do `AGENTS.md` | 1 | pendente |
-| T1.6 | Foco independente de `requestAnimationFrame` | 1 | pendente |
-| T1.7 | Correções menores agrupadas | 1 | pendente |
-| T1.8 | Revisar prompts de explicação e simplificação | 1 | pendente — ver 5.4 |
+| T1.4 | Remover diretório morto `app/api/` | 1 | PASS 19/09 |
+| T1.5 | Atualizar snapshot do `AGENTS.md` | 1 | PASS 19/09 |
+| T1.6 | Foco independente de `requestAnimationFrame` | 1 | PASS 19/09 — verificado com rAF desligado |
+| T1.7 | Correções menores agrupadas | 1 | PASS 19/09 |
+| T1.8 | Revisar prompts de explicação e simplificação | 1 | prompt reescrito 19/09 — **avaliação semântica humana pendente** |
 | T2.1 | Acionador circular e grade de recursos | 2 | pendente |
 | T2.2 | Chat assistente com ditado por voz | 2 | pendente |
 | T2.3 | Capacidade de voz no contrato e no executor | 2 | pendente |
