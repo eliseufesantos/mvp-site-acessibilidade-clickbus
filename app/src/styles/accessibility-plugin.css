@@ -1090,44 +1090,6 @@
   border-top: 0;
 }
 
-.accessibility-plugin__selection-coach {
-  position: absolute;
-  top: 92px;
-  left: 72px;
-  z-index: 2;
-  display: flex;
-  max-width: min(360px, calc(100vw - 92px));
-  padding: 13px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 13px;
-  background: var(--a11y-plum);
-  box-shadow: var(--a11y-shadow);
-  color: #ffffff;
-  gap: 11px;
-  pointer-events: none;
-}
-
-.accessibility-plugin__selection-coach svg {
-  width: 21px;
-  height: 21px;
-}
-
-.accessibility-plugin__selection-coach strong,
-.accessibility-plugin__selection-coach span {
-  display: block;
-}
-
-.accessibility-plugin__selection-coach strong {
-  margin-bottom: 2px;
-  font-size: 0.82rem;
-}
-
-.accessibility-plugin__selection-coach span {
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 0.7rem;
-  line-height: 1.4;
-}
-
 html[data-contrast='high'] .accessibility-plugin__trigger,
 html[data-contrast='high'] .accessibility-plugin .segmented-control button[aria-pressed='true'] {
   color: #080808;
@@ -1158,21 +1120,18 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
     display: none;
   }
 
+  /* `--a11y-viewport-*` vem do plugin e acompanha a viewport VISUAL, que é o
+     que encolhe quando o teclado virtual abre. `dvh` é a defesa para quando o
+     script ainda não rodou; `vh` sozinho ignorava tanto a barra do navegador
+     quanto o teclado. */
   .accessibility-plugin__surface {
-    top: 8px;
+    top: calc(8px + var(--a11y-viewport-offset, 0px));
     right: 8px;
-    bottom: 8px;
+    bottom: auto;
     left: 8px;
     width: auto;
+    height: calc(var(--a11y-viewport-height, 100dvh) - 16px);
     max-height: none;
-  }
-
-  /* No mobile o painel cobre a tela inteira: precisa sair da frente para a
-     pessoa conseguir selecionar o texto. No desktop ele fica ao lado. */
-  .accessibility-plugin--selecting .accessibility-plugin__surface {
-    visibility: hidden;
-    opacity: 0;
-    pointer-events: none;
   }
 
   .accessibility-plugin .accessibility-panel {
@@ -1184,19 +1143,15 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
     border-left: 1px solid var(--a11y-border);
     border-radius: 18px;
   }
-
-  .accessibility-plugin__selection-coach {
-    top: auto;
-    right: 14px;
-    bottom: 14px;
-    left: 14px;
-    max-width: none;
-  }
 }
 
 @media (max-width: 480px) {
   .accessibility-plugin__surface {
-    inset: 0;
+    top: var(--a11y-viewport-offset, 0px);
+    right: 0;
+    bottom: auto;
+    left: 0;
+    height: var(--a11y-viewport-height, 100dvh);
   }
 
   .accessibility-plugin .accessibility-panel {
@@ -1214,7 +1169,12 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
   }
 
   .accessibility-plugin .a11y-chat {
-    padding: 11px 13px 13px;
+    padding: 11px 13px 0;
+  }
+
+  /* `safe-area` para o campo não encostar na barra de gestos do aparelho. */
+  .accessibility-plugin .a11y-chat__form {
+    padding-bottom: calc(13px + env(safe-area-inset-bottom, 0px));
   }
 
   .accessibility-plugin .a11y-chat__row textarea {
@@ -1275,28 +1235,4 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
 .accessibility-plugin .a11y-chat__hint strong {
   color: var(--a11y-text);
   font-weight: 600;
-}
-
-/* Durante a seleção na página, os trechos que o assistente aceita ganham
-   destaque. Sem isso nada indicava o que era elegível, e uma seleção válida
-   feita sobre qualquer outro texto era recusada sem explicação.
-
-   As cores aqui são literais, e não `var(--a11y-accent-strong)`: neste projeto
-   `outline-color` não aceita a substituição por `var()` — cai em `currentColor`
-   e o contorno fica cinza —, embora `var()` funcione normalmente para
-   `border-color` e `text-decoration-color` no mesmo elemento. Os valores abaixo
-   são os mesmos tokens de `tokens.css`, repetidos por necessidade. */
-:root[data-a11y-selecting='true'] [data-a11y-content-id] {
-  border-radius: 4px;
-  outline-width: 2px;
-  outline-style: dashed;
-  outline-color: #7417c7;
-  outline-offset: 3px;
-  background-color: color-mix(in srgb, #7417c7 12%, transparent);
-  cursor: text;
-}
-
-html[data-contrast='high']:root[data-a11y-selecting='true'] [data-a11y-content-id] {
-  outline-color: #ffe36f;
-  background-color: color-mix(in srgb, #ffe36f 18%, transparent);
 }

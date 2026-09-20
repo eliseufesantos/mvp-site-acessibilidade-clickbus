@@ -47,7 +47,7 @@ Snapshot operacional atualizado em **19/09/2026**:
 - as funções ficaram quebradas em produção até 19/09 com `FUNCTION_INVOCATION_FAILED`, porque o `.vercelignore` começava com `*` e não re-incluía o `package.json` da raiz — sem o `"type": "module"` a saída carregava como CommonJS e o `import` falhava na carga. **Ao editar o `.vercelignore`, preserve `!package.json` e `!tsconfig.json`;**
 - `RYBENA_ACCESS_TOKEN` está configurada no ambiente de produção do domínio autorizado, e `GET /api/accessibility/rybena` responde `200` com a URL do CDN. O player foi aberto no navegador em 19/09; a evidência formal ainda não foi registrada, e a homologação linguística com pessoas surdas sinalizantes permanece `NOT RUN`;
 - o token da Rybená é de exceção acadêmica: o parâmetro `token` na URL do script **não** consta na documentação pública e foi confirmado por e-mail do fornecedor. O formato atual é 64 hexadecimais, o que o código valida — mas esse formato nunca foi especificado e pode mudar numa rotação;
-- fluxo de conteúdo validado em navegador: seleção real de termo na página, explicação pelo glossário e simplificação determinística com original preservado;
+- fluxo de conteúdo validado em navegador: explicação pelo glossário e simplificação determinística com original preservado. O termo chega pelo campo do chat — digitado, ditado ou colado;
 - reflow da nova UI validado em 1440×900, 390×844 e 320×844 CSS px; escala de texto a 150% em 320 px e alto contraste em mobile também permaneceram sem overflow horizontal;
 - breakpoint validado nos limites: 820 px usa diálogo modal com backdrop e bloqueio do body; 821 px usa região não modal, sem backdrop e com a página rolável;
 - `@types/node` é dependência explícita do app e a resolução de tipos está restrita ao `app/node_modules`;
@@ -135,9 +135,9 @@ npx --yes pnpm@10.28.0 --dir app test:accessibility
 - o painel é lançador + superfície: uma superfície ativa por vez, `root` por padrão, e abrir sempre começa na raiz. A raiz é uma grade 2×2 de cartões — Libras, Voz, Ajustes visuais e Conteúdo — com "Sobre acessibilidade" como link logo abaixo. Cartão que navega é `<button>`, **nunca** `role="tab"`; não recrie o `tablist`.
 - toda entrada da raiz precisa de `id="a11y-card-<superfície>"`, inclusive o link "Sobre": é por esse id que o foco volta ao sair de uma superfície. O primeiro elemento focável de cada superfície carrega `data-a11y-entry`, que é o seletor usado pelo host para levar o foco ao abrir.
 - o chat fica visível na base de todas as superfícies e colapsa para uma linha em 320 px; não o esconda atrás de outro clique. Os chips de sugestão apenas preenchem o campo — nunca enviam.
-- A seleção de texto da página só ocorre em modo explícito, dentro de um alvo público registrado. Durante esse modo o painel **se recolhe apenas no mobile**, onde é um diálogo de tela cheia e cobriria o texto a selecionar; no desktop é um popover ao lado do conteúdo e permanece aberto. `aria-hidden` no painel só pode existir quando ele está de fato oculto — num painel visível seria violação de `aria-hidden-focus`.
-- O painel **não fecha ao trocar de etapa**. A proteção contra plano velho é o `pageEpoch`, que o executor compara e recusa; fechar o painel era efeito colateral da gaveta antiga. Ao trocar de etapa, encerre o modo de seleção e recolha propostas pendentes, que seriam recusadas.
-- Depois da seleção o foco volta para `#accessibility-request`, o campo do chat. Se esse id mudar, atualize `AccessibilityPlugin`: já houve uma regressão silenciosa quando o campo antigo (`term-to-explain`) foi removido junto com a superfície de Conteúdo.
+- **Não existe modo de seleção de texto na página.** Ele foi removido em 20/09/2026 por decisão do responsável: valiam apenas quatro trechos na jornada inteira, todos textos de ajuda do próprio protótipo, e as palavras que de fato confundem nunca estiveram disponíveis. Em troca, exigia um modo modal com recolhimento do painel no mobile, gestão de foco entre painel e página e uma mensagem de recusa para um limite criado pela própria implementação. O termo chega pelo campo do chat — digitado, ditado ou colado pelo navegador. Se algum dia voltar, `aria-hidden` no painel só pode existir quando ele está de fato oculto: num painel visível seria violação de `aria-hidden-focus`.
+- O painel **não fecha ao trocar de etapa**. A proteção contra plano velho é o `pageEpoch`, que o executor compara e recusa; fechar o painel era efeito colateral da gaveta antiga. Ao trocar de etapa, recolha propostas pendentes, que seriam recusadas.
+- O campo do chat é `#accessibility-request`. Se esse id mudar, atualize `AccessibilityPlugin`: já houve uma regressão silenciosa quando o campo antigo (`term-to-explain`) foi removido junto com a superfície de Conteúdo.
 - Não substitua conteúdo original por texto explicado ou simplificado; apresente a saída separadamente.
 - Checkout, passageiro, bilhete, preço, pagamento e confirmação não podem ser enviados ao planejador ou às ferramentas de conteúdo. Essa exclusão é aplicada pela lista de capacidades e pelos alvos públicos registrados; ela **não** alcança a seleção livre feita dentro da barra da Rybená, decisão registrada na seção 7.
 
@@ -223,7 +223,7 @@ Para mudanças no núcleo ou no painel:
 - amplie `app/src/features/accessibility-agent/tests/run.ts` quando houver novo comportamento determinístico;
 - valide ações desconhecidas, estado obsoleto, idempotência, indisponibilidade e exclusões de conteúdo;
 - teste teclado, foco, Escape e retorno ao acionador quando alterar diálogos/painéis;
-- ao alterar ferramentas de conteúdo, teste a entrada e saída do modo de seleção, a captura restrita ao mesmo alvo público e o retorno do foco ao campo de termo;
+- ao alterar ferramentas de conteúdo, teste o glossário determinístico antes da rede, a recusa de alvos fora da lista pública e a declaração de origem da resposta na interface;
 - teste reflow sem rolagem horizontal em desktop, mobile e 320 CSS px;
 - confirme que guia e máscara não interceptam ponteiro;
 - inspecione console/rede ao tocar em IA, voz ou Rybená;

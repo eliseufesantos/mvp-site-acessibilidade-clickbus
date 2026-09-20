@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
-  Bot, Check, ChevronLeft, FlaskConical, Info, ScanText,
+  Bot, Check, ChevronLeft, FlaskConical, Info,
   Languages, Mic, Send, SlidersHorizontal, Sparkles, Square, Undo2, Volume2, X,
 } from 'lucide-react';
 import type { AccessibilityPreferences, JourneyStep } from '../../../types';
@@ -29,7 +29,6 @@ import { getActivePreferenceLabels, type PreferencePatch } from '../core/prefere
 import { AboutSurface } from './AboutSurface';
 import { FeatureGrid, type FeatureCard } from './FeatureGrid';
 import { PreferenceControls } from './PreferenceControls';
-import { usePageSelection } from './usePageSelection';
 import { useVoiceInput } from './useVoiceInput';
 import { focusAfterRender } from '../../../utils/focus';
 
@@ -47,7 +46,6 @@ interface AccessibilityPanelProps {
   getStateRevision(): number;
   onApply(patch: PreferencePatch): boolean;
   onClose(): void;
-  onSelectionModeChange?(active: boolean): void;
   onReset(): boolean;
   onUndo(): boolean;
   page: JourneyStep;
@@ -167,12 +165,6 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
   const firstRenderRef = useRef(true);
   const openedFromRef = useRef<Exclude<PanelSurface, 'root'> | null>(null);
   const voice = useVoiceInput();
-  const pageSelection = usePageSelection({
-    page: props.page,
-    onSelected: (term) => setRequest(`o que significa "${term}"?`),
-    onStatus: (message) => announce(message),
-    onModeChange: props.onSelectionModeChange,
-  });
   const activeLabels = getActivePreferenceLabels(props.preferences);
   const targets = getPublicContentTargets(props.page);
   // O snapshot precisa ser assinado: lido direto no render, ele congelava no
@@ -629,18 +621,6 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
               placeholder="Ex.: aumente o texto, ou: o que é embarque?"
             />
             <div className="a11y-chat__buttons">
-              <button
-                className="a11y-chat__icon-button"
-                type="button"
-                aria-pressed={pageSelection.active}
-                aria-label={pageSelection.active
-                  ? 'Cancelar a seleção na página'
-                  : 'Selecionar uma palavra da página para perguntar o significado'}
-                disabled={!pageSelection.available}
-                onClick={pageSelection.start}
-              >
-                <ScanText aria-hidden="true" />
-              </button>
               {voice.supported ? (
                 <button
                   className="a11y-chat__icon-button"

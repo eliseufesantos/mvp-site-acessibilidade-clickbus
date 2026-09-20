@@ -156,7 +156,7 @@ export function ResultsPage({ onBack, onChangeDate, onSelectTrip, preferences, s
               <span role="status" aria-atomic="true">
                 {visibleTrips.length} {visibleTrips.length === 1 ? 'opção encontrada' : 'opções encontradas'} para {formatTravelDate(search.date)}.
               </span>{' '}
-              <span data-a11y-content-id="results-help">Compare horários, embarque e comodidades antes de escolher.</span>
+              <span>Compare horários, embarque e comodidades antes de escolher.</span>
             </p>
           </div>
           <Button className="mobile-filter-button" variant="secondary" onClick={() => setMobileFiltersOpen(true)}>
@@ -176,7 +176,7 @@ export function ResultsPage({ onBack, onChangeDate, onSelectTrip, preferences, s
         <div className="results-layout">
           <aside className="filter-card" aria-labelledby="filters-title">
             <div className="filter-card__title"><SlidersHorizontal aria-hidden="true" size={21} /><h2 id="filters-title">Filtros</h2></div>
-            <p className="filter-card__help" data-a11y-content-id="service-class-help">A classe descreve o tipo de serviço. Confira também as comodidades da viagem.</p>
+            <p className="filter-card__help">A classe descreve o tipo de serviço. Confira também as comodidades da viagem.</p>
             <FilterFields {...{ classFilter, period, setClassFilter, setPeriod, setSort, sort }} />
             {activeFilterCount > 0 ? <button className="filter-clear" type="button" onClick={clearFilters}>Limpar filtros</button> : null}
           </aside>

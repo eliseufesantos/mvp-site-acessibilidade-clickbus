@@ -8,11 +8,6 @@ export interface PublicContentTarget {
   allowSimplify: boolean;
 }
 
-export interface ApprovedPageSelection {
-  term: string;
-  contentRef: string;
-}
-
 const CONTENT_BY_PAGE: Record<JourneyStep, readonly PublicContentTarget[]> = {
   search: [{
     id: 'search-help',
@@ -56,61 +51,4 @@ export const resolvePublicContent = (page: JourneyStep, id: string): PublicConte
 export const simplifyPublicContent = (page: JourneyStep, id: string): string | null => {
   const target = resolvePublicContent(page, id);
   return target?.allowSimplify && target.simplifiedText ? target.simplifiedText : null;
-};
-
-type PageSelectionRead =
-  | { state: 'empty' }
-  | { state: 'invalid' }
-  | { state: 'approved'; value: ApprovedPageSelection };
-
-let rememberedSelection: (ApprovedPageSelection & { page: JourneyStep }) | null = null;
-
-const closestApprovedTarget = (node: Node): HTMLElement | null => {
-  const element = node.nodeType === 1 ? node as Element : node.parentElement;
-  return element?.closest<HTMLElement>('[data-a11y-content-id]') ?? null;
-};
-
-const readPageSelection = (page: JourneyStep, selection: Selection | null): PageSelectionRead => {
-  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return { state: 'empty' };
-
-  const term = selection.toString().replace(/\s+/g, ' ').trim();
-  if (term.length < 2 || term.length > 120) return { state: 'invalid' };
-
-  const range = selection.getRangeAt(0);
-  const startTarget = closestApprovedTarget(range.startContainer);
-  const endTarget = closestApprovedTarget(range.endContainer);
-  if (!startTarget || startTarget !== endTarget) return { state: 'invalid' };
-
-  const contentRef = startTarget.dataset.a11yContentId ?? '';
-  return resolvePublicContent(page, contentRef)
-    ? { state: 'approved', value: { term, contentRef } }
-    : { state: 'invalid' };
-};
-
-export const rememberApprovedPageSelection = (
-  page: JourneyStep,
-  selection: Selection | null = window.getSelection(),
-): ApprovedPageSelection | null => {
-  const result = readPageSelection(page, selection);
-  if (result.state === 'approved') {
-    rememberedSelection = { page, ...result.value };
-    return result.value;
-  }
-  if (result.state === 'invalid') rememberedSelection = null;
-  return null;
-};
-
-export const clearRememberedApprovedPageSelection = () => {
-  rememberedSelection = null;
-};
-
-export const getApprovedPageSelection = (
-  page: JourneyStep,
-  selection: Selection | null = window.getSelection(),
-): ApprovedPageSelection | null => {
-  const current = rememberApprovedPageSelection(page, selection);
-  if (current) return current;
-  return rememberedSelection?.page === page
-    ? { term: rememberedSelection.term, contentRef: rememberedSelection.contentRef }
-    : null;
 };

@@ -145,7 +145,7 @@ export function SeatSelectionPage({
                 <CheckCircle2 aria-hidden="true" /> Assento {selectedSeat} selecionado
               </div>
             ) : null}
-            <p className="journey-card__hint" id="seat-map-help" data-a11y-content-id="seat-map-help">
+            <p className="journey-card__hint" id="seat-map-help">
               Use Tab ou as setas do teclado para navegar pela posição visual dos assentos. Pressione Espaço ou Enter para escolher.
             </p>
           </aside>

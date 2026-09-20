@@ -1,4 +1,3 @@
-import { MousePointer2 } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { PreferencePatch } from '../../features/accessibility-agent/core/preferences';
@@ -28,17 +27,14 @@ const FOCUSABLE_SELECTOR = 'button:not(:disabled), a[href], input:not(:disabled)
 
 export function AccessibilityPlugin(props: AccessibilityPluginProps) {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [isSelectingPage, setIsSelectingPage] = useState(false);
   const [panelSession, setPanelSession] = useState(0);
   const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_QUERY).matches);
   const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
-  const wasSelectingPageRef = useRef(false);
   const activeModes = getActivePreferenceLabels(props.preferences).length;
 
   const closePanel = useCallback((restoreFocus = true) => {
-    setIsSelectingPage(false);
     setIsPanelOpen(false);
     if (restoreFocus) focusAfterRender(() => triggerRef.current);
   }, []);
@@ -65,13 +61,36 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
   useEffect(() => {
     if (!isPanelOpen) return undefined;
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || isSelectingPage) return;
+      if (event.key !== 'Escape') return;
       event.preventDefault();
       closePanel();
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [closePanel, isPanelOpen, isSelectingPage]);
+  }, [closePanel, isPanelOpen]);
+
+  // No celular o painel é uma folha que cobre a tela. O teclado virtual encolhe
+  // a viewport VISUAL, mas não a de layout: sem acompanhar, o painel continuava
+  // do tamanho antigo, metade dele atrás do teclado, e o navegador o empurrava
+  // para manter o campo à vista — daí a sensação de tela distorcida e solta.
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!isPanelOpen || !isMobile || !viewport) return undefined;
+    const root = document.documentElement;
+    const apply = () => {
+      root.style.setProperty('--a11y-viewport-height', `${viewport.height}px`);
+      root.style.setProperty('--a11y-viewport-offset', `${viewport.offsetTop}px`);
+    };
+    apply();
+    viewport.addEventListener('resize', apply);
+    viewport.addEventListener('scroll', apply);
+    return () => {
+      viewport.removeEventListener('resize', apply);
+      viewport.removeEventListener('scroll', apply);
+      root.style.removeProperty('--a11y-viewport-height');
+      root.style.removeProperty('--a11y-viewport-offset');
+    };
+  }, [isMobile, isPanelOpen]);
 
   // O painel abre sempre na grade de recursos; o foco vai para o primeiro
   // cartao, marcado por `data-a11y-entry`.
@@ -81,32 +100,14 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
   }, [isPanelOpen]);
 
   useEffect(() => {
-    if (!isPanelOpen || isSelectingPage || !isMobile) return;
+    if (!isPanelOpen || !isMobile) return;
     const surface = surfaceRef.current;
     if (surface?.contains(document.activeElement)) return;
     focusAfterRender(() => surface?.querySelector<HTMLElement>('[data-a11y-entry]'));
-  }, [isMobile, isPanelOpen, isSelectingPage]);
+  }, [isMobile, isPanelOpen]);
 
   useEffect(() => {
-    if (!isPanelOpen) {
-      wasSelectingPageRef.current = false;
-      return;
-    }
-    if (isSelectingPage) {
-      wasSelectingPageRef.current = true;
-      // No desktop o painel continua visível e o foco fica onde está; mover
-      // para o conteúdo só faz sentido quando o painel se recolhe.
-      if (isMobile) focusAfterRender(() => document.getElementById('main-content'), { preventScroll: true });
-      return;
-    }
-    if (wasSelectingPageRef.current) {
-      wasSelectingPageRef.current = false;
-      focusAfterRender(() => document.getElementById('accessibility-request'), { preventScroll: true });
-    }
-  }, [isMobile, isPanelOpen, isSelectingPage]);
-
-  useEffect(() => {
-    if (!isPanelOpen || isSelectingPage) return undefined;
+    if (!isPanelOpen) return undefined;
     const previousOverflow = document.body.style.overflow;
     if (isMobile) document.body.style.overflow = 'hidden';
 
@@ -134,21 +135,9 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
       document.removeEventListener('keydown', trapFocus);
       document.body.style.overflow = previousOverflow;
     };
-  }, [isMobile, isPanelOpen, isSelectingPage]);
+  }, [isMobile, isPanelOpen]);
 
-  useEffect(() => {
-    // Só o modo de seleção termina: os alvos públicos são outros nesta etapa.
-    // O painel permanece aberto, e o executor continua recusando qualquer plano
-    // pendente porque `pageEpoch` mudou.
-    setIsSelectingPage(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.pageEpoch]);
-
-  const handleSelectionModeChange = useCallback((active: boolean) => {
-    setIsSelectingPage(active);
-  }, []);
-
-  const triggerLabel = `${isSelectingPage ? 'Cancelar seleção e fechar' : isPanelOpen ? 'Fechar' : 'Abrir'} acessibilidade${activeModes > 0 ? `, ${activeModes} ${activeModes === 1 ? 'ajuste ativo' : 'ajustes ativos'}` : ''}`;
+  const triggerLabel = `${isPanelOpen ? 'Fechar' : 'Abrir'} acessibilidade${activeModes > 0 ? `, ${activeModes} ${activeModes === 1 ? 'ajuste ativo' : 'ajustes ativos'}` : ''}`;
 
   const trigger = (
     <button
@@ -169,24 +158,17 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
   );
 
   return (
-    <aside className={`accessibility-plugin${isPanelOpen ? ' accessibility-plugin--open' : ''}${isSelectingPage ? ' accessibility-plugin--selecting' : ''}`} aria-label="Recursos de acessibilidade">
+    <aside className={`accessibility-plugin${isPanelOpen ? ' accessibility-plugin--open' : ''}`} aria-label="Recursos de acessibilidade">
       {headerSlot ? createPortal(trigger, headerSlot) : trigger}
 
       {isPanelOpen ? (
         <>
-          {isMobile && !isSelectingPage ? <div className="accessibility-plugin__backdrop" aria-hidden="true" onPointerDown={() => closePanel()} /> : null}
-          {isSelectingPage ? (
-            <div className="accessibility-plugin__selection-coach" role="status">
-              <MousePointer2 aria-hidden="true" />
-              <div><strong>Selecione uma palavra para perguntar o significado</strong><span>Arraste sobre um dos textos de ajuda destacados. Pressione Esc para cancelar.</span></div>
-            </div>
-          ) : null}
+          {isMobile ? <div className="accessibility-plugin__backdrop" aria-hidden="true" onPointerDown={() => closePanel()} /> : null}
           <div
             id="accessibility-panel"
             className="accessibility-plugin__surface accessibility-menu__popover"
             role={isMobile ? 'dialog' : 'region'}
-            aria-modal={isMobile && !isSelectingPage ? true : undefined}
-            aria-hidden={isSelectingPage && isMobile ? true : undefined}
+            aria-modal={isMobile ? true : undefined}
             aria-label="Painel de acessibilidade"
             ref={surfaceRef}
           >
@@ -202,7 +184,6 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
               panelSession={panelSession}
               onApply={props.onApplyPreferences}
               onClose={closePanel}
-              onSelectionModeChange={handleSelectionModeChange}
               onReset={props.onResetPreferences}
               onUndo={props.onUndoPreferences}
             />

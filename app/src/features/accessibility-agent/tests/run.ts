@@ -20,10 +20,7 @@ import {
   shouldSimulateLibras,
 } from '../adapters/libras/selection';
 import {
-  clearRememberedApprovedPageSelection,
-  getApprovedPageSelection,
   getPublicContentTargets,
-  rememberApprovedPageSelection,
   resolvePublicContent,
   simplifyPublicContent,
 } from '../adapters/clickbus/content';
@@ -1103,41 +1100,6 @@ await test('content adapter simplifies only reviewed public targets locally', ()
   assert(simplifyPublicContent('search', 'unknown') === null);
   assert(simplifyPublicContent('checkout', 'search-help') === null);
   assert(simplifyPublicContent('confirmation', 'search-help') === null);
-});
-
-await test('content adapter remembers a collapsed approved selection and rejects other targets', () => {
-  const selection = (term: string, startId: string, endId = startId) => {
-    const target = (id: string): HTMLElement => {
-      let element: HTMLElement;
-      element = {
-        nodeType: 1,
-        dataset: { a11yContentId: id },
-        closest: () => element,
-      } as unknown as HTMLElement;
-      return element;
-    };
-    const targetElement = target(startId);
-    const endElement = endId === startId ? targetElement : target(endId);
-    return {
-      rangeCount: 1,
-      isCollapsed: false,
-      toString: () => term,
-      getRangeAt: () => ({ startContainer: targetElement, endContainer: endElement }),
-    } as unknown as Selection;
-  };
-  const collapsed = { rangeCount: 0, isCollapsed: true } as unknown as Selection;
-
-  clearRememberedApprovedPageSelection();
-  equal(rememberApprovedPageSelection('results', selection('embarque', 'results-help')), {
-    term: 'embarque',
-    contentRef: 'results-help',
-  });
-  equal(getApprovedPageSelection('results', collapsed), { term: 'embarque', contentRef: 'results-help' });
-  assert(getApprovedPageSelection('search', collapsed) === null);
-  assert(getApprovedPageSelection('results', selection('texto', 'results-help', 'service-class-help')) === null);
-  assert(getApprovedPageSelection('results', selection('x', 'results-help')) === null);
-  assert(getApprovedPageSelection('results', selection('x'.repeat(121), 'results-help')) === null);
-  assert(getApprovedPageSelection('checkout', selection('embarque', 'results-help')) === null);
 });
 
 await test('glossary explains travel terms deterministically', () => {
