@@ -1104,6 +1104,15 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
   box-shadow: inset 0 0 0 3px #080808, 0 0 0 2px #ffffff;
 }
 
+/* No celular a folha ocupa a tela inteira: deslizar de lado não faz sentido e,
+   enquanto a animação não termina, deixa a folha fora do lugar horizontalmente
+   — foi o que vazou o conteúdo pela direita no aparelho. Lá a entrada é só
+   opacidade, sem deslocamento que possa sobrar. */
+@keyframes accessibility-sheet-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @keyframes accessibility-drawer-in {
   from {
     opacity: 0;
@@ -1124,7 +1133,10 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
      que encolhe quando o teclado virtual abre. `dvh` é a defesa para quando o
      script ainda não rodou; `vh` sozinho ignorava tanto a barra do navegador
      quanto o teclado. */
+  /* `fixed` em vez de `absolute`: a folha passa a se medir pela viewport e não
+     pela caixa do ancestral, que é o que sobra de margem para ela escorregar. */
   .accessibility-plugin__surface {
+    position: fixed;
     top: calc(8px + var(--a11y-viewport-offset, 0px));
     right: 8px;
     bottom: auto;
@@ -1132,6 +1144,8 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
     width: auto;
     height: calc(var(--a11y-viewport-height, 100dvh) - 16px);
     max-height: none;
+    overflow-x: hidden;
+    animation-name: accessibility-sheet-in;
   }
 
   .accessibility-plugin .accessibility-panel {
@@ -1146,11 +1160,14 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
 }
 
 @media (max-width: 480px) {
+  /* Largura explícita: com `left` e `right` a zero, a largura herdada da regra
+     base (`min(392px, …)`) ainda vencia e a folha não cobria a tela. */
   .accessibility-plugin__surface {
     top: var(--a11y-viewport-offset, 0px);
     right: 0;
     bottom: auto;
     left: 0;
+    width: 100%;
     height: var(--a11y-viewport-height, 100dvh);
   }
 
