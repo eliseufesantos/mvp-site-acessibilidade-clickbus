@@ -59,6 +59,10 @@ export const useVoiceInput = () => {
 
   const stop = () => {
     listeningRef.current = false;
+    // Encerra a escuta na interface sem depender de `onend`: quando a sessão
+    // nunca chegou a começar, `stop()` não emite evento nenhum e o botão
+    // ficaria travado em "parar".
+    setActive(false);
     recognitionRef.current?.stop();
   };
 
@@ -91,6 +95,11 @@ export const useVoiceInput = () => {
         fatalRef.current = true;
         listeningRef.current = false;
         setError(described.text);
+        // `onend` não é garantido depois de um erro fatal: com o microfone
+        // bloqueado pelo navegador, a sessão nunca começa e o evento pode não
+        // vir. Sem isto a interface ficava presa anunciando "Ouvindo" ao lado
+        // da mensagem de bloqueio, e o botão não voltava para "ditar".
+        setActive(false);
       }
       // Erros transitórios (`no-speech`, `network`, `aborted`) não viram texto
       // na tela: `onend` vem logo depois e a sessão religa sozinha.
