@@ -106,15 +106,15 @@
   border-radius: 18px;
   background: var(--cb-surface);
   box-shadow: var(--a11y-shadow);
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  overflow: hidden;
+  grid-template-rows: auto auto auto;
+  overflow-y: auto;
   overscroll-behavior: contain;
 }
 
 .accessibility-plugin .accessibility-panel__heading {
-  position: relative;
-  top: auto;
-  z-index: auto;
+  position: sticky;
+  top: 0;
+  z-index: 3;
   display: grid;
   min-height: 72px;
   padding: 15px 15px 15px 18px;
@@ -209,12 +209,14 @@
 
 .accessibility-plugin .a11y-surface {
   min-width: 0;
-  min-height: 0;
+  /* `min-content` impede que o grid comprima esta faixa: quem rola é o painel.
+     Com `min-height: 0` ela era espremida a algumas dezenas de pixels e voltava
+     a ser um rolador aninhado — `overflow-x: hidden` faz o eixo Y virar `auto`
+     por especificação, então esconder só o X não elimina a rolagem. */
+  min-height: min-content;
   padding: 16px;
   background: var(--cb-surface);
   overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
   scrollbar-color: var(--a11y-border) transparent;
   scrollbar-width: thin;
 }
@@ -357,22 +359,46 @@
 /* O chat é a porta de entrada do assistente e precisa parecer isso. Antes ele
    se confundia com um rodapé: faixa apagada, campo estreito e botão só de
    ícone. Agora é um cartão elevado, com contorno de acento e ação rotulada. */
+/* O painel inteiro é a única área de rolagem. Antes havia três aninhadas — a
+   superfície dos cartões, o fluxo e o log —, todas disputando a mesma altura:
+   com o texto ampliado, alguma delas sempre ia a zero. Os cartões chegaram a
+   desaparecer por completo, e a resposta nascia abaixo do campo de envio. */
 .accessibility-plugin .a11y-chat {
-  padding: 15px 16px 16px;
+  padding: 15px 16px 0;
   border-top: 3px solid var(--a11y-accent);
   background: var(--a11y-soft);
   box-shadow: 0 -10px 22px -18px rgba(43, 3, 68, 0.55);
 }
 
-/* O painel é um MVP didático: ver o pedido e a resposta lado a lado explica o
-   que o planejador fez melhor do que qualquer texto de ajuda. */
+.accessibility-plugin .a11y-chat__stream {
+  margin-bottom: 11px;
+}
+
+/* Vazio, o fluxo não deve reservar faixa nem margem. */
+.accessibility-plugin .a11y-chat__stream:empty {
+  margin: 0;
+}
+
+/* O campo fica sempre alcançável: gruda na base enquanto a conversa rola atrás.
+   O fundo é obrigatório — sem ele o texto do fluxo apareceria por baixo. */
+.accessibility-plugin .a11y-chat__form {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding-bottom: 16px;
+  background: var(--a11y-soft);
+}
+
+/* O painel é um MVP didático: ver o pedido e a resposta em sequência explica o
+   que o planejador fez melhor do que qualquer texto de ajuda.
+
+   A rolagem e o teto saíram daqui para `.a11y-chat__stream`: o teto era
+   `168px` fixo, que não acompanha a escala de texto, então com a raiz em 24px
+   cabia menos de um turno e o seguinte aparecia fatiado no meio da linha. */
 .accessibility-plugin .a11y-chat__log {
-  max-height: 168px;
-  margin: 0 0 11px;
+  margin: 0;
   padding: 0;
   list-style: none;
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 
 .accessibility-plugin .a11y-chat__turn {
