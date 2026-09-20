@@ -186,6 +186,21 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
 
   useEffect(() => () => requestControllerRef.current?.abort(), []);
 
+  // A conversa cresce para baixo. Sem rolar, a resposta recém-chegada nascia
+  // fora da área visível e a pessoa via o turno anterior cortado ao meio.
+  // Quem rola é o painel: o campo de envio fica grudado na base e a mensagem
+  // mais recente para logo acima dele.
+  useEffect(() => {
+    // Em quadro seguinte: o campo é `position: sticky`, e medir a altura antes
+    // de o layout assentar devolvia um `scrollHeight` menor que o final — a
+    // rolagem parava no meio e a resposta nova ficava atrás do campo.
+    const frame = window.requestAnimationFrame(() => {
+      const panel = panelRef.current;
+      if (panel) panel.scrollTop = panel.scrollHeight;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [history, status, answer, proposal, undoOffered]);
+
   useEffect(() => {
     requestControllerRef.current?.abort();
     requestControllerRef.current = null;
@@ -214,7 +229,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       : '[data-a11y-entry]';
     const timer = focusAfterRender(() => panelRef.current?.querySelector<HTMLElement>(selector));
     // Rolagem é efeito visual: aqui `requestAnimationFrame` é o certo.
-    const frame = window.requestAnimationFrame(() => bodyRef.current?.scrollTo({ top: 0, behavior: 'auto' }));
+    const frame = window.requestAnimationFrame(() => panelRef.current?.scrollTo({ top: 0, behavior: 'auto' }));
     return () => {
       window.clearTimeout(timer);
       window.cancelAnimationFrame(frame);
@@ -377,22 +392,26 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
         },
         history: history.slice(-6),
       }, controller.signal);
-      setHistory((current) => [...current, { role: 'user' as const, content: message }, { role: 'assistant' as const, content: response.message }].slice(-6));
+      // Na recusa, o escopo entra no próprio turno do assistente: a faixa de
+      // status não repete mais a fala, então não havia onde anexá-lo.
+      const assistantTurn = response.mode === 'unsupported'
+        ? `${response.message} ${SCOPE_NOTICE}`
+        : response.message;
+      setHistory((current) => [...current, { role: 'user' as const, content: message }, { role: 'assistant' as const, content: assistantTurn }].slice(-6));
       setRequest('');
       // O destino — ferramentas visuais, Libras ou voz — vem das AÇÕES do plano.
       // O cliente não adivinha por texto; o executor revalida tudo de novo.
       if (response.mode === 'propose') {
         setProposal(response);
-        announce(response.message, 'warning');
+        // A fala já está no fluxo e as ações estão no bloco de confirmação:
+        // repeti-la aqui mostrava o mesmo texto três vezes.
+        announce('');
       } else if (response.mode === 'apply') {
         await execute(response);
       } else {
-        // `clarify` pergunta, `unsupported` recusa. Nenhum dos dois aplica nada.
-        // Na recusa, o escopo vem de `SCOPE_NOTICE`, não do texto do modelo.
-        announce(
-          response.mode === 'unsupported' ? `${response.message} ${SCOPE_NOTICE}` : response.message,
-          response.mode === 'unsupported' ? 'warning' : 'neutral',
-        );
+        // `clarify` pergunta, `unsupported` recusa. Nenhum dos dois aplica nada,
+        // e os dois já aparecem como turno do assistente no fluxo.
+        announce('');
       }
     } catch (error) {
       announce(
@@ -514,8 +533,15 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       </div>
 
       <div className="a11y-chat">
+        {/* Conversa e composer em faixas separadas: antes o formulário ficava no
+            meio do diálogo, com o histórico acima e a resposta abaixo, e com o
+            texto ampliado a resposta saía da tela. */}
+        <div className="a11y-chat__stream">
         {history.length > 0 ? (
-          <ol className="a11y-chat__log">
+          // Região viva da CONVERSA. A faixa de status abaixo cuida dos estados
+          // passageiros; sem isto, tirar a fala do assistente dali a deixaria
+          // sem anúncio para quem usa leitor de tela.
+          <ol className="a11y-chat__log" aria-live="polite" aria-relevant="additions">
             {history.slice(-4).map((turno, index) => (
               <li key={`${turno.role}-${index}`} className={`a11y-chat__turn a11y-chat__turn--${turno.role}`}>
                 <span className="a11y-chat__who">{turno.role === 'user' ? 'Você' : 'Assistente'}</span>
@@ -524,6 +550,49 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
             ))}
           </ol>
         ) : null}
+
+        {proposal ? (
+          <div className="assistant-proposal">
+            <strong>Confirme antes de aplicar</strong>
+            {/* `proposal.message` saiu daqui: a fala do assistente já é o último
+                turno do fluxo, logo acima. Repeti-la mostrava o mesmo texto
+                três vezes — log, proposta e faixa de status. */}
+            <p className="assistant-proposal__hint">O planejador propôs estas ações. Nada acontece até você confirmar:</p>
+            <ul>{proposal.actions.map((action, index) => <li key={`${action.type}-${index}`}>{describeAction(action)}</li>)}</ul>
+            <div>
+              <Button variant="quiet" onClick={() => { setProposal(null); announce('Proposta cancelada. Nada foi alterado.'); }}>Cancelar</Button>
+              <Button onClick={() => void execute(proposal)}>Aplicar proposta</Button>
+            </div>
+          </div>
+        ) : null}
+
+        {answer ? (
+          <div className="a11y-chat__answer">
+            <span className="a11y-chat__answer-source">
+              {answer.source === 'local' ? 'Conteúdo revisado deste protótipo' : 'Gerado por IA — confira antes de usar'}
+            </span>
+            <p>{answer.text}</p>
+          </div>
+        ) : null}
+
+        {/* Estados passageiros do sistema: "Analisando…", erros e recibos de
+            execução. A fala do assistente vive no log, uma vez só. */}
+        <p className={`assistant-message assistant-message--${tone}`} role="status" aria-atomic="true">{status}</p>
+
+        {undoOffered ? (
+          <div className="a11y-chat__undo">
+            <Button
+              variant="quiet"
+              onClick={() => {
+                announce(props.onUndo() ? 'Último ajuste desfeito.' : 'Não há ajuste para desfazer.');
+                setUndoOffered(false);
+              }}
+            >
+              <Undo2 aria-hidden="true" /> Desfazer este ajuste
+            </Button>
+          </div>
+        ) : null}
+        </div>
 
         <form className="a11y-chat__form" onSubmit={askAssistant}>
           <label htmlFor="accessibility-request"><Bot aria-hidden="true" /> Fale com o assistente</label>
@@ -553,7 +622,10 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
               value={request}
               onChange={(event) => setRequest(event.target.value)}
               maxLength={1000}
-              rows={4}
+              // Duas linhas: com o texto ampliado, quatro deixavam o composer
+              // mais alto que o painel inteiro. O campo continua redimensionável
+              // e o conteúdo rola.
+              rows={2}
               placeholder="Ex.: aumente o texto, ou: o que é embarque?"
             />
             <div className="a11y-chat__buttons">
@@ -621,43 +693,6 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
           </small>
         </form>
 
-        {proposal ? (
-          <div className="assistant-proposal">
-            <strong>Confirme antes de aplicar</strong>
-            <p>{proposal.message}</p>
-            <p className="assistant-proposal__hint">O planejador propôs estas ações. Nada acontece até você confirmar:</p>
-            <ul>{proposal.actions.map((action, index) => <li key={`${action.type}-${index}`}>{describeAction(action)}</li>)}</ul>
-            <div>
-              <Button variant="quiet" onClick={() => { setProposal(null); announce('Proposta cancelada. Nada foi alterado.'); }}>Cancelar</Button>
-              <Button onClick={() => void execute(proposal)}>Aplicar proposta</Button>
-            </div>
-          </div>
-        ) : null}
-
-        {answer ? (
-          <div className="a11y-chat__answer">
-            <span className="a11y-chat__answer-source">
-              {answer.source === 'local' ? 'Conteúdo revisado deste protótipo' : 'Gerado por IA — confira antes de usar'}
-            </span>
-            <p>{answer.text}</p>
-          </div>
-        ) : null}
-
-        <p className={`assistant-message assistant-message--${tone}`} role="status" aria-atomic="true">{status}</p>
-
-        {undoOffered ? (
-          <div className="a11y-chat__undo">
-            <Button
-              variant="quiet"
-              onClick={() => {
-                announce(props.onUndo() ? 'Último ajuste desfeito.' : 'Não há ajuste para desfazer.');
-                setUndoOffered(false);
-              }}
-            >
-              <Undo2 aria-hidden="true" /> Desfazer este ajuste
-            </Button>
-          </div>
-        ) : null}
       </div>
     </section>
   );
