@@ -55,10 +55,25 @@ export const useVoiceInput = () => {
   const listeningRef = useRef(false);
   const fatalRef = useRef(false);
   const startedAtRef = useRef(0);
+  // Cada acionamento do microfone é uma geração. Os callbacks de uma sessão só
+  // agem enquanto a geração deles for a corrente: sem isso, o `onend` atrasado
+  // de uma sessão encerrada agia sobre os refs — que são compartilhados — e
+  // podia religar o reconhecedor velho por cima do novo.
+  const generationRef = useRef(0);
   const supported = getConstructor() !== null;
 
   const stop = () => {
     listeningRef.current = false;
+    // Fecha o trecho aqui: com a sessão invalidada, o `onend` dela não vai mais
+    // fazê-lo, e o que foi dito seria perdido.
+    committedRef.current = joinTranscript(committedRef.current, liveRef.current);
+    liveRef.current = '';
+    // Invalida a sessão antes de liberar a interface. Como `stop()` passou a
+    // encerrar a escuta sem esperar o `onend`, dava para acionar o microfone de
+    // novo antes de o evento antigo chegar; ele então via `listeningRef` já
+    // rearmado pela nova sessão e religava o reconhecedor velho, deixando dois
+    // em curso e misturando as transcrições.
+    generationRef.current += 1;
     // Encerra a escuta na interface sem depender de `onend`: quando a sessão
     // nunca chegou a começar, `stop()` não emite evento nenhum e o botão
     // ficaria travado em "parar".
@@ -75,12 +90,15 @@ export const useVoiceInput = () => {
   const openSession = () => {
     const Constructor = getConstructor();
     if (!Constructor) return;
+    const generation = generationRef.current;
+    const isCurrent = () => generationRef.current === generation;
     const recognition = new Constructor();
     recognition.lang = 'pt-BR';
     recognition.continuous = true;
     recognition.interimResults = true;
 
     recognition.onresult = (event) => {
+      if (!isCurrent()) return;
       let sessionText = '';
       for (let index = 0; index < event.results.length; index += 1) {
         sessionText += event.results[index][0]?.transcript ?? '';
@@ -90,6 +108,7 @@ export const useVoiceInput = () => {
     };
 
     recognition.onerror = (event) => {
+      if (!isCurrent()) return;
       const described = describeVoiceError(event?.error ?? '');
       if (described.fatal) {
         fatalRef.current = true;
@@ -106,6 +125,7 @@ export const useVoiceInput = () => {
     };
 
     recognition.onend = () => {
+      if (!isCurrent()) return;
       // Fecha o trecho desta sessão antes de qualquer religamento.
       committedRef.current = joinTranscript(committedRef.current, liveRef.current);
       liveRef.current = '';
@@ -142,6 +162,7 @@ export const useVoiceInput = () => {
 
   const start = () => {
     if (!supported || active) return;
+    generationRef.current += 1;
     setError('');
     fatalRef.current = false;
     listeningRef.current = true;
@@ -152,6 +173,7 @@ export const useVoiceInput = () => {
 
   useEffect(() => () => {
     listeningRef.current = false;
+    generationRef.current += 1;
     recognitionRef.current?.abort();
   }, []);
 
