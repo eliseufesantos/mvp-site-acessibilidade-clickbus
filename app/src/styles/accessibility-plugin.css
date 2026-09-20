@@ -1243,3 +1243,40 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
     transition: none;
   }
 }
+
+/* Mensagem inicial do chat: ocupa o lugar do histórico enquanto ele está vazio
+   e declara o escopo do assistente antes do primeiro pedido. */
+.accessibility-plugin .a11y-chat__intro {
+  margin: 0 0 11px;
+  padding: 9px 11px;
+  border-left: 3px solid var(--a11y-accent-strong);
+  border-radius: 0 11px 11px 0;
+  background: var(--cb-surface);
+  color: var(--a11y-text);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+/* Durante a seleção na página, os trechos que o assistente aceita ganham
+   destaque. Sem isso nada indicava o que era elegível, e uma seleção válida
+   feita sobre qualquer outro texto era recusada sem explicação.
+
+   As cores aqui são literais, e não `var(--a11y-accent-strong)`: neste projeto
+   `outline-color` não aceita a substituição por `var()` — cai em `currentColor`
+   e o contorno fica cinza —, embora `var()` funcione normalmente para
+   `border-color` e `text-decoration-color` no mesmo elemento. Os valores abaixo
+   são os mesmos tokens de `tokens.css`, repetidos por necessidade. */
+:root[data-a11y-selecting='true'] [data-a11y-content-id] {
+  border-radius: 4px;
+  outline-width: 2px;
+  outline-style: dashed;
+  outline-color: #7417c7;
+  outline-offset: 3px;
+  background-color: color-mix(in srgb, #7417c7 12%, transparent);
+  cursor: text;
+}
+
+html[data-contrast='high']:root[data-a11y-selecting='true'] [data-a11y-content-id] {
+  outline-color: #ffe36f;
+  background-color: color-mix(in srgb, #ffe36f 18%, transparent);
+}

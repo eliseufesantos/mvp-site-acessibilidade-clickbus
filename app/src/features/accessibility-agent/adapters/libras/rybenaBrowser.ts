@@ -315,15 +315,32 @@ export class RybenaBrowserAdapter implements RybenaAdapter {
    * `switchToVoz()`, nunca um segundo player.
    */
   setMode = async (mode: RybenaMode): Promise<RybenaReceipt> => {
-    if (this.mode === mode && this.runtime) return this.accepted('O player já estava nesse modo.');
-    this.mode = mode;
-    if (!this.runtime) return this.accepted('Modo salvo para a próxima solicitação.');
-    return this.callRuntime(
+    if (!this.runtime) {
+      // Sem runtime não há troca a fazer: a intenção fica guardada e
+      // `initialize` a aplica assim que o player carrega.
+      this.mode = mode;
+      return this.accepted('Modo salvo para a próxima solicitação.');
+    }
+
+    // Antes havia aqui uma guarda de igualdade que devolvia "o player já estava
+    // nesse modo" sem chamar o runtime. Como a barra do fornecedor troca o modo
+    // real sem nos notificar, `this.mode` podia divergir do player — e a guarda
+    // então transformava a correção em no-op permanente, com recibo de sucesso:
+    // a pessoa clicava em Voz, o avatar de Libras continuava na tela e o painel
+    // anunciava que a narração estava pronta. Reenviar `switchTo*` é a única
+    // forma de recuperar a sincronia, e repetir a chamada é barato.
+    const receipt = this.callRuntime(
       this.snapshot.state,
       mode === 'voz' ? 'Player em modo de voz.' : 'Player em modo de Libras.',
       (runtime) => (mode === 'voz' ? runtime.switchToVoz() : runtime.switchToLibras()),
       mode,
     );
+
+    // `initialize` e `translate` reaplicam `this.mode`. Commitá-lo antes da
+    // troca deixava o campo apontando para um modo que nunca chegou a valer
+    // quando `switchTo*` falhava.
+    if (receipt.status === 'accepted') this.mode = mode;
+    return receipt;
   };
 
   open = async () => this.withRuntime('ready', 'Player aberto.', (runtime) => runtime.openPlayer());
