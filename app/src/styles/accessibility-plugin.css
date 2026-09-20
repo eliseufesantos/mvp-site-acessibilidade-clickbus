@@ -1120,12 +1120,17 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
     display: none;
   }
 
+  /* `--a11y-viewport-*` vem do plugin e acompanha a viewport VISUAL, que é o
+     que encolhe quando o teclado virtual abre. `dvh` é a defesa para quando o
+     script ainda não rodou; `vh` sozinho ignorava tanto a barra do navegador
+     quanto o teclado. */
   .accessibility-plugin__surface {
-    top: 8px;
+    top: calc(8px + var(--a11y-viewport-offset, 0px));
     right: 8px;
-    bottom: 8px;
+    bottom: auto;
     left: 8px;
     width: auto;
+    height: calc(var(--a11y-viewport-height, 100dvh) - 16px);
     max-height: none;
   }
 
@@ -1142,7 +1147,11 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
 
 @media (max-width: 480px) {
   .accessibility-plugin__surface {
-    inset: 0;
+    top: var(--a11y-viewport-offset, 0px);
+    right: 0;
+    bottom: auto;
+    left: 0;
+    height: var(--a11y-viewport-height, 100dvh);
   }
 
   .accessibility-plugin .accessibility-panel {
@@ -1160,7 +1169,12 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
   }
 
   .accessibility-plugin .a11y-chat {
-    padding: 11px 13px 13px;
+    padding: 11px 13px 0;
+  }
+
+  /* `safe-area` para o campo não encostar na barra de gestos do aparelho. */
+  .accessibility-plugin .a11y-chat__form {
+    padding-bottom: calc(13px + env(safe-area-inset-bottom, 0px));
   }
 
   .accessibility-plugin .a11y-chat__row textarea {

@@ -69,6 +69,29 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [closePanel, isPanelOpen]);
 
+  // No celular o painel é uma folha que cobre a tela. O teclado virtual encolhe
+  // a viewport VISUAL, mas não a de layout: sem acompanhar, o painel continuava
+  // do tamanho antigo, metade dele atrás do teclado, e o navegador o empurrava
+  // para manter o campo à vista — daí a sensação de tela distorcida e solta.
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!isPanelOpen || !isMobile || !viewport) return undefined;
+    const root = document.documentElement;
+    const apply = () => {
+      root.style.setProperty('--a11y-viewport-height', `${viewport.height}px`);
+      root.style.setProperty('--a11y-viewport-offset', `${viewport.offsetTop}px`);
+    };
+    apply();
+    viewport.addEventListener('resize', apply);
+    viewport.addEventListener('scroll', apply);
+    return () => {
+      viewport.removeEventListener('resize', apply);
+      viewport.removeEventListener('scroll', apply);
+      root.style.removeProperty('--a11y-viewport-height');
+      root.style.removeProperty('--a11y-viewport-offset');
+    };
+  }, [isMobile, isPanelOpen]);
+
   // O painel abre sempre na grade de recursos; o foco vai para o primeiro
   // cartao, marcado por `data-a11y-entry`.
   useEffect(() => {
