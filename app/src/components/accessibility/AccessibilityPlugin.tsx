@@ -108,8 +108,29 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
 
   useEffect(() => {
     if (!isPanelOpen) return undefined;
-    const previousOverflow = document.body.style.overflow;
-    if (isMobile) document.body.style.overflow = 'hidden';
+    const body = document.body;
+    const anterior = {
+      overflow: body.style.overflow,
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+    };
+    // `overflow: hidden` no body não segura a rolagem no Safari do iOS — é uma
+    // limitação conhecida, e foi por isso que a página continuou correndo atrás
+    // do painel quando o teclado abriu no iPhone. A trava que funciona lá é
+    // tirar o body do fluxo e compensar a rolagem atual, restaurando-a ao
+    // fechar. O `scrollY` é lido antes de qualquer mudança de estilo.
+    const rolagem = window.scrollY;
+    if (isMobile) {
+      body.style.overflow = 'hidden';
+      body.style.position = 'fixed';
+      body.style.top = `-${rolagem}px`;
+      body.style.left = '0';
+      body.style.right = '0';
+      body.style.width = '100%';
+    }
 
     const trapFocus = (event: KeyboardEvent) => {
       if (event.key !== 'Tab' || !isMobile) return;
@@ -133,7 +154,15 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
     document.addEventListener('keydown', trapFocus);
     return () => {
       document.removeEventListener('keydown', trapFocus);
-      document.body.style.overflow = previousOverflow;
+      body.style.overflow = anterior.overflow;
+      body.style.position = anterior.position;
+      body.style.top = anterior.top;
+      body.style.left = anterior.left;
+      body.style.right = anterior.right;
+      body.style.width = anterior.width;
+      // Sair de `position: fixed` joga a página para o topo: devolve a rolagem
+      // ao ponto em que a pessoa estava.
+      if (isMobile) window.scrollTo(0, rolagem);
     };
   }, [isMobile, isPanelOpen]);
 
