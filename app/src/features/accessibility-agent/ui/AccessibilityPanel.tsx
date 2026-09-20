@@ -563,7 +563,9 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
                 className="a11y-chat__icon-button"
                 type="button"
                 aria-pressed={pageSelection.active}
-                aria-label={pageSelection.active ? 'Cancelar a seleção na página' : 'Selecionar um texto na página'}
+                aria-label={pageSelection.active
+                  ? 'Cancelar a seleção na página'
+                  : 'Selecionar uma palavra da página para perguntar o significado'}
                 disabled={!pageSelection.available}
                 onClick={pageSelection.start}
               >
@@ -589,11 +591,30 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
               </button>
             </div>
           </div>
-          {voice.active ? <p className="voice-active">Microfone ativo. Revise a transcrição antes de enviar.</p> : null}
+          {voice.active ? (
+            // `role="status"` porque quem usa leitor de tela nao era avisado de
+            // que a escuta comecou: o indicador era um paragrafo mudo.
+            <p className="voice-active" role="status">Ouvindo. Pode falar com pausas — a escuta continua.</p>
+          ) : null}
           {voice.transcript ? (
-            <Button variant="secondary" onClick={() => { setRequest(voice.transcript); announce('Transcrição copiada para o campo. Revise antes de enviar.'); }}>
-              <Send aria-hidden="true" /> Usar transcrição
-            </Button>
+            <div className="a11y-chat__voice">
+              {/* O transcript nunca aparecia na tela: a pessoa falava, nao via
+                  nada, e so descobria o que foi captado depois de inserir. */}
+              <p className="a11y-chat__voice-preview">{voice.transcript}</p>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  // Acrescenta em vez de substituir: substituir apagava sem
+                  // aviso o que a pessoa ja tinha digitado.
+                  const merged = request.trim() ? `${request.trim()} ${voice.transcript}` : voice.transcript;
+                  setRequest(merged);
+                  voice.reset();
+                  announce('Transcrição inserida no campo. Revise antes de enviar.');
+                }}
+              >
+                <Send aria-hidden="true" /> Usar transcrição
+              </Button>
+            </div>
           ) : null}
           {voice.error ? <p className="field-error" role="alert">{voice.error}</p> : null}
           <small>

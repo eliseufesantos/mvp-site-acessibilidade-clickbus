@@ -39,6 +39,12 @@ import {
 import { AccessibilityExecutor, PlanExecutionError } from '../core/executor';
 import { explainFromGlossary, matchGlossaryQuestion } from '../core/glossary';
 import {
+  MAX_LISTENING_MS,
+  describeVoiceError,
+  joinTranscript,
+  shouldKeepListening,
+} from '../core/voiceSession';
+import {
   COMFORTABLE_READING_PATCH,
   applyPreferencePatch,
   getActivePreferenceLabels,
@@ -1158,6 +1164,48 @@ await test('a dictionary question answered offline never depends on the planner'
   assert(matchGlossaryQuestion('aumente o texto') === null);
   assert(matchGlossaryQuestion('quero comprar uma passagem para o terminal') === null);
   assert(matchGlossaryQuestion('o que é aquela parte da viagem em que preciso trocar de onibus no meio') === null);
+});
+
+await test('dictation survives the silence timeout the browser imposes', () => {
+  // O navegador encerra o reconhecimento sozinho depois de um trecho de
+  // silencio, mesmo com `continuous = true`. Sem religar, quem formula uma
+  // frase mais longa perdia a sessao no meio, sem explicacao na tela.
+  assert(shouldKeepListening({ requestedStop: false, fatalError: false, elapsedMs: 8_000 }));
+
+  // Parar e intencao da pessoa, nao falha: nao religa.
+  assert(!shouldKeepListening({ requestedStop: true, fatalError: false, elapsedMs: 8_000 }));
+
+  // Um erro que se repetiria a cada tentativa nao pode virar laco de religamento.
+  assert(!shouldKeepListening({ requestedStop: false, fatalError: true, elapsedMs: 8_000 }));
+
+  // Teto de escuta por acionamento: um microfone esquecido aberto para.
+  assert(!shouldKeepListening({ requestedStop: false, fatalError: false, elapsedMs: MAX_LISTENING_MS }));
+  assert(shouldKeepListening({ requestedStop: false, fatalError: false, elapsedMs: MAX_LISTENING_MS - 1 }));
+});
+
+await test('dictation keeps what was already said across restarts', () => {
+  // `event.results` recomeca do zero a cada religamento: sem acumular, cada
+  // religamento apagaria o que a pessoa ja tinha ditado.
+  equal(joinTranscript('quero aumentar', 'o texto da pagina'), 'quero aumentar o texto da pagina');
+  equal(joinTranscript('', 'primeira frase'), 'primeira frase');
+  equal(joinTranscript('ja dito', ''), 'ja dito');
+  equal(joinTranscript('  espacos  ', '  sobrando '), 'espacos sobrando');
+});
+
+await test('dictation only surfaces errors that repeating would not solve', () => {
+  // Permissao negada e ausencia de microfone sao definitivos: viram texto na
+  // tela e encerram a escuta.
+  assert(describeVoiceError('not-allowed').fatal);
+  assert(describeVoiceError('audio-capture').fatal);
+  assert(describeVoiceError('service-not-allowed').fatal);
+  assert(describeVoiceError('not-allowed').text.length > 0);
+
+  // Silencio e queda de rede passam sozinhos: a sessao religa e a pessoa nao
+  // precisa ver mensagem de erro nenhuma.
+  assert(!describeVoiceError('no-speech').fatal);
+  assert(!describeVoiceError('network').fatal);
+  assert(!describeVoiceError('aborted').fatal);
+  assert(describeVoiceError('no-speech').text === '');
 });
 
 await test('server accepts a valid provider response and rejects output outside the safe contract', async () => {

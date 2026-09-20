@@ -178,7 +178,7 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
           {isSelectingPage ? (
             <div className="accessibility-plugin__selection-coach" role="status">
               <MousePointer2 aria-hidden="true" />
-              <div><strong>Selecione um texto na página</strong><span>Arraste sobre um trecho identificado. Pressione Esc para cancelar.</span></div>
+              <div><strong>Selecione uma palavra para perguntar o significado</strong><span>Arraste sobre um dos textos de ajuda destacados. Pressione Esc para cancelar.</span></div>
             </div>
           ) : null}
           <div

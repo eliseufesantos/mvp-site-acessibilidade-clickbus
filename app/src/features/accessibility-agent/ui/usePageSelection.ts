@@ -54,6 +54,7 @@ export const usePageSelection = ({ page, onSelected, onStatus, onModeChange }: P
     const leave = (message: string) => {
       activeRef.current = false;
       setActive(false);
+      delete document.documentElement.dataset.a11ySelecting;
       callbacks.current.onModeChange?.(false);
       callbacks.current.onStatus(message);
     };
@@ -65,6 +66,19 @@ export const usePageSelection = ({ page, onSelected, onStatus, onModeChange }: P
         const selection = getApprovedPageSelection(page);
         if (!selection) {
           queued = false;
+          // Uma seleção real fora de um trecho identificado não pode falhar em
+          // silêncio. Antes a faixa seguia repetindo a regra de 2 a 120
+          // caracteres, culpando o tamanho quando o problema era o elemento:
+          // selecionar 22 caracteres válidos num título era recusado sem que
+          // nada na tela explicasse por quê.
+          const raw = window.getSelection()?.toString().replace(/\s+/g, ' ').trim() ?? '';
+          if (raw) {
+            callbacks.current.onStatus(
+              raw.length < 2 || raw.length > 120
+                ? 'Selecione entre 2 e 120 caracteres.'
+                : 'Este trecho não está disponível para o assistente. Escolha um dos textos de ajuda destacados na página.',
+            );
+          }
           return;
         }
         callbacks.current.onSelected(selection.term);
@@ -108,7 +122,11 @@ export const usePageSelection = ({ page, onSelected, onStatus, onModeChange }: P
     window.getSelection()?.removeAllRanges();
     activeRef.current = true;
     setActive(true);
-    callbacks.current.onStatus('Selecione de 2 a 120 caracteres em um trecho público da página.');
+    // Durante a seleção, os trechos elegíveis ganham destaque. Sem isso nada na
+    // página indicava o que podia ser selecionado, e a pessoa descobria o
+    // limite só depois de a seleção ser recusada.
+    document.documentElement.dataset.a11ySelecting = 'true';
+    callbacks.current.onStatus('Arraste sobre um dos textos de ajuda destacados. Eles são os trechos que o assistente pode usar.');
     callbacks.current.onModeChange?.(true);
   };
 
