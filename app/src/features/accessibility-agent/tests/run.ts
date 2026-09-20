@@ -37,7 +37,7 @@ import {
   type PlannerResponse,
 } from '../core/contracts';
 import { AccessibilityExecutor, PlanExecutionError } from '../core/executor';
-import { explainFromGlossary } from '../core/glossary';
+import { explainFromGlossary, matchGlossaryQuestion } from '../core/glossary';
 import {
   COMFORTABLE_READING_PATCH,
   applyPreferencePatch,
@@ -680,6 +680,53 @@ await test('Rybená browser adapter maps the documented player controls', async 
   ]);
 });
 
+await test('Rybena setMode resends the switch and commits only what the player confirmed', async () => {
+  const calls: string[] = [];
+  let recusaTroca = false;
+  const runtime: RybenaRuntime = {
+    closePlayer: () => calls.push('close'),
+    handleLoaded: () => undefined,
+    handleTranslate: () => undefined,
+    isTranslating: () => false,
+    openPlayer: () => calls.push('open'),
+    pause: () => calls.push('pause'),
+    play: () => calls.push('play'),
+    setSpeed: (speed) => calls.push(`speed:${speed}`),
+    stop: () => calls.push('stop'),
+    switchToLibras: () => {
+      if (recusaTroca) throw new Error('A Rybena recusou a troca.');
+      calls.push('libras');
+    },
+    switchToVoz: () => calls.push('voz'),
+    translate: (text) => calls.push(`translate:${text}`),
+  };
+  const adapter = new RybenaBrowserAdapter(async () => runtime);
+
+  assert((await adapter.initialize()).status === 'accepted');
+  assert((await adapter.setMode('voz')).status === 'accepted');
+  assert(adapter.getSnapshot().mode === 'voz');
+
+  // Pedir o modo que ja acreditamos estar ativo precisa reenviar `switchToVoz`:
+  // a barra do fornecedor troca o modo real sem nos notificar, e a guarda de
+  // igualdade que existia aqui tornava essa correcao um no-op permanente.
+  assert((await adapter.setMode('voz')).status === 'accepted');
+
+  // Uma troca recusada nao pode ficar registrada: `initialize` e `translate`
+  // reaplicam o modo, e um campo otimista faria o player voltar para o modo
+  // que nunca chegou a valer.
+  recusaTroca = true;
+  const recusada = await adapter.setMode('libras');
+  assert(recusada.status === 'failed');
+  assert(adapter.getSnapshot().state === 'failed');
+
+  recusaTroca = false;
+  await adapter.translate({ id: 'search-help', text: 'Ajuda da busca' });
+  equal(calls, [
+    'speed:1', 'libras', 'voz', 'voz',
+    'speed:1', 'voz', 'open', 'voz', 'speed:1', 'translate:Ajuda da busca',
+  ]);
+});
+
 await test('development Libras adapter walks the real state machine without network', async () => {
   let pendingTranslation: (() => void) | null = null;
   const adapter = new RybenaDevelopmentAdapter({
@@ -1090,6 +1137,27 @@ await test('content adapter remembers a collapsed approved selection and rejects
 await test('glossary explains travel terms deterministically', () => {
   assert(explainFromGlossary('viação')?.explanation.includes('empresa'));
   assert(explainFromGlossary('termo inexistente') === null);
+  // "desembarque" contem "embarque": sem precedencia da correspondencia exata,
+  // a pergunta certa recebia a definicao do termo oposto.
+  assert(explainFromGlossary('desembarque')?.term === 'Desembarque');
+  assert(explainFromGlossary('embarque')?.term === 'Embarque');
+});
+
+await test('a dictionary question answered offline never depends on the planner', () => {
+  // O roteamento da intencao passava obrigatoriamente por `/plan`, entao uma
+  // resposta que ja existia offline caia junto com a cota do provedor.
+  assert(matchGlossaryQuestion('O que é viação?')?.term === 'Viação');
+  assert(matchGlossaryQuestion('o que significa embarque')?.term === 'Embarque');
+  assert(matchGlossaryQuestion('não entendi "conexão"')?.term === 'Conexão');
+  assert(matchGlossaryQuestion('significado de itinerário')?.term === 'Itinerário');
+  assert(matchGlossaryQuestion('explique desembarque')?.term === 'Desembarque');
+
+  // Fora do glossario, fora do formato de pergunta, ou frase longa demais para
+  // ser um verbete: o planejador continua decidindo, como antes.
+  assert(matchGlossaryQuestion('o que é bitcoin') === null);
+  assert(matchGlossaryQuestion('aumente o texto') === null);
+  assert(matchGlossaryQuestion('quero comprar uma passagem para o terminal') === null);
+  assert(matchGlossaryQuestion('o que é aquela parte da viagem em que preciso trocar de onibus no meio') === null);
 });
 
 await test('server accepts a valid provider response and rejects output outside the safe contract', async () => {

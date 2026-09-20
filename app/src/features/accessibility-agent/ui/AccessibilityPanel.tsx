@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
   Bot, Check, ChevronLeft, FlaskConical, Info, ScanText,
   Languages, Mic, Send, SlidersHorizontal, Sparkles, Square, Undo2, Volume2, X,
@@ -7,7 +7,7 @@ import type { AccessibilityPreferences, JourneyStep } from '../../../types';
 import { Button } from '../../../components/ui/Button';
 import { UniversalAccessIcon } from '../../../components/accessibility/UniversalAccessIcon';
 import { getPublicContentTargets, resolvePublicContent, simplifyPublicContent } from '../adapters/clickbus/content';
-import { explainFromGlossary } from '../core/glossary';
+import { explainFromGlossary, matchGlossaryQuestion } from '../core/glossary';
 import { RYBENA_SIMULATION_NOTICE } from '../adapters/libras/contracts';
 import { librasAdapter } from '../adapters/libras/selection';
 import {
@@ -139,6 +139,16 @@ const ACTION_LABELS: Record<ActionType, string> = {
 
 const describeAction = (action: PlanAction) => ACTION_LABELS[action.type];
 
+/**
+ * O que o assistente faz, em uma frase, escrita por nós.
+ *
+ * A recusa de `mode=unsupported` é texto livre do modelo, validado apenas como
+ * string curta. Acrescentar esta linha garante que a pessoa sempre leia o
+ * escopo real — e distingue "não faço isso" de "tente de novo mais tarde", que
+ * compartilham o mesmo tom de aviso.
+ */
+const SCOPE_NOTICE = 'Este assistente só ajusta a aparência desta página e explica palavras do glossário de viagens. Ele não busca, não reserva e não compra passagens.';
+
 export function AccessibilityPanel(props: AccessibilityPanelProps) {
   const [surface, setSurface] = useState<PanelSurface>('root');
   const [request, setRequest] = useState('');
@@ -165,7 +175,10 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
   });
   const activeLabels = getActivePreferenceLabels(props.preferences);
   const targets = getPublicContentTargets(props.page);
-  const player = librasAdapter.getSnapshot();
+  // O snapshot precisa ser assinado: lido direto no render, ele congelava no
+  // último render feito por outro motivo, e os selos "Aberta"/"Narrando"
+  // mostravam o estado anterior do player.
+  const player = useSyncExternalStore(librasAdapter.subscribe, librasAdapter.getSnapshot);
   // Aviso permanente: simulacao nunca pode ser confundida com traducao real.
   const librasSimulated = player.simulated;
   const playerAvailable = player.state !== 'unavailable_pending_provider_configuration';
@@ -225,7 +238,13 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       announce(ready.message, 'error');
       return;
     }
-    await librasAdapter.setMode(mode);
+    // O recibo de `setMode` era descartado, então uma troca de modo que falhava
+    // seguia para `open()` e era anunciada como sucesso.
+    const switched = await librasAdapter.setMode(mode);
+    if (switched.status !== 'accepted') {
+      announce(switched.message, 'error');
+      return;
+    }
     const opened = await librasAdapter.open();
     announce(
       opened.status === 'accepted'
@@ -316,6 +335,25 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
     requestControllerRef.current?.abort();
     const controller = new AbortController();
     requestControllerRef.current = controller;
+    // Caminho determinístico, antes de qualquer rede: uma pergunta de dicionário
+    // cujo termo está no glossário local é respondida aqui. O roteamento da
+    // intenção dependia de `/api/accessibility/plan`, então uma resposta que já
+    // existia offline caía junto com a cota do provedor.
+    const known = matchGlossaryQuestion(message);
+    if (known) {
+      setProposal(null);
+      setUndoOffered(false);
+      setHistory((current) => [
+        ...current,
+        { role: 'user' as const, content: message },
+        { role: 'assistant' as const, content: known.explanation },
+      ].slice(-6));
+      setRequest('');
+      setAnswer({ text: known.explanation, source: 'local' });
+      announce(`"${known.term}" está no glossário revisado deste protótipo. Resposta local, sem uso de IA.`);
+      return;
+    }
+
     const requestId = createRequestId();
     setBusy(true);
     setProposal(null);
@@ -350,7 +388,11 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
         await execute(response);
       } else {
         // `clarify` pergunta, `unsupported` recusa. Nenhum dos dois aplica nada.
-        announce(response.message, response.mode === 'unsupported' ? 'warning' : 'neutral');
+        // Na recusa, o escopo vem de `SCOPE_NOTICE`, não do texto do modelo.
+        announce(
+          response.mode === 'unsupported' ? `${response.message} ${SCOPE_NOTICE}` : response.message,
+          response.mode === 'unsupported' ? 'warning' : 'neutral',
+        );
       }
     } catch (error) {
       announce(
@@ -481,12 +523,17 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
               </li>
             ))}
           </ol>
-        ) : null}
+        ) : (
+          // O chat abria mudo: nao havia superficie onde declarar o escopo antes
+          // do primeiro pedido, e a pessoa so descobria o limite na recusa.
+          <p className="a11y-chat__intro">{SCOPE_NOTICE}</p>
+        )}
 
         <form className="a11y-chat__form" onSubmit={askAssistant}>
           <label htmlFor="accessibility-request"><Bot aria-hidden="true" /> Fale com o assistente</label>
-          <p className="a11y-chat__hint">
-            Escreva com suas palavras o que você precisa nesta página, ou pergunte o que uma palavra significa.
+          <p className="a11y-chat__hint" id="accessibility-request-hint">
+            Peça um ajuste de leitura — texto maior, mais contraste, mais espaçamento — ou pergunte o
+            que uma palavra da viagem significa.
           </p>
           <div className="a11y-chat__suggestions" role="group" aria-label="Sugestões de pedido">
             {SUGGESTIONS.map((suggestion) => (
@@ -504,6 +551,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
           <div className="a11y-chat__row">
             <textarea
               id="accessibility-request"
+              aria-describedby="accessibility-request-hint"
               value={request}
               onChange={(event) => setRequest(event.target.value)}
               maxLength={1000}
