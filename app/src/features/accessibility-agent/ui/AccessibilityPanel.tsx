@@ -147,7 +147,7 @@ const describeAction = (action: PlanAction) => ACTION_LABELS[action.type];
  * escopo real — e distingue "não faço isso" de "tente de novo mais tarde", que
  * compartilham o mesmo tom de aviso.
  */
-const SCOPE_NOTICE = 'Este assistente só ajusta a aparência desta página e explica palavras do glossário de viagens. Ele não busca, não reserva e não compra passagens.';
+const SCOPE_NOTICE = 'Só ajusto a leitura desta página e explico palavras da viagem.';
 
 export function AccessibilityPanel(props: AccessibilityPanelProps) {
   const [surface, setSurface] = useState<PanelSurface>('root');
@@ -523,17 +523,15 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
               </li>
             ))}
           </ol>
-        ) : (
-          // O chat abria mudo: nao havia superficie onde declarar o escopo antes
-          // do primeiro pedido, e a pessoa so descobria o limite na recusa.
-          <p className="a11y-chat__intro">{SCOPE_NOTICE}</p>
-        )}
+        ) : null}
 
         <form className="a11y-chat__form" onSubmit={askAssistant}>
           <label htmlFor="accessibility-request"><Bot aria-hidden="true" /> Fale com o assistente</label>
+          {/* O escopo vive aqui, em uma linha: o chat abria mudo e a pessoa só
+              descobria o limite na recusa. Os exemplos ficam nas sugestões e no
+              placeholder, então repeti-los aqui só ocuparia espaço. */}
           <p className="a11y-chat__hint" id="accessibility-request-hint">
-            Peça um ajuste de leitura — texto maior, mais contraste, mais espaçamento — ou pergunte o
-            que uma palavra da viagem significa.
+            <strong>{SCOPE_NOTICE}</strong>
           </p>
           <div className="a11y-chat__suggestions" role="group" aria-label="Sugestões de pedido">
             {SUGGESTIONS.map((suggestion) => (

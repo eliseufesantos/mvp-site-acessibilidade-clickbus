@@ -1244,17 +1244,11 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
   }
 }
 
-/* Mensagem inicial do chat: ocupa o lugar do histórico enquanto ele está vazio
-   e declara o escopo do assistente antes do primeiro pedido. */
-.accessibility-plugin .a11y-chat__intro {
-  margin: 0 0 11px;
-  padding: 9px 11px;
-  border-left: 3px solid var(--a11y-accent-strong);
-  border-radius: 0 11px 11px 0;
-  background: var(--cb-surface);
+/* O escopo do assistente vive no texto de apoio do campo. Em negrito e com a
+   cor do corpo, ele se destaca do restante do apoio sem virar um bloco à parte. */
+.accessibility-plugin .a11y-chat__hint strong {
   color: var(--a11y-text);
-  font-size: 0.76rem;
-  line-height: 1.45;
+  font-weight: 600;
 }
 
 /* Durante a seleção na página, os trechos que o assistente aceita ganham
