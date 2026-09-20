@@ -154,6 +154,13 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
     document.addEventListener('keydown', trapFocus);
     return () => {
       document.removeEventListener('keydown', trapFocus);
+      // `html` tem `scroll-behavior: smooth` por padrão, e a restauração abaixo
+      // o respeitaria: fechar o painel animaria a página do topo de volta até a
+      // posição salva, à vista da pessoa. A devolução precisa ser instantânea,
+      // porque ela desfaz um deslocamento que nunca deveria ter sido visível.
+      const raiz = document.documentElement;
+      const comportamentoAnterior = raiz.style.scrollBehavior;
+      raiz.style.scrollBehavior = 'auto';
       body.style.overflow = anterior.overflow;
       body.style.position = anterior.position;
       body.style.top = anterior.top;
@@ -162,7 +169,8 @@ export function AccessibilityPlugin(props: AccessibilityPluginProps) {
       body.style.width = anterior.width;
       // Sair de `position: fixed` joga a página para o topo: devolve a rolagem
       // ao ponto em que a pessoa estava.
-      if (isMobile) window.scrollTo(0, rolagem);
+      if (isMobile) window.scrollTo({ top: rolagem, left: 0, behavior: 'instant' });
+      raiz.style.scrollBehavior = comportamentoAnterior;
     };
   }, [isMobile, isPanelOpen]);
 
