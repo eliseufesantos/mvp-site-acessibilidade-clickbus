@@ -7,11 +7,13 @@
     "dev": "vite --configLoader runner",
     "build": "tsc --noEmit -p tsconfig.app.json && vite build --configLoader runner",
     "preview": "vite preview --configLoader runner",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json --pretty false",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json --pretty false && tsc --noEmit -p tsconfig.e2e.json --pretty false",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:accessibility": "vitest run"
+    "test:accessibility": "vitest run",
+    "test:e2e": "playwright test",
+    "test:all": "vitest run && playwright test"
   },
   "dependencies": {
     "@fontsource/roboto-mono": "^5.2.6",
@@ -21,6 +23,8 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.3",
