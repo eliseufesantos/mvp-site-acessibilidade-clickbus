@@ -1219,3 +1219,48 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
   color: var(--a11y-text);
   font-weight: 600;
 }
+
+/* Chave entre assistente e recursos. Dois botões lado a lado, o ativo marcado
+   por `aria-pressed` — o estilo segue o estado, nunca o contrário. */
+.accessibility-plugin .a11y-viewswitch {
+  display: grid;
+  margin-bottom: 16px;
+  padding: 4px;
+  border: 1px solid var(--a11y-border, rgba(0, 0, 0, 0.1));
+  border-radius: 12px;
+  background: var(--a11y-soft);
+  gap: 4px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.accessibility-plugin .a11y-viewswitch button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--a11y-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  gap: 7px;
+}
+
+.accessibility-plugin .a11y-viewswitch button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.accessibility-plugin .a11y-viewswitch button[aria-pressed='true'] {
+  background: var(--cb-surface);
+  box-shadow: 0 1px 3px rgba(43, 3, 68, 0.18);
+  color: var(--a11y-accent-strong);
+}
+
+.accessibility-plugin .a11y-chat__fallback {
+  margin-top: 8px;
+}

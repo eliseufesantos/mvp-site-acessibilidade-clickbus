@@ -149,6 +149,13 @@ const SCOPE_NOTICE = 'Só ajusto a leitura desta página e explico palavras da v
 
 export function AccessibilityPanel(props: AccessibilityPanelProps) {
   const [surface, setSurface] = useState<PanelSurface>('root');
+  // A raiz tem duas vistas e uma chave entre elas. Começa no assistente: o
+  // protótipo é IA-first, e manter a grade 2×2 sempre na tela custava ~280px
+  // de altura, que empurravam o campo e os botões para fora do alcance.
+  const [rootView, setRootView] = useState<'chat' | 'features'>('chat');
+  // Quando o serviço de IA falha, o chat oferece um atalho para os recursos:
+  // não é hedge contra a escolha de produto, é o tratamento do erro.
+  const [offerFeatures, setOfferFeatures] = useState(false);
   const [request, setRequest] = useState('');
   const [status, setStatus] = useState('');
   const [tone, setTone] = useState<StatusTone>('neutral');
@@ -366,6 +373,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
     setProposal(null);
     setUndoOffered(false);
     setAnswer(null);
+    setOfferFeatures(false);
     announce('Analisando seu pedido com o planejador seguro…', 'busy');
     try {
       const response = await requestPlan({
@@ -408,6 +416,9 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
         announce(assistantTurn, response.mode === 'unsupported' ? 'warning' : 'neutral');
       }
     } catch (error) {
+      const indisponivel = error instanceof AccessibilityServiceError
+        && (error.kind === 'unavailable' || error.kind === 'busy' || error.kind === 'rate_limited');
+      setOfferFeatures(indisponivel);
       announce(
         error instanceof Error ? error.message : 'O assistente não conseguiu responder.',
         toneForError(error),
@@ -478,9 +489,32 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       <div className="a11y-surface" ref={bodyRef}>
         {surface === 'root' ? (
           <>
-            <FeatureGrid cards={cards} onOpen={handleCard} />
+            {/* Chave entre assistente e recursos. São dois botões com
+                `aria-pressed`, não `role="tab"`: não há painéis de aba aqui, e
+                recriar a navegação por setas confundiria o modelo de teclado.
+                O foco de abertura (`data-a11y-entry`) mora nela, porque a grade
+                de cartões pode não estar na tela. */}
+            <div className="a11y-viewswitch" role="group" aria-label="O que mostrar no painel">
+              <button
+                type="button"
+                data-a11y-entry="true"
+                aria-pressed={rootView === 'chat'}
+                onClick={() => setRootView('chat')}
+              >
+                <Bot aria-hidden="true" /> Assistente
+              </button>
+              <button
+                type="button"
+                aria-pressed={rootView === 'features'}
+                onClick={() => setRootView('features')}
+              >
+                <SlidersHorizontal aria-hidden="true" /> Recursos
+              </button>
+            </div>
 
-            {activeLabels.length > 0 ? (
+            {rootView === 'features' ? <FeatureGrid cards={cards} onOpen={handleCard} /> : null}
+
+            {rootView === 'features' && activeLabels.length > 0 ? (
               <section className="active-preferences" aria-labelledby="active-preferences-title">
                 <div>
                   <h3 id="active-preferences-title">
@@ -499,7 +533,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
                 </ul>
               </section>
             ) : null}
-            {!props.storageAvailable ? <p className="storage-warning" role="status">As preferências funcionam nesta sessão, mas este navegador bloqueou o salvamento local.</p> : null}
+            {rootView === 'features' && !props.storageAvailable ? <p className="storage-warning" role="status">As preferências funcionam nesta sessão, mas este navegador bloqueou o salvamento local.</p> : null}
           </>
         ) : (
           <>
@@ -526,6 +560,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
         )}
       </div>
 
+      {surface === 'root' && rootView === 'features' ? null : (
       <div className="a11y-chat">
         {/* Conversa e composer em faixas separadas: antes o formulário ficava no
             meio do diálogo, com a resposta abaixo dele, e com o texto ampliado
@@ -550,6 +585,14 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
             execução. A explicação de uma proposta vive no próprio cartão de
             confirmação, que fica fora do fluxo com teto. */}
         <p className={`assistant-message assistant-message--${tone}`} role="status" aria-atomic="true">{status}</p>
+
+        {offerFeatures ? (
+          <div className="a11y-chat__fallback">
+            <Button variant="secondary" onClick={() => { setRootView('features'); setOfferFeatures(false); }}>
+              <SlidersHorizontal aria-hidden="true" /> Ver os recursos de acessibilidade
+            </Button>
+          </div>
+        ) : null}
 
         {undoOffered ? (
           <div className="a11y-chat__undo">
@@ -673,6 +716,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
         </form>
 
       </div>
+      )}
     </section>
   );
 }
