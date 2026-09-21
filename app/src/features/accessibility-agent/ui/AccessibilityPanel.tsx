@@ -167,8 +167,13 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
   // quem pergunta quer a informação, não a procedência interna do protótipo.
   // Resta um único sinal, e só quando cabe: se aquela resposta veio da IA, a
   // pessoa precisa saber que convém conferir.
-  const [aiAnswer, setAiAnswer] = useState(false);
-  const [history, setHistory] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  //
+  // `fromAi` mora no próprio turno, e não num estado à parte, por dois motivos
+  // que já custaram defeito: um estado paralelo era zerado ao trocar de etapa
+  // enquanto o histórico permanecia, deixando a resposta da IA na tela sem a
+  // ressalva; e, renderizada fora do `<ol aria-live>`, a ressalva era inserida
+  // sem anúncio nenhum a quem usa leitor de tela.
+  const [history, setHistory] = useState<{ role: 'user' | 'assistant'; content: string; fromAi?: boolean }[]>([]);
   const executorRef = useRef(new AccessibilityExecutor());
   const requestControllerRef = useRef<AbortController | null>(null);
   const panelRef = useRef<HTMLElement | null>(null);
@@ -202,7 +207,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       if (panel) panel.scrollTop = panel.scrollHeight;
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [history, status, aiAnswer, proposal, undoOffered]);
+  }, [history, status, proposal, undoOffered]);
 
   useEffect(() => {
     requestControllerRef.current?.abort();
@@ -215,7 +220,6 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
   // melhor recolhê-la do que oferecer um botão que vai falhar.
   useEffect(() => {
     setProposal(null);
-    setAiAnswer(false);
     setUndoOffered(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.pageEpoch]);
@@ -334,8 +338,10 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       const receipt = await executorRef.current.execute(plan, dependencies(plan.requestId));
       const resposta = receipt.actions.find((item) => item.answer)?.answer ?? null;
       if (resposta) {
-        setHistory((current) => [...current, { role: 'assistant' as const, content: resposta.text }].slice(-6));
-        setAiAnswer(resposta.source === 'service');
+        setHistory((current) => [
+          ...current,
+          { role: 'assistant' as const, content: resposta.text, fromAi: resposta.source === 'service' },
+        ].slice(-6));
       }
       const rejected = receipt.status === 'rejected';
       announce(
@@ -371,7 +377,6 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
         { role: 'assistant' as const, content: known.explanation },
       ].slice(-6));
       setRequest('');
-      setAiAnswer(false);
       // A fala já está no histórico, que é a região viva: anunciar de novo aqui
       // mostraria o mesmo texto duas vezes.
       announce('');
@@ -382,7 +387,6 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
     setBusy(true);
     setProposal(null);
     setUndoOffered(false);
-    setAiAnswer(false);
     setOfferFeatures(false);
     announce('Analisando seu pedido com o planejador seguro…', 'busy');
     try {
@@ -400,7 +404,8 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
           capabilities,
           contentTargets: targets.map(({ id, label }) => ({ id, label })),
         },
-        history: history.slice(-6),
+        // O contrato aceita apenas `role` e `content`: `fromAi` é de exibição.
+        history: history.slice(-6).map(({ role, content }) => ({ role, content })),
       }, controller.signal);
       // Na recusa, o escopo entra no próprio turno do assistente: a faixa de
       // status não repete mais a fala, então não havia onde anexá-lo.
@@ -592,12 +597,12 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
               <li key={`${turno.role}-${index}`} className={`a11y-chat__turn a11y-chat__turn--${turno.role}`}>
                 <span className="a11y-chat__who">{turno.role === 'user' ? 'Você' : 'Assistente'}</span>
                 <p>{turno.content}</p>
+                {turno.fromAi ? <p className="a11y-chat__caveat">Confira esta explicação antes de usar.</p> : null}
               </li>
             ))}
           </ol>
         ) : null}
 
-        {aiAnswer ? <p className="a11y-chat__caveat">Confira esta explicação antes de usar.</p> : null}
 
         {/* Estados passageiros do sistema: "Analisando…", erros e recibos de
             execução. A explicação de uma proposta vive no próprio cartão de
