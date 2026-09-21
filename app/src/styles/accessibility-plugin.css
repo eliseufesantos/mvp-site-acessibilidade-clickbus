@@ -106,7 +106,7 @@
   border-radius: 18px;
   background: var(--cb-surface);
   box-shadow: var(--a11y-shadow);
-  grid-template-rows: auto auto auto;
+  grid-template-rows: auto minmax(min-content, 1fr) auto;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -116,8 +116,12 @@
   top: 0;
   z-index: 3;
   display: grid;
-  min-height: 72px;
-  padding: 15px 15px 15px 18px;
+  /* Era 72px e o grid ainda esticava a linha. O mínimo agora é só o suficiente
+     para o título respirar e o botão de fechar manter alvo de toque; a sobra de
+     altura foi para a superfície, que é quem deve absorvê-la. */
+  min-height: 52px;
+  align-items: center;
+  padding: 10px 14px 10px 16px;
   border: 0;
   background: var(--a11y-plum);
   color: #ffffff;
@@ -370,8 +374,14 @@
   box-shadow: 0 -10px 22px -18px rgba(43, 3, 68, 0.55);
 }
 
+/* A resposta tem teto e rola por dentro se for longa: sem isso ela empurraria
+   o campo e os botões para fora da tela, que era a queixa. O teto é em `rem`,
+   então acompanha a escala de texto. */
 .accessibility-plugin .a11y-chat__stream {
-  margin-bottom: 11px;
+  max-height: 15rem;
+  margin-bottom: 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Vazio, o fluxo não deve reservar faixa nem margem. */
@@ -387,46 +397,6 @@
   z-index: 2;
   padding-bottom: 16px;
   background: var(--a11y-soft);
-}
-
-/* O painel é um MVP didático: ver o pedido e a resposta em sequência explica o
-   que o planejador fez melhor do que qualquer texto de ajuda.
-
-   A rolagem e o teto saíram daqui para `.a11y-chat__stream`: o teto era
-   `168px` fixo, que não acompanha a escala de texto, então com a raiz em 24px
-   cabia menos de um turno e o seguinte aparecia fatiado no meio da linha. */
-.accessibility-plugin .a11y-chat__log {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.accessibility-plugin .a11y-chat__turn {
-  margin-bottom: 8px;
-  padding: 9px 11px;
-  border-radius: 11px;
-  background: var(--cb-surface);
-}
-
-.accessibility-plugin .a11y-chat__turn--user {
-  background: var(--a11y-soft-strong);
-}
-
-.accessibility-plugin .a11y-chat__who {
-  display: block;
-  margin-bottom: 3px;
-  color: var(--a11y-accent-strong);
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.accessibility-plugin .a11y-chat__turn p {
-  margin: 0;
-  color: var(--a11y-text);
-  font-size: 0.8rem;
-  line-height: 1.45;
 }
 
 .accessibility-plugin .assistant-proposal__hint {
@@ -592,10 +562,10 @@
 
 .accessibility-plugin .a11y-chat__form small {
   display: block;
-  margin-top: 8px;
+  margin-top: 6px;
   color: var(--a11y-muted);
-  font-size: 0.68rem;
-  line-height: 1.4;
+  font-size: 0.66rem;
+  line-height: 1.3;
 }
 
 .accessibility-plugin .a11y-chat .voice-active {
@@ -1252,4 +1222,105 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
 .accessibility-plugin .a11y-chat__hint strong {
   color: var(--a11y-text);
   font-weight: 600;
+}
+
+/* Chave entre assistente e recursos. Dois botões lado a lado, o ativo marcado
+   por `aria-pressed` — o estilo segue o estado, nunca o contrário. */
+.accessibility-plugin .a11y-viewswitch {
+  display: grid;
+  margin-bottom: 16px;
+  padding: 4px;
+  border: 1px solid var(--a11y-border, rgba(0, 0, 0, 0.1));
+  border-radius: 12px;
+  background: var(--a11y-soft);
+  gap: 4px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.accessibility-plugin .a11y-viewswitch button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--a11y-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  gap: 7px;
+}
+
+.accessibility-plugin .a11y-viewswitch button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.accessibility-plugin .a11y-viewswitch button[aria-pressed='true'] {
+  background: var(--cb-surface);
+  box-shadow: 0 1px 3px rgba(43, 3, 68, 0.18);
+  color: var(--a11y-accent-strong);
+}
+
+.accessibility-plugin .a11y-chat__fallback {
+  margin-top: 8px;
+}
+
+/* Histórico curto: as últimas trocas, para a pessoa lembrar o que pediu. Ele
+   voltou depois que a chave entre assistente e recursos liberou a altura que
+   a grade 2×2 consumia. */
+.accessibility-plugin .a11y-chat__log {
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.accessibility-plugin .a11y-chat__turn {
+  margin-bottom: 6px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: var(--cb-surface);
+}
+
+.accessibility-plugin .a11y-chat__turn--user {
+  background: var(--a11y-soft-strong);
+}
+
+.accessibility-plugin .a11y-chat__who {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--a11y-accent-strong);
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.accessibility-plugin .a11y-chat__turn p {
+  margin: 0;
+  color: var(--a11y-text);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+/* Na vista do assistente, quem absorve a sobra de altura é o chat, não a faixa
+   dos recursos — que ali contém só a chave. Sem isto a sobra virava um vão
+   branco entre a chave e a conversa. O fluxo cresce até o campo, que fica na
+   base, no arranjo clássico de conversa. */
+.accessibility-plugin .accessibility-panel--chat {
+  grid-template-rows: auto auto minmax(min-content, 1fr);
+}
+
+.accessibility-plugin .accessibility-panel--chat .a11y-chat {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.accessibility-plugin .accessibility-panel--chat .a11y-chat__stream {
+  min-height: 0;
+  max-height: none;
 }
