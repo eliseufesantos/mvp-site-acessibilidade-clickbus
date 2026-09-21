@@ -412,8 +412,10 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
         // Aqui quem fala é o recibo da execução: ele diz o que de fato mudou.
         await execute(response);
       } else {
-        // `clarify` pergunta, `unsupported` recusa. Nenhum dos dois aplica nada.
-        announce(assistantTurn, response.mode === 'unsupported' ? 'warning' : 'neutral');
+        // `clarify` pergunta, `unsupported` recusa. Nenhum dos dois aplica nada,
+        // e os dois já aparecem como turno do assistente no histórico, que é a
+        // região viva: repetir aqui mostraria o mesmo texto duas vezes.
+        announce('');
       }
     } catch (error) {
       const indisponivel = error instanceof AccessibilityServiceError
@@ -461,7 +463,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
 
   return (
     <section
-      className={`accessibility-panel${librasSimulated ? ' accessibility-panel--simulated' : ''}`}
+      className={`accessibility-panel${librasSimulated ? ' accessibility-panel--simulated' : ''}${surface === 'root' && rootView === 'chat' ? ' accessibility-panel--chat' : ''}`}
       aria-label="Acessibilidade assistida por IA"
       ref={panelRef}
     >
@@ -571,6 +573,19 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
             maior consumidor de altura, empurrando o campo e os botões para fora
             da tela. `history` continua em memória como contexto do planejador. */}
         <div className="a11y-chat__stream">
+        {history.length > 0 ? (
+          // Região viva da CONVERSA: a faixa de status abaixo cuida só dos
+          // estados passageiros, então é daqui que a fala do assistente é
+          // anunciada a quem usa leitor de tela.
+          <ol className="a11y-chat__log" aria-live="polite" aria-relevant="additions">
+            {history.slice(-4).map((turno, index) => (
+              <li key={`${turno.role}-${index}`} className={`a11y-chat__turn a11y-chat__turn--${turno.role}`}>
+                <span className="a11y-chat__who">{turno.role === 'user' ? 'Você' : 'Assistente'}</span>
+                <p>{turno.content}</p>
+              </li>
+            ))}
+          </ol>
+        ) : null}
 
         {answer ? (
           <div className="a11y-chat__answer">
@@ -710,7 +725,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
           ) : null}
           {voice.error ? <p className="field-error" role="alert">{voice.error}</p> : null}
           <small>
-            A IA apenas propõe ações do contrato. O executor local valida tudo antes de alterar a tela.
+            A IA propõe; o executor local valida antes de alterar a tela.
             {playerAvailable ? '' : ' Libras e voz estão indisponíveis neste ambiente: o assistente não vai oferecê-las.'}
           </small>
         </form>
