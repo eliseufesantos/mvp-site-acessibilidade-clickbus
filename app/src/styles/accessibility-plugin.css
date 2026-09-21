@@ -370,8 +370,14 @@
   box-shadow: 0 -10px 22px -18px rgba(43, 3, 68, 0.55);
 }
 
+/* A resposta tem teto e rola por dentro se for longa: sem isso ela empurraria
+   o campo e os botões para fora da tela, que era a queixa. O teto é em `rem`,
+   então acompanha a escala de texto. */
 .accessibility-plugin .a11y-chat__stream {
+  max-height: 12rem;
   margin-bottom: 11px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Vazio, o fluxo não deve reservar faixa nem margem. */
@@ -387,46 +393,6 @@
   z-index: 2;
   padding-bottom: 16px;
   background: var(--a11y-soft);
-}
-
-/* O painel é um MVP didático: ver o pedido e a resposta em sequência explica o
-   que o planejador fez melhor do que qualquer texto de ajuda.
-
-   A rolagem e o teto saíram daqui para `.a11y-chat__stream`: o teto era
-   `168px` fixo, que não acompanha a escala de texto, então com a raiz em 24px
-   cabia menos de um turno e o seguinte aparecia fatiado no meio da linha. */
-.accessibility-plugin .a11y-chat__log {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.accessibility-plugin .a11y-chat__turn {
-  margin-bottom: 8px;
-  padding: 9px 11px;
-  border-radius: 11px;
-  background: var(--cb-surface);
-}
-
-.accessibility-plugin .a11y-chat__turn--user {
-  background: var(--a11y-soft-strong);
-}
-
-.accessibility-plugin .a11y-chat__who {
-  display: block;
-  margin-bottom: 3px;
-  color: var(--a11y-accent-strong);
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.accessibility-plugin .a11y-chat__turn p {
-  margin: 0;
-  color: var(--a11y-text);
-  font-size: 0.8rem;
-  line-height: 1.45;
 }
 
 .accessibility-plugin .assistant-proposal__hint {

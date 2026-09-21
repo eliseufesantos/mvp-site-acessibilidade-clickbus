@@ -393,17 +393,17 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       setRequest('');
       // O destino — ferramentas visuais, Libras ou voz — vem das AÇÕES do plano.
       // O cliente não adivinha por texto; o executor revalida tudo de novo.
+      // Sem log, a faixa de status é o único lugar onde o assistente fala — e
+      // é a região viva, então continua sendo anunciada a leitor de tela.
       if (response.mode === 'propose') {
         setProposal(response);
-        // A fala já está no fluxo e as ações estão no bloco de confirmação:
-        // repeti-la aqui mostrava o mesmo texto três vezes.
-        announce('');
+        announce(response.message, 'warning');
       } else if (response.mode === 'apply') {
+        // Aqui quem fala é o recibo da execução: ele diz o que de fato mudou.
         await execute(response);
       } else {
-        // `clarify` pergunta, `unsupported` recusa. Nenhum dos dois aplica nada,
-        // e os dois já aparecem como turno do assistente no fluxo.
-        announce('');
+        // `clarify` pergunta, `unsupported` recusa. Nenhum dos dois aplica nada.
+        announce(assistantTurn, response.mode === 'unsupported' ? 'warning' : 'neutral');
       }
     } catch (error) {
       announce(
@@ -528,20 +528,11 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
         {/* Conversa e composer em faixas separadas: antes o formulário ficava no
             meio do diálogo, com o histórico acima e a resposta abaixo, e com o
             texto ampliado a resposta saía da tela. */}
+        {/* Só a resposta mais recente. O log de conversa saiu: ele duplicava o
+            que já estava visível — a página muda na frente da pessoa — e era o
+            maior consumidor de altura, empurrando o campo e os botões para fora
+            da tela. `history` continua em memória como contexto do planejador. */}
         <div className="a11y-chat__stream">
-        {history.length > 0 ? (
-          // Região viva da CONVERSA. A faixa de status abaixo cuida dos estados
-          // passageiros; sem isto, tirar a fala do assistente dali a deixaria
-          // sem anúncio para quem usa leitor de tela.
-          <ol className="a11y-chat__log" aria-live="polite" aria-relevant="additions">
-            {history.slice(-4).map((turno, index) => (
-              <li key={`${turno.role}-${index}`} className={`a11y-chat__turn a11y-chat__turn--${turno.role}`}>
-                <span className="a11y-chat__who">{turno.role === 'user' ? 'Você' : 'Assistente'}</span>
-                <p>{turno.content}</p>
-              </li>
-            ))}
-          </ol>
-        ) : null}
 
         {proposal ? (
           <div className="assistant-proposal">
