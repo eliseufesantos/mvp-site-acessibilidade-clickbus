@@ -396,8 +396,10 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       // Sem log, a faixa de status é o único lugar onde o assistente fala — e
       // é a região viva, então continua sendo anunciada a leitor de tela.
       if (response.mode === 'propose') {
+        // A explicação vive dentro do cartão de confirmação, que é região viva:
+        // repeti-la na faixa mostraria o mesmo texto duas vezes.
         setProposal(response);
-        announce(response.message, 'warning');
+        announce('');
       } else if (response.mode === 'apply') {
         // Aqui quem fala é o recibo da execução: ele diz o que de fato mudou.
         await execute(response);
@@ -526,28 +528,14 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
 
       <div className="a11y-chat">
         {/* Conversa e composer em faixas separadas: antes o formulário ficava no
-            meio do diálogo, com o histórico acima e a resposta abaixo, e com o
-            texto ampliado a resposta saía da tela. */}
-        {/* Só a resposta mais recente. O log de conversa saiu: ele duplicava o
+            meio do diálogo, com a resposta abaixo dele, e com o texto ampliado
+            ela saía da tela.
+
+            Só a resposta mais recente. O log de conversa saiu: ele duplicava o
             que já estava visível — a página muda na frente da pessoa — e era o
             maior consumidor de altura, empurrando o campo e os botões para fora
             da tela. `history` continua em memória como contexto do planejador. */}
         <div className="a11y-chat__stream">
-
-        {proposal ? (
-          <div className="assistant-proposal">
-            <strong>Confirme antes de aplicar</strong>
-            {/* `proposal.message` saiu daqui: a fala do assistente já é o último
-                turno do fluxo, logo acima. Repeti-la mostrava o mesmo texto
-                três vezes — log, proposta e faixa de status. */}
-            <p className="assistant-proposal__hint">O planejador propôs estas ações. Nada acontece até você confirmar:</p>
-            <ul>{proposal.actions.map((action, index) => <li key={`${action.type}-${index}`}>{describeAction(action)}</li>)}</ul>
-            <div>
-              <Button variant="quiet" onClick={() => { setProposal(null); announce('Proposta cancelada. Nada foi alterado.'); }}>Cancelar</Button>
-              <Button onClick={() => void execute(proposal)}>Aplicar proposta</Button>
-            </div>
-          </div>
-        ) : null}
 
         {answer ? (
           <div className="a11y-chat__answer">
@@ -559,7 +547,8 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
         ) : null}
 
         {/* Estados passageiros do sistema: "Analisando…", erros e recibos de
-            execução. A fala do assistente vive no log, uma vez só. */}
+            execução. A explicação de uma proposta vive no próprio cartão de
+            confirmação, que fica fora do fluxo com teto. */}
         <p className={`assistant-message assistant-message--${tone}`} role="status" aria-atomic="true">{status}</p>
 
         {undoOffered ? (
@@ -576,6 +565,25 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
           </div>
         ) : null}
         </div>
+
+        {/* A proposta fica FORA do fluxo com teto. Dentro dele, um cartão alto —
+            três ações, texto ampliado ou mensagem longa — empurrava a explicação
+            para baixo do corte de 12rem, e o auto-scroll mira o painel, não este
+            fluxo: a pessoa recebia o pedido de confirmação sem o motivo.
+            `role="status"` porque, sem a faixa repetindo a mensagem, é aqui que
+            o assistente fala. */}
+        {proposal ? (
+          <div className="assistant-proposal" role="status">
+            <strong>Confirme antes de aplicar</strong>
+            <p>{proposal.message}</p>
+            <p className="assistant-proposal__hint">O planejador propôs estas ações. Nada acontece até você confirmar:</p>
+            <ul>{proposal.actions.map((action, index) => <li key={`${action.type}-${index}`}>{describeAction(action)}</li>)}</ul>
+            <div>
+              <Button variant="quiet" onClick={() => { setProposal(null); announce('Proposta cancelada. Nada foi alterado.'); }}>Cancelar</Button>
+              <Button onClick={() => void execute(proposal)}>Aplicar proposta</Button>
+            </div>
+          </div>
+        ) : null}
 
         <form className="a11y-chat__form" onSubmit={askAssistant}>
           <label htmlFor="accessibility-request"><Bot aria-hidden="true" /> Fale com o assistente</label>
