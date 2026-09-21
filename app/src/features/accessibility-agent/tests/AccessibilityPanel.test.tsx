@@ -92,7 +92,7 @@ const renderPanel = (overrides: Partial<ReturnType<typeof baseProps>> = {}) => {
 };
 
 const ask = async (text: string) => {
-  const user = userEvent.setup();
+  const user = userEvent.setup({ delay: null });
   const field = screen.getByRole('textbox', { name: /fale com o assistente/i });
   await user.clear(field);
   await user.type(field, text);
@@ -124,7 +124,7 @@ describe('vistas da raiz', () => {
 
   test('a chave troca para os recursos e o chat cede o lugar', async () => {
     const { container } = renderPanel();
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Recursos' }));
+    await userEvent.setup({ delay: null }).click(screen.getByRole('button', { name: 'Recursos' }));
     expect(screen.getByRole('button', { name: 'Recursos' })).toHaveAttribute('aria-pressed', 'true');
     for (const card of ['libras', 'voice', 'settings', 'about']) {
       expect(container.querySelector(`#a11y-card-${card}`)).not.toBeNull();
@@ -278,7 +278,7 @@ describe('falhas do serviço de IA', () => {
     const { container } = renderPanel();
     await ask('aumente o texto');
     const shortcut = await screen.findByRole('button', { name: /ver os recursos de acessibilidade/i });
-    await userEvent.setup().click(shortcut);
+    await userEvent.setup({ delay: null }).click(shortcut);
     expect(container.querySelector('#a11y-card-libras')).not.toBeNull();
     expect(screen.getByRole('button', { name: 'Recursos' })).toHaveAttribute('aria-pressed', 'true');
   });
@@ -303,7 +303,7 @@ describe('falhas do serviço de IA', () => {
 
 describe('cartões da Rybená', () => {
   const openCard = async (name: 'libras' | 'voice') => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     await user.click(screen.getByRole('button', { name: 'Recursos' }));
     await user.click(document.querySelector(`#a11y-card-${name}`) as HTMLElement);
   };

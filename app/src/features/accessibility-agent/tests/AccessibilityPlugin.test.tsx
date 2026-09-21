@@ -100,7 +100,7 @@ describe('acionador', () => {
 
   test('abre e fecha o painel, e `aria-expanded` acompanha', async () => {
     setViewport(false);
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<AccessibilityPlugin {...props()} />);
     expect(openTrigger()).toHaveAttribute('aria-expanded', 'false');
     await user.click(openTrigger());
@@ -116,13 +116,13 @@ describe('foco', () => {
   test('ao abrir, o foco vai para a entrada do painel', async () => {
     setViewport(false);
     render(<AccessibilityPlugin {...props()} />);
-    await userEvent.setup().click(openTrigger());
+    await userEvent.setup({ delay: null }).click(openTrigger());
     await waitFor(() => expect(screen.getByRole('button', { name: 'Assistente' })).toHaveFocus());
   });
 
   test('Esc fecha e devolve o foco ao acionador', async () => {
     setViewport(false);
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<AccessibilityPlugin {...props()} />);
     await user.click(openTrigger());
     await waitFor(() => expect(screen.getByRole('button', { name: 'Assistente' })).toHaveFocus());
@@ -134,7 +134,7 @@ describe('foco', () => {
   test('no celular o painel é um diálogo modal', async () => {
     setViewport(true);
     render(<AccessibilityPlugin {...props()} />);
-    await userEvent.setup().click(openTrigger());
+    await userEvent.setup({ delay: null }).click(openTrigger());
     expect(screen.getByRole('dialog', { name: 'Painel de acessibilidade' })).toHaveAttribute('aria-modal', 'true');
   });
 });
@@ -148,7 +148,7 @@ describe('trava de rolagem da página', () => {
     setViewport(true);
     setScrollY(420);
     render(<AccessibilityPlugin {...props()} />);
-    await userEvent.setup().click(openTrigger());
+    await userEvent.setup({ delay: null }).click(openTrigger());
     expect(document.body.style.position).toBe('fixed');
     expect(document.body.style.top).toBe('-420px');
     expect(document.body.style.overflow).toBe('hidden');
@@ -158,7 +158,7 @@ describe('trava de rolagem da página', () => {
   test('ao fechar, devolve o body e a rolagem ao ponto em que estavam', async () => {
     setViewport(true);
     setScrollY(420);
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<AccessibilityPlugin {...props()} />);
     await user.click(openTrigger());
     await user.click(screen.getByRole('button', { name: /^fechar acessibilidade/i }));
@@ -175,7 +175,7 @@ describe('trava de rolagem da página', () => {
     setScrollY(420);
     let noMomento = '';
     scrollTo.mockImplementation(() => { noMomento = document.documentElement.style.scrollBehavior; });
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<AccessibilityPlugin {...props()} />);
     await user.click(openTrigger());
     await user.click(screen.getByRole('button', { name: /^fechar acessibilidade/i }));
@@ -187,7 +187,7 @@ describe('trava de rolagem da página', () => {
   test('no desktop a página não é travada: o painel fica ao lado dela', async () => {
     setViewport(false);
     render(<AccessibilityPlugin {...props()} />);
-    await userEvent.setup().click(openTrigger());
+    await userEvent.setup({ delay: null }).click(openTrigger());
     expect(document.body.style.position).toBe('');
     expect(document.body.style.overflow).toBe('');
   });
@@ -199,7 +199,7 @@ describe('teclado virtual', () => {
     const viewport = new FakeVisualViewport();
     vi.stubGlobal('visualViewport', viewport);
     render(<AccessibilityPlugin {...props()} />);
-    await userEvent.setup().click(openTrigger());
+    await userEvent.setup({ delay: null }).click(openTrigger());
     const raiz = document.documentElement.style;
     expect(raiz.getPropertyValue('--a11y-viewport-height')).toBe('850px');
     viewport.openKeyboard(520, 34);
@@ -210,7 +210,7 @@ describe('teclado virtual', () => {
   test('ao fechar, as medidas saem da raiz', async () => {
     setViewport(true);
     vi.stubGlobal('visualViewport', new FakeVisualViewport());
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<AccessibilityPlugin {...props()} />);
     await user.click(openTrigger());
     await user.click(screen.getByRole('button', { name: /^fechar acessibilidade/i }));
@@ -222,7 +222,7 @@ describe('teclado virtual', () => {
     setViewport(false);
     vi.stubGlobal('visualViewport', new FakeVisualViewport());
     render(<AccessibilityPlugin {...props()} />);
-    await userEvent.setup().click(openTrigger());
+    await userEvent.setup({ delay: null }).click(openTrigger());
     expect(document.documentElement.style.getPropertyValue('--a11y-viewport-height')).toBe('');
   });
 });
