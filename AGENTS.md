@@ -114,8 +114,19 @@ Antes de entregar código, execute no mínimo:
 ```bash
 npx --yes pnpm@10.28.0 --dir app typecheck
 npx --yes pnpm@10.28.0 --dir app build
-npx --yes pnpm@10.28.0 --dir app test:accessibility
+npx --yes pnpm@10.28.0 --dir app test
 ```
+
+Se a mudança toca layout, CSS, o painel ou qualquer etapa da jornada, rode também `test:e2e`, que precisa dos navegadores baixados uma vez com `pnpm exec playwright install chromium webkit`.
+
+A suíte tem duas camadas, e elas não se substituem:
+
+- **Vitest** cobre lógica pura (ambiente `node`) e componentes, hooks e regiões vivas num DOM simulado (jsdom, declarado por `// @vitest-environment jsdom` no topo do arquivo).
+- **Playwright** cobre o que o jsdom não enxerga, que é geometria — o jsdom devolve zero em `getBoundingClientRect`. Roda em desktop, celular no Chromium e celular no WebKit, e audita WCAG 2.1 AA com o axe.
+
+Os defeitos que mais custaram nesta base caíram exatamente fora da lógica pura: corrida no reconhecedor de voz, região viva ausente, cabeçalho esticado pelo grid, folha fora do lugar no celular. Todos passavam por uma suíte verde que não renderizava componente algum.
+
+**Um teste que passa na primeira execução ainda não provou nada.** Os testes desta suíte foram verificados por mutação: o comportamento protegido é quebrado de propósito na fonte e o teste correspondente precisa falhar. Ao escrever um teste novo, faça o mesmo — foi assim que se descobriu, por exemplo, que o antigo teste de retry do provedor deixava passar um teto de `retry-after` mudado de 2 s para 2,4 s. Ao mutar, preserve os bytes do arquivo original (leia e grave em modo binário ou com `newline=''`): regravar em modo texto no Windows troca LF por CRLF sem aviso.
 
 ## 6. Invariantes da aplicação
 
