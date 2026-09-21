@@ -163,7 +163,11 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
   const [proposal, setProposal] = useState<PlannerResponse | null>(null);
   // Desfazer só aparece depois de um plano que de fato mexeu em preferências.
   const [undoOffered, setUndoOffered] = useState(false);
-  const [answer, setAnswer] = useState<{ text: string; source: 'local' | 'service' } | null>(null);
+  // A resposta é uma fala do assistente no histórico, não um cartão à parte:
+  // quem pergunta quer a informação, não a procedência interna do protótipo.
+  // Resta um único sinal, e só quando cabe: se aquela resposta veio da IA, a
+  // pessoa precisa saber que convém conferir.
+  const [aiAnswer, setAiAnswer] = useState(false);
   const [history, setHistory] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const executorRef = useRef(new AccessibilityExecutor());
   const requestControllerRef = useRef<AbortController | null>(null);
@@ -198,7 +202,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       if (panel) panel.scrollTop = panel.scrollHeight;
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [history, status, answer, proposal, undoOffered]);
+  }, [history, status, aiAnswer, proposal, undoOffered]);
 
   useEffect(() => {
     requestControllerRef.current?.abort();
@@ -211,7 +215,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
   // melhor recolhê-la do que oferecer um botão que vai falhar.
   useEffect(() => {
     setProposal(null);
-    setAnswer(null);
+    setAiAnswer(false);
     setUndoOffered(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.pageEpoch]);
@@ -328,7 +332,11 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
   const execute = async (plan: PlannerResponse) => {
     try {
       const receipt = await executorRef.current.execute(plan, dependencies(plan.requestId));
-      setAnswer(receipt.actions.find((item) => item.answer)?.answer ?? null);
+      const resposta = receipt.actions.find((item) => item.answer)?.answer ?? null;
+      if (resposta) {
+        setHistory((current) => [...current, { role: 'assistant' as const, content: resposta.text }].slice(-6));
+        setAiAnswer(resposta.source === 'service');
+      }
       const rejected = receipt.status === 'rejected';
       announce(
         formatExecutionReceipt(receipt) || plan.message,
@@ -363,8 +371,10 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
         { role: 'assistant' as const, content: known.explanation },
       ].slice(-6));
       setRequest('');
-      setAnswer({ text: known.explanation, source: 'local' });
-      announce(`"${known.term}" está no glossário revisado deste protótipo. Resposta local, sem uso de IA.`);
+      setAiAnswer(false);
+      // A fala já está no histórico, que é a região viva: anunciar de novo aqui
+      // mostraria o mesmo texto duas vezes.
+      announce('');
       return;
     }
 
@@ -372,7 +382,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
     setBusy(true);
     setProposal(null);
     setUndoOffered(false);
-    setAnswer(null);
+    setAiAnswer(false);
     setOfferFeatures(false);
     announce('Analisando seu pedido com o planejador seguro…', 'busy');
     try {
@@ -587,14 +597,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
           </ol>
         ) : null}
 
-        {answer ? (
-          <div className="a11y-chat__answer">
-            <span className="a11y-chat__answer-source">
-              {answer.source === 'local' ? 'Conteúdo revisado deste protótipo' : 'Gerado por IA — confira antes de usar'}
-            </span>
-            <p>{answer.text}</p>
-          </div>
-        ) : null}
+        {aiAnswer ? <p className="a11y-chat__caveat">Confira esta explicação antes de usar.</p> : null}
 
         {/* Estados passageiros do sistema: "Analisando…", erros e recibos de
             execução. A explicação de uma proposta vive no próprio cartão de
@@ -724,10 +727,9 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
             </div>
           ) : null}
           {voice.error ? <p className="field-error" role="alert">{voice.error}</p> : null}
-          <small>
-            A IA propõe; o executor local valida antes de alterar a tela.
-            {playerAvailable ? '' : ' Libras e voz estão indisponíveis neste ambiente: o assistente não vai oferecê-las.'}
-          </small>
+          {playerAvailable ? null : (
+            <small>Libras e voz estão indisponíveis neste ambiente.</small>
+          )}
         </form>
 
       </div>

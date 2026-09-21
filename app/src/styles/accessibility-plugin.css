@@ -595,31 +595,6 @@
   background: var(--cb-surface);
 }
 
-.accessibility-plugin .a11y-chat__answer {
-  margin-top: 10px;
-  padding: 11px 13px;
-  border-left: 4px solid var(--cb-success);
-  border-radius: 0 11px 11px 0;
-  background: color-mix(in srgb, var(--cb-success) 7%, var(--cb-surface));
-}
-
-.accessibility-plugin .a11y-chat__answer-source {
-  display: block;
-  margin-bottom: 4px;
-  color: var(--a11y-muted);
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.accessibility-plugin .a11y-chat__answer p {
-  margin: 0;
-  color: var(--a11y-text);
-  font-size: 0.83rem;
-  line-height: 1.55;
-}
-
 /* Tom do estado. A cor nunca e o unico sinal: o texto ja diz o que houve. */
 .accessibility-plugin .assistant-message--busy {
   border-left-color: var(--a11y-muted);
@@ -1323,4 +1298,14 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
 .accessibility-plugin .accessibility-panel--chat .a11y-chat__stream {
   min-height: 0;
   max-height: none;
+}
+
+/* Única ressalva de procedência que sobrou, e só quando a explicação veio da
+   IA: aí ela pode estar errada, e isso é informação útil para quem lê — não
+   jargão sobre o funcionamento interno do protótipo. */
+.accessibility-plugin .a11y-chat__caveat {
+  margin: 0 0 8px;
+  color: var(--a11y-muted);
+  font-size: 0.7rem;
+  line-height: 1.35;
 }
