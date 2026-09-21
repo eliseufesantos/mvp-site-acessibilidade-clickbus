@@ -1296,8 +1296,19 @@ html[data-contrast='high'] .accessibility-plugin__trigger:focus-visible {
 }
 
 .accessibility-plugin .accessibility-panel--chat .a11y-chat__stream {
+  display: flex;
   min-height: 0;
   max-height: none;
+  flex-direction: column;
+}
+
+/* Conversa curta encosta na base, perto de onde se digita, como em qualquer
+   chat. O empurrão vem de `margin-top: auto` no primeiro filho, e não de
+   `justify-content: flex-end`: com o segundo, quando o conteúdo passa da
+   altura da caixa, os navegadores cortam o topo e as falas mais antigas ficam
+   inalcançáveis pela rolagem. */
+.accessibility-plugin .accessibility-panel--chat .a11y-chat__stream > :first-child {
+  margin-top: auto;
 }
 
 /* Única ressalva de procedência que sobrou, e só quando a explicação veio da
