@@ -220,7 +220,7 @@ A cobertura automática comprova handler, construção/validação da URL e cont
 
 Para mudanças no núcleo ou no painel:
 
-- amplie `app/src/features/accessibility-agent/tests/run.ts` quando houver novo comportamento determinístico;
+- amplie a suíte em `app/src/features/accessibility-agent/tests/` quando houver novo comportamento. Lógica pura roda no ambiente `node`; o que depende de DOM declara `// @vitest-environment jsdom` no topo do arquivo;
 - valide ações desconhecidas, estado obsoleto, idempotência, indisponibilidade e exclusões de conteúdo;
 - teste teclado, foco, Escape e retorno ao acionador quando alterar diálogos/painéis;
 - ao alterar ferramentas de conteúdo, teste o glossário determinístico antes da rede, a recusa de alvos fora da lista pública e a declaração de origem da resposta na interface;

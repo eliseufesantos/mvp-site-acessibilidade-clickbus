@@ -8,7 +8,10 @@
     "build": "tsc --noEmit -p tsconfig.app.json && vite build --configLoader runner",
     "preview": "vite preview --configLoader runner",
     "typecheck": "tsc --noEmit -p tsconfig.app.json --pretty false",
-    "test:accessibility": "node scripts/run-accessibility-tests.mjs"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:accessibility": "vitest run"
   },
   "dependencies": {
     "@fontsource/roboto-mono": "^5.2.6",
@@ -18,12 +21,18 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^3.2.7",
     "esbuild": "0.25.12",
+    "jsdom": "^26.1.0",
     "typescript": "^5.6.3",
-    "vite": "^6.0.5"
+    "vite": "^6.0.5",
+    "vitest": "^3.2.7"
   }
 }
