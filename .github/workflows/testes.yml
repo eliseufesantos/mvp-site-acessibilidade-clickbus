@@ -1,0 +1,76 @@
+# Roda a suíte em todo pull request e em todo push para o main.
+#
+# Nenhum teste precisa de segredo: a Gemini e o CDN da Rybená são sempre
+# simulados. Por isso o workflow tem só permissão de leitura, e pode rodar com
+# segurança em pull requests vindos de fork.
+name: Testes
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Um push novo no mesmo pull request cancela a execução anterior, que ficou velha.
+concurrency:
+  group: testes-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    name: Typecheck, build e Vitest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          # O setup-node ativa cache sozinho quando acha `packageManager` no
+          # package.json, e para isso chama o pnpm — que ainda não está
+          # instalado neste passo. Quem cuida do cache é o passo seguinte.
+          package-manager-cache: false
+      # Sem `version`: a versão vem do `packageManager` do package.json da raiz,
+      # a mesma que a Vercel e a documentação usam.
+      - uses: pnpm/action-setup@v6
+        with:
+          cache: true
+          cache_dependency_path: app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm build
+      - run: pnpm test
+
+  navegador:
+    name: Testes em navegador
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - uses: pnpm/action-setup@v6
+        with:
+          cache: true
+          cache_dependency_path: app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      # `--with-deps` instala as bibliotecas de sistema que o Chromium exige no Linux.
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      # Traces e capturas de tela só quando algo falha, para depurar sem rodar local.
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: relatorio-playwright
+          path: app/test-results/
+          retention-days: 7

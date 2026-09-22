@@ -2265,7 +2265,20 @@ html[data-contrast='high'] .campaign-hero > img { opacity: 0.28; }
   .date-strip { gap: 5px; }
   .date-strip__item { flex-direction: column; gap: 3px; min-width: 0; padding: 7px 3px; font-size: 0.72rem; text-align: center; }
   .date-strip__item svg { width: 16px; }
-  .results-heading { flex-direction: row; align-items: center; }
+  /* Título e botão de filtros lado a lado, com quebra quando não cabem. O botão
+     não encolhe (`flex: 0 0 auto`) e o título não encolhe abaixo da palavra
+     mais longa; com o texto a 150% os dois passavam da largura em 320 e 390 px,
+     e o botão era empurrado para fora da tela (critério 1.4.10 da WCAG).
+
+     `flex: 1 1 0` com o `min-width` padrão faz o flexbox decidir a quebra pelo
+     tamanho mínimo REAL do título, e não por um valor chutado: a linha só
+     quebra quando título mínimo + botão de fato não cabem. Uma base em `rem`
+     também corrigia o vazamento, mas quebrava a linha em casos que já
+     cabiam — 320 px com texto normal e 412 px com texto a 150%. Não use
+     `min-width: 0` aqui: ele deixaria o título encolher abaixo da própria
+     palavra mais longa, e a linha nunca quebraria. */
+  .results-heading { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .results-heading > :first-child { flex: 1 1 0; }
   .results-heading h1 { font-size: 1.65rem; }
   .mobile-filter-button { flex: 0 0 auto; padding-inline: 12px; }
   .trip-card { grid-template-columns: 1fr; }
