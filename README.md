@@ -75,6 +75,8 @@ npx --yes pnpm@10.28.0 --dir app test:e2e
 
 `test:all` roda as duas camadas. `test:accessibility` continua existindo e roda a camada do Vitest.
 
+O GitHub Actions (`.github/workflows/testes.yml`) roda typecheck, build e as duas camadas em todo pull request e em todo push para o `main`.
+
 Nenhum teste fala com a Gemini nem com o CDN da Rybená: a rede e o fornecedor são sempre simulados. Passar no axe não é conformidade comprovada — ele cobre só parte dos critérios da WCAG.
 
 ## Deploy na Vercel

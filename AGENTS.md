@@ -117,6 +117,8 @@ npx --yes pnpm@10.28.0 --dir app build
 npx --yes pnpm@10.28.0 --dir app test
 ```
 
+O GitHub Actions roda typecheck, build e as duas camadas em todo pull request (`.github/workflows/testes.yml`); rodar local continua valendo, para não descobrir a falha só no PR.
+
 Se a mudança toca layout, CSS, o painel ou qualquer etapa da jornada, rode também `test:e2e`, que precisa do navegador baixado uma vez com `pnpm exec playwright install chromium`.
 
 A suíte tem duas camadas, e elas não se substituem:
