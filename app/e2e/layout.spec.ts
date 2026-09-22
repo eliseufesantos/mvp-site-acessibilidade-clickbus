@@ -130,9 +130,9 @@ test.describe('painel no desktop', () => {
 });
 
 test.describe('fronteira entre celular e desktop', () => {
-  // A fronteira é 820/821 px, registrada no AGENTS.md. Os projetos de celular
-  // têm 320, 390 e 412 px e o de desktop tem 1280: sem este teste, um
-  // breakpoint deslocado para 768 px passaria por todos eles.
+  // A fronteira é 820/821 px, registrada no AGENTS.md. O projeto de celular
+  // tem 320 px e o de desktop tem 1280: sem este teste, um breakpoint
+  // deslocado para 768 px passaria pelos dois.
   test.skip(({ isMobile }) => isMobile, 'a largura é fixada pelo próprio teste');
 
   test('em 820 px o painel é um diálogo modal que trava a página', async ({ page }) => {
