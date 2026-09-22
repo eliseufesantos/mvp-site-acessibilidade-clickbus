@@ -66,10 +66,10 @@ npx --yes pnpm@10.28.0 --dir app test
 npx --yes pnpm@10.28.0 --dir app test:coverage
 ```
 
-**Navegador real (Playwright).** O jsdom não calcula geometria, então layout só se testa num navegador de verdade. Os testes rodam em desktop, em celular no Chromium e em celular no WebKit — o motor do Safari — e incluem auditoria automática de WCAG 2.1 AA com o axe em cada etapa da jornada e em cada vista do painel. Na primeira vez, baixe os navegadores:
+**Navegador real (Playwright).** O jsdom não calcula geometria, então layout só se testa num navegador de verdade. Os testes rodam em desktop e em celular a 320 CSS px — o limite do critério de Reflow da WCAG — e incluem auditoria automática de WCAG 2.1 AA com o axe em cada etapa da jornada e em cada vista do painel. Na primeira vez, baixe o navegador:
 
 ```bash
-npx --yes pnpm@10.28.0 --dir app exec playwright install chromium webkit
+npx --yes pnpm@10.28.0 --dir app exec playwright install chromium
 npx --yes pnpm@10.28.0 --dir app test:e2e
 ```
 

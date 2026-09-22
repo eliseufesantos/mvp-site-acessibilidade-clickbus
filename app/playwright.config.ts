@@ -6,9 +6,16 @@ import { defineConfig, devices } from '@playwright/test';
  * cabeçalho esticado, folha fora do lugar e botão fora da tela passam
  * despercebidos nos testes de componente.
  *
- * Três projetos, porque os defeitos desta base apareceram em lugares
- * diferentes: desktop, celular no Chromium e celular no WebKit, o motor do
- * Safari — onde a trava de rolagem e o teclado virtual deram trabalho.
+ * Dois projetos: desktop e celular em 320 CSS px. O 320 é o limite do critério
+ * de Reflow da WCAG 2.1 (1.4.10) e a meta de validação do AGENTS.md — foi nele
+ * que o botão Filtros apareceu vazando da tela. Larguras intermediárias ficam
+ * cobertas entre os dois extremos, e a fronteira exata entre celular e desktop
+ * (820/821 px) tem teste próprio em `layout.spec.ts`.
+ *
+ * Já foram quatro, com Pixel 7 (412 px) e WebKit (iPhone 14). Saíram por
+ * proporção: o WebKit concentrava a instabilidade sob carga paralela e, no
+ * Windows, aproxima o motor do Safari mas não o aparelho — não há teclado
+ * virtual real. Para um protótipo, o custo não se pagava.
  */
 export default defineConfig({
   testDir: './e2e',
@@ -22,8 +29,7 @@ export default defineConfig({
   },
   projects: [
     { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'mobile-chromium', use: { ...devices['Pixel 7'] } },
-    { name: 'mobile-webkit', use: { ...devices['iPhone 14'] } },
+    { name: 'mobile-320', use: { ...devices['Pixel 7'], viewport: { width: 320, height: 844 } } },
   ],
   webServer: {
     command: 'npx vite --configLoader runner',

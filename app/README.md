@@ -15,7 +15,7 @@ pnpm test:e2e      # layout e acessibilidade em navegador real (Playwright)
 pnpm test:all      # as duas camadas
 ```
 
-Antes do primeiro `test:e2e`, baixe os navegadores com `pnpm exec playwright install chromium webkit`.
+Antes do primeiro `test:e2e`, baixe o navegador com `pnpm exec playwright install chromium`.
 
 O servidor local usa `http://127.0.0.1:4173/`.
 

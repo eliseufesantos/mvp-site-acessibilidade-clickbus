@@ -117,12 +117,12 @@ npx --yes pnpm@10.28.0 --dir app build
 npx --yes pnpm@10.28.0 --dir app test
 ```
 
-Se a mudança toca layout, CSS, o painel ou qualquer etapa da jornada, rode também `test:e2e`, que precisa dos navegadores baixados uma vez com `pnpm exec playwright install chromium webkit`.
+Se a mudança toca layout, CSS, o painel ou qualquer etapa da jornada, rode também `test:e2e`, que precisa do navegador baixado uma vez com `pnpm exec playwright install chromium`.
 
 A suíte tem duas camadas, e elas não se substituem:
 
 - **Vitest** cobre lógica pura (ambiente `node`) e componentes, hooks e regiões vivas num DOM simulado (jsdom, declarado por `// @vitest-environment jsdom` no topo do arquivo).
-- **Playwright** cobre o que o jsdom não enxerga, que é geometria — o jsdom devolve zero em `getBoundingClientRect`. Roda em desktop, celular no Chromium e celular no WebKit, e audita WCAG 2.1 AA com o axe.
+- **Playwright** cobre o que o jsdom não enxerga, que é geometria — o jsdom devolve zero em `getBoundingClientRect`. Roda em desktop e em celular a 320 CSS px, audita WCAG 2.1 AA com o axe e mede reflow nas cinco etapas da jornada. A fronteira 820/821 px entre celular e desktop tem teste próprio.
 
 Os defeitos que mais custaram nesta base caíram exatamente fora da lógica pura: corrida no reconhecedor de voz, região viva ausente, cabeçalho esticado pelo grid, folha fora do lugar no celular. Todos passavam por uma suíte verde que não renderizava componente algum.
 

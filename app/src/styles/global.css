@@ -5,6 +5,18 @@
 html {
   background: var(--cb-background);
   scroll-behavior: smooth;
+  /* O header é `position: sticky` no topo. Sem esta folga, levar um elemento à
+     vista alinhando pelo topo — por `scrollIntoView`, âncora ou foco vindo de
+     cima — o estaciona embaixo do header. Foi o que fez a caixa de
+     consentimento do checkout ficar coberta nos testes em navegador: o clique
+     caía no header, de forma intermitente, sob carga.
+
+     O valor é em px, e não em rem, de propósito: o header tem altura fixa —
+     67 px no celular e 73 px no desktop, em qualquer escala de texto. Em rem,
+     a folga cresceria à toa com o texto ampliado. 88 px cobre os dois com
+     margem, e o teste "levar um elemento à vista não o deixa embaixo do
+     header", em e2e/layout.spec.ts, acusa se o header crescer além dela. */
+  scroll-padding-top: 88px;
 }
 
 html[data-reduced-motion='true'] {

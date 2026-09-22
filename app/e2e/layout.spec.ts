@@ -1,5 +1,5 @@
-import { expect, test } from '@playwright/test';
-import { ask, openPanel, planFrom, stubApi, withPreferences } from './support';
+import { expect, test } from './fixtures';
+import { ask, goToStep, openPanel, planFrom, stubApi, withPreferences } from './support';
 
 /*
  * Cada teste aqui corresponde a um defeito de geometria que já chegou ao
@@ -126,5 +126,45 @@ test.describe('painel no desktop', () => {
     const viewport = page.viewportSize();
     expect(box?.width).toBeLessThan((viewport?.width ?? 0) / 2);
     await expect(page.getByRole('region', { name: 'Painel de acessibilidade' })).toBeVisible();
+  });
+});
+
+test.describe('fronteira entre celular e desktop', () => {
+  // A fronteira é 820/821 px, registrada no AGENTS.md. Os projetos de celular
+  // têm 320, 390 e 412 px e o de desktop tem 1280: sem este teste, um
+  // breakpoint deslocado para 768 px passaria por todos eles.
+  test.skip(({ isMobile }) => isMobile, 'a largura é fixada pelo próprio teste');
+
+  test('em 820 px o painel é um diálogo modal que trava a página', async ({ page }) => {
+    await page.setViewportSize({ width: 820, height: 900 });
+    await page.goto('/');
+    await openPanel(page);
+    await expect(page.getByRole('dialog', { name: 'Painel de acessibilidade' })).toHaveAttribute('aria-modal', 'true');
+    await expect(page.locator('.accessibility-plugin__backdrop')).toBeVisible();
+    expect(await page.evaluate(() => document.body.style.position)).toBe('fixed');
+  });
+
+  test('em 821 px o painel é uma região ao lado, e a página continua rolável', async ({ page }) => {
+    await page.setViewportSize({ width: 821, height: 900 });
+    await page.goto('/');
+    await openPanel(page);
+    await expect(page.getByRole('region', { name: 'Painel de acessibilidade' })).toBeVisible();
+    await expect(page.locator('.accessibility-plugin__backdrop')).toHaveCount(0);
+    expect(await page.evaluate(() => document.body.style.position)).toBe('');
+  });
+});
+
+test.describe('header fixo', () => {
+  test('levar um elemento à vista não o deixa embaixo do header', async ({ page }) => {
+    // O header é `sticky`. Sem folga de rolagem, alinhar um elemento pelo topo
+    // o estacionava embaixo dele — a caixa de consentimento ficava coberta e o
+    // clique caía no header. `behavior: 'instant'` porque a raiz tem rolagem
+    // suave, e medir no meio da animação mede uma posição intermediária.
+    await goToStep(page, 'checkout');
+    const alvo = page.getByRole('checkbox');
+    await alvo.evaluate((element) => element.scrollIntoView({ behavior: 'instant', block: 'start' }));
+    const header = await page.locator('.site-header').boundingBox();
+    const box = await alvo.boundingBox();
+    expect(box?.y).toBeGreaterThanOrEqual((header?.y ?? 0) + (header?.height ?? 0));
   });
 });
