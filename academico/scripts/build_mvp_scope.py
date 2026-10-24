@@ -1,11 +1,11 @@
 """Gera o escopo técnico do MVP em DOCX.
 
-    python scripts/build_mvp_scope.py
+    python academico/scripts/build_mvp_scope.py
 
-Saída: entregas/Escopo_Tecnico_MVP_ClickBus_Web.docx
+Saída: academico/entregas/Escopo_Tecnico_MVP_ClickBus_Web.docx
 
 Requisitos: Python 3 e python-docx (pip install python-docx). O PDF equivalente
-em entregas/ foi exportado a partir deste DOCX.
+em academico/entregas/ foi exportado a partir deste DOCX.
 
 Atenção: o documento embute quatro capturas da auditoria, que não fazem mais
 parte da árvore do repositório. Antes de rodar, restaure-as do histórico:
@@ -29,8 +29,8 @@ from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 
 
-ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "entregas" / "Escopo_Tecnico_MVP_ClickBus_Web.docx"
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUT = ROOT / "academico" / "entregas" / "Escopo_Tecnico_MVP_ClickBus_Web.docx"
 OUTPUT.parent.mkdir(parents=True, exist_ok=True)
 AUDIT = ROOT / "docs" / "audit"
 

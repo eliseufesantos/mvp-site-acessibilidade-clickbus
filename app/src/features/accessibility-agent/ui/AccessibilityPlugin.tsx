@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { PreferencePatch } from '../../features/accessibility-agent/core/preferences';
-import { getActivePreferenceLabels } from '../../features/accessibility-agent/core/preferences';
-import type { AccessibilityPreferences, JourneyStep } from '../../types';
+import type { PreferencePatch } from '../core/preferences';
+import { getActivePreferenceLabels } from '../core/preferences';
+import type { AccessibilityPreferences, JourneyStep } from '../../../types';
 import { AccessibilityPanel } from './AccessibilityPanel';
-import { ACCESSIBILITY_SLOT_ID } from '../layout/Header';
+import { ACCESSIBILITY_SLOT_ID } from '../../../components/layout/Header';
 import { UniversalAccessIcon } from './UniversalAccessIcon';
-import { focusAfterRender } from '../../utils/focus';
+import { focusAfterRender } from '../../../utils/focus';
 
 interface AccessibilityPluginProps {
   canUndo: boolean;

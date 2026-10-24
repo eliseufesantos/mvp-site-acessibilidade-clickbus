@@ -14,8 +14,8 @@ from docx.shared import Inches, Pt, RGBColor
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = ROOT / ".research" / "rybena" / "report-source.md"
-OUTPUT = ROOT / "docs" / "Pesquisa_Rybena_FIAP.docx"
+SOURCE = ROOT / "academico" / "pesquisa-rybena" / "report-source.md"
+OUTPUT = ROOT / "academico" / "pesquisa-rybena" / "Pesquisa_Rybena_FIAP.docx"
 
 INK = "161B22"
 MUTED = "5B6573"

@@ -75,7 +75,7 @@ Este snapshot não prova que um deployment remoto posterior continua saudável. 
 │   ├── scripts/                      # testes e captura de evidências
 │   └── src/
 │       ├── app/App.tsx               # estado e navegação da jornada
-│       ├── components/               # layout, UI, fachadas e host do plugin
+│       ├── components/               # marca, layout e UI genérica, sem regra de acessibilidade
 │       │                              # layout/Header.tsx expõe o encaixe do acionador
 │       ├── data/trips.ts             # viagens fictícias
 │       ├── features/                 # search, results, seats, checkout e confirmation
@@ -83,14 +83,17 @@ Este snapshot não prova que um deployment remoto posterior continua saudável. 
 │       │   ├── core/                 # contratos, preferências, planner client e executor
 │       │   ├── adapters/             # conteúdo ClickBus e porta Libras/Rybená
 │       │   │                          # libras/selection.ts escolhe real vs. simulado
-│       │   ├── ui/                   # conversa, ajustes, conteúdo e voz
+│       │   ├── ui/                   # host do plugin, painel, ajudas de leitura, filtros de cor,
+│       │   │                          # hook de preferências e accessibility-plugin.css
 │       │   └── tests/                # regressão executável do núcleo
-│       ├── hooks/                    # persistência/aplicação das preferências
-│       └── styles/                   # tokens, base global, componentes e plugin de acessibilidade
+│       └── styles/                   # tokens, base global e componentes da jornada
 ├── docs/                             # produto, engenharia, QA e continuidade
-├── entregas/                         # artefatos finais acadêmicos
-└── scripts/                          # geradores de documentos da entrega
+└── academico/                        # material da disciplina: entregas, pesquisa, resumo e geradores
 ```
+
+Tudo o que é do plugin de acessibilidade mora em `features/accessibility-agent/`. Não recrie `components/accessibility/`, `hooks/` ou `styles/accessibility-plugin.css` na raiz de `src/`, nem arquivos que só reexportam de outro lugar. O CSS do plugin continua importado em `main.tsx`, **depois** de `components.css`: importá-lo de dentro do componente mudaria a ordem da cascata.
+
+Material acadêmico fica em `academico/` e não é lido pelo build, pelos testes nem pelo deploy. Não o devolva para a raiz nem para `docs/`.
 
 ## 5. Instalação e comandos
 
@@ -138,7 +141,7 @@ Os defeitos que mais custaram nesta base caíram exatamente fora da lógica pura
 - Componentes de UI não devem assumir regras comerciais da jornada.
 - Tokens visuais pertencem a `src/styles/tokens.css`; evite valores globais duplicados em componentes.
 - Use os componentes e ícones Lucide existentes antes de criar novas primitivas.
-- O símbolo do acionador é o pictograma universal de acesso, desenhado em `components/accessibility/UniversalAccessIcon.tsx`. Não troque pelo ícone de cadeira de rodas do Lucide: ele representa mobilidade e comunica menos do que o painel oferece.
+- O símbolo do acionador é o pictograma universal de acesso, desenhado em `features/accessibility-agent/ui/UniversalAccessIcon.tsx`. Não troque pelo ícone de cadeira de rodas do Lucide: ele representa mobilidade e comunica menos do que o painel oferece.
 - O contador de ajustes ativos precisa ser estilizado pela classe do próprio acionador (`.accessibility-plugin__trigger-badge`), nunca por um seletor ancorado em `.accessibility-plugin`: o portal tira o botão de dentro do host, e um seletor de ancestral deixa de casar em silêncio.
 - **Libras e Voz não têm superfície intermediária.** Os cartões abrem a aplicação da Rybená, e a seleção do texto acontece na interface dela.
 - **Um único chat atende ajuste e dicionário.** "aumente o texto" e "o que é viação" entram pelo mesmo campo. Quem decide o destino é o **plano**, com as ações `explain_term` e `simplify_content` — nunca heurística de string no cliente. Não recrie uma superfície de Conteúdo separada.

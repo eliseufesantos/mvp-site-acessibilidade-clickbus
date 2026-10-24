@@ -51,10 +51,10 @@ app/src/features/accessibility-agent/
   adapters/libras/contracts.ts
   adapters/libras/rybenaBrowser.ts
   adapters/libras/rybenaUnavailable.ts
+  ui/AccessibilityPlugin.tsx
   ui/AccessibilityPanel.tsx
-  ui/ContentTools.tsx
-app/src/components/accessibility/AccessibilityPlugin.tsx
-app/src/styles/accessibility-plugin.css
+  ui/useAccessibilityPreferences.ts
+  ui/accessibility-plugin.css
 app/server/accessibility/handler.ts
 app/server/accessibility/provider.ts
 app/server/accessibility/prompt.ts

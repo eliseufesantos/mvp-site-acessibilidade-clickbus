@@ -23,7 +23,7 @@ vi.mock('../adapters/libras/selection', () => {
   };
 });
 
-const { AccessibilityPlugin } = await import('../../../components/accessibility/AccessibilityPlugin');
+const { AccessibilityPlugin } = await import('../ui/AccessibilityPlugin');
 
 /*
  * O jsdom não tem `matchMedia`, `visualViewport` nem rolagem real. Os três são

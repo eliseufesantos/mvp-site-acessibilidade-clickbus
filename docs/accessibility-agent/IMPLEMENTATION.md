@@ -118,8 +118,8 @@ Aceite: navegador sem suporte não quebra; fechamento impede envio tardio.
 - `src/features/accessibility-agent/core/`: preferências, contratos, cliente e executor;
 - `src/features/accessibility-agent/adapters/`: registro ClickBus e porta/estado Rybená;
 - `src/features/accessibility-agent/ui/`: conversa, ajustes, conteúdo e voz;
-- `src/components/accessibility/AccessibilityPlugin.tsx`: acionador fixo, superfície desktop/mobile, foco e modo de seleção;
-- `src/styles/accessibility-plugin.css`: identidade visual e responsividade isoladas do plugin;
+- `src/features/accessibility-agent/ui/AccessibilityPlugin.tsx`: acionador fixo, superfície desktop/mobile, foco e modo de seleção;
+- `src/features/accessibility-agent/ui/accessibility-plugin.css`: identidade visual e responsividade isoladas do plugin;
 - `server/accessibility/`: handler protegido, prompts e provedores; `../api/accessibility/`: funções Vercel canônicas na raiz;
 - `src/features/accessibility-agent/tests/`: regressão do núcleo e da interface, executada pelo Vitest;
 - `scripts/capture-accessibility-evidence.mjs`: captura reproduzível em 320×844. As imagens antigas foram removidas; novas capturas devem ser revisadas antes de serem versionadas.

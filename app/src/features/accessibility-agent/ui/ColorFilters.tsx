@@ -1,4 +1,4 @@
-import type { AccessibilityPreferences } from '../../types';
+import type { AccessibilityPreferences } from '../../../types';
 
 /**
  * Camada de saturação e correção de cores.

@@ -2,7 +2,7 @@
 
 ## Comece por aqui
 
-- [`RESUMO-PARA-APRESENTACAO.md`](RESUMO-PARA-APRESENTACAO.md): visão executiva e roteiro-base de dez slides.
+- [`../academico/RESUMO-PARA-APRESENTACAO.md`](../academico/RESUMO-PARA-APRESENTACAO.md): visão executiva e roteiro-base de dez slides.
 - [`accessibility-agent/README.md`](accessibility-agent/README.md): índice da documentação de produto, arquitetura, implementação e validação do plugin.
 - [`guides/00-CONTINUAR-PROJETO.md`](guides/00-CONTINUAR-PROJETO.md): retomada rápida do desenvolvimento.
 - [`guides/09-PLANO-EVOLUCAO-ACESSIBILIDADE.md`](guides/09-PLANO-EVOLUCAO-ACESSIBILIDADE.md): plano de execução da rodada atual — desbloqueio de Gemini e Rybená, correções da auditoria de 18/09/2026 e reconstrução do plugin no padrão de lançador com chat. É o documento que orienta agentes nesta etapa.
@@ -21,7 +21,7 @@ A matriz atual de QA é [`accessibility-agent/VALIDATION.md`](accessibility-agen
 ## Material histórico
 
 - `clickbus-mapping/`: análise realizada em 08/09/2026 sobre uma versão anterior da réplica. As capturas e snapshots brutos foram removidos; os documentos restantes preservam apenas o contexto histórico.
-- `Pesquisa_Rybena_FIAP.docx`: pesquisa anterior à especificação atual. Suas propostas não substituem o PRD e o SDD.
+- `../academico/pesquisa-rybena/Pesquisa_Rybena_FIAP.docx`: pesquisa anterior à especificação atual. Suas propostas não substituem o PRD e o SDD.
 
 ## Referências de marca
 
@@ -29,14 +29,8 @@ A matriz atual de QA é [`accessibility-agent/VALIDATION.md`](accessibility-agen
 - `brand/brand-book-a4.html`: mesma peça em HTML, fonte do PDF acima.
 - `brand/design-system.html`: tokens e componentes visuais extraídos da ClickBus.
 
-## Entregáveis
+## Material acadêmico
 
-Os documentos finais ficam em `entregas/`, na raiz do repositório:
-
-| Arquivo | O que é |
-| --- | --- |
-| `Escopo_Tecnico_MVP_ClickBus_Web.pdf` | escopo técnico elaborado para o MVP |
-| `Escopo_Tecnico_MVP_ClickBus_Web.docx` | mesma peça em formato editável, gerada por `scripts/build_mvp_scope.py` |
-| `Escopo_Original_ClickBus_MVP.pdf` | escopo recebido no início do projeto |
+Entregáveis, pesquisa e resumo para apresentação ficam em [`../academico/`](../academico/README.md), fora da documentação técnica.
 
 Os conceitos visuais antigos e as capturas desatualizadas foram removidos. O histórico do Git preserva esses arquivos caso seja necessário consultar a evolução do projeto.

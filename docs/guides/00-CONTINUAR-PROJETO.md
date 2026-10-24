@@ -33,7 +33,7 @@ Acesse `http://127.0.0.1:4173/`.
 
 ## Ordem de leitura
 
-1. `../RESUMO-PARA-APRESENTACAO.md`
+1. `../../academico/RESUMO-PARA-APRESENTACAO.md`
 2. `01-ARQUITETURA.md`
 3. `02-DESIGN-SYSTEM.md`
 4. `03-ACESSIBILIDADE.md`

@@ -31,7 +31,7 @@ npx --yes pnpm@10.28.0 --dir app build
 npx --yes pnpm@10.28.0 --dir app test:accessibility
 ```
 
-O material atual para apresentação está em `docs/RESUMO-PARA-APRESENTACAO.md`. Os geradores históricos de entregáveis não fazem parte da rotina padrão de desenvolvimento.
+O material atual para apresentação está em `academico/RESUMO-PARA-APRESENTACAO.md`. Os geradores históricos de entregáveis, em `academico/scripts/`, não fazem parte da rotina padrão de desenvolvimento.
 
 ## Convenções
 

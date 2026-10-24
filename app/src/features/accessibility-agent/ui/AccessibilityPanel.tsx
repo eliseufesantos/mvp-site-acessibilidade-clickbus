@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import type { AccessibilityPreferences, JourneyStep } from '../../../types';
 import { Button } from '../../../components/ui/Button';
-import { UniversalAccessIcon } from '../../../components/accessibility/UniversalAccessIcon';
+import { UniversalAccessIcon } from './UniversalAccessIcon';
 import { getPublicContentTargets, resolvePublicContent, simplifyPublicContent } from '../adapters/clickbus/content';
 import { explainFromGlossary, matchGlossaryQuestion } from '../core/glossary';
 import { RYBENA_SIMULATION_NOTICE } from '../adapters/libras/contracts';

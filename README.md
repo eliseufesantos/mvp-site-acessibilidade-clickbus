@@ -11,9 +11,7 @@ Não é necessário instalar ou implementar uma LLM local. Sem credenciais no ru
 - `app/`: aplicação React + TypeScript + Vite.
 - `docs/guides/`: guias técnicos e de continuidade.
 - `docs/brand/`: brandbook e design system recebidos como referência.
-- `docs/RESUMO-PARA-APRESENTACAO.md`: síntese executiva e roteiro-base para slides.
-- `entregas/`: documentos finais em PDF e DOCX.
-- `scripts/`: utilitários históricos de geração dos entregáveis acadêmicos.
+- `academico/`: material da disciplina, separado da solução — resumo para apresentação, entregáveis em PDF e DOCX, pesquisa Rybená e os geradores desses documentos.
 
 ## Pré-requisitos
 
@@ -87,6 +85,6 @@ O diagnóstico de `404: NOT_FOUND` e o passo a passo de configuração estão em
 
 O protótipo é uma simulação acadêmica: não consulta horários reais, não cria pedidos e não processa pagamentos.
 
-Para preparar uma apresentação, use [`docs/RESUMO-PARA-APRESENTACAO.md`](docs/RESUMO-PARA-APRESENTACAO.md).
+Para preparar uma apresentação, use [`academico/RESUMO-PARA-APRESENTACAO.md`](academico/RESUMO-PARA-APRESENTACAO.md).
 
 Para continuar o projeto em outra sessão ou ferramenta, comece por [`docs/guides/00-CONTINUAR-PROJETO.md`](docs/guides/00-CONTINUAR-PROJETO.md).

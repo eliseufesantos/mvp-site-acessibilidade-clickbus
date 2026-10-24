@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityPlugin } from '../components/accessibility/AccessibilityPlugin';
-import { ColorFilters } from '../components/accessibility/ColorFilters';
-import { ReadingAids } from '../components/accessibility/ReadingGuide';
+import { AccessibilityPlugin } from '../features/accessibility-agent/ui/AccessibilityPlugin';
+import { ColorFilters } from '../features/accessibility-agent/ui/ColorFilters';
+import { ReadingAids } from '../features/accessibility-agent/ui/ReadingGuide';
 import { Header } from '../components/layout/Header';
 import { CheckoutPage } from '../features/checkout/CheckoutPage';
 import { ConfirmationPage } from '../features/confirmation/ConfirmationPage';
 import { ResultsPage } from '../features/results/ResultsPage';
 import { SearchPage } from '../features/search/SearchPage';
 import { SeatSelectionPage } from '../features/seats/SeatSelectionPage';
-import { useAccessibilityPreferences } from '../hooks/useAccessibilityPreferences';
+import { useAccessibilityPreferences } from '../features/accessibility-agent/ui/useAccessibilityPreferences';
 import type { JourneyStep, SearchValues, Trip } from '../types';
 import { getDefaultTravelDate } from '../utils/date';
 import { focusAfterRender } from '../utils/focus';

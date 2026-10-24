@@ -1,6 +1,6 @@
 import { ArrowLeft, ArrowRight, Armchair, BusFront, CheckCircle2, MapPin } from 'lucide-react';
 import { useMemo, useRef } from 'react';
-import { ActiveModeBanner } from '../../components/accessibility/ActiveModeBanner';
+import { ActiveModeBanner } from '../accessibility-agent/ui/ActiveModeBanner';
 import { Button } from '../../components/ui/Button';
 import { StepProgress } from '../../components/ui/StepProgress';
 import { formatCurrency } from '../../data/trips';
