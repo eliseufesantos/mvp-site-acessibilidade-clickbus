@@ -16,3 +16,7 @@ tmp/
 .env.*
 app/.env
 app/.env.*
+# Saídas dos testes: relatórios, traces e cobertura são gerados a cada execução.
+app/test-results/
+app/playwright-report/
+app/coverage/

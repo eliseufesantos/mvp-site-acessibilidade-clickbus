@@ -363,6 +363,10 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
     requestControllerRef.current?.abort();
     const controller = new AbortController();
     requestControllerRef.current = controller;
+    // O atalho para os recursos é resposta a UMA falha. Ele se apaga aqui, antes
+    // do caminho do glossário: esse caminho retorna cedo, e o atalho do erro
+    // anterior ficava na tela depois de uma resposta bem-sucedida.
+    setOfferFeatures(false);
     // Caminho determinístico, antes de qualquer rede: uma pergunta de dicionário
     // cujo termo está no glossário local é respondida aqui. O roteamento da
     // intenção dependia de `/api/accessibility/plan`, então uma resposta que já
@@ -387,7 +391,6 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
     setBusy(true);
     setProposal(null);
     setUndoOffered(false);
-    setOfferFeatures(false);
     announce('Analisando seu pedido com o planejador seguro…', 'busy');
     try {
       const response = await requestPlan({
@@ -444,6 +447,16 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
       if (requestControllerRef.current === controller) setBusy(false);
     }
   };
+
+  // Região viva dos estados passageiros. Ela é montada nas DUAS vistas da raiz:
+  // quando só existia dentro do chat, a vista de recursos ficava sem nenhuma —
+  // tocar em Libras ou Voz ali não dava retorno algum, nem visual nem a leitor
+  // de tela, e uma recusa da Rybená era engolida em silêncio. Como as vistas
+  // são exclusivas, há sempre exatamente uma no documento, e ela já está
+  // montada, vazia, antes de qualquer anúncio — condição para ser lida.
+  const statusRegion = (
+    <p className={`assistant-message assistant-message--${tone}`} role="status" aria-atomic="true">{status}</p>
+  );
 
   const playerNote = (mode: 'libras' | 'voz') => {
     if (librasSimulated) return 'Simulação';
@@ -530,6 +543,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
             </div>
 
             {rootView === 'features' ? <FeatureGrid cards={cards} onOpen={handleCard} /> : null}
+            {rootView === 'features' ? statusRegion : null}
 
             {rootView === 'features' && activeLabels.length > 0 ? (
               <section className="active-preferences" aria-labelledby="active-preferences-title">
@@ -607,7 +621,7 @@ export function AccessibilityPanel(props: AccessibilityPanelProps) {
         {/* Estados passageiros do sistema: "Analisando…", erros e recibos de
             execução. A explicação de uma proposta vive no próprio cartão de
             confirmação, que fica fora do fluxo com teto. */}
-        <p className={`assistant-message assistant-message--${tone}`} role="status" aria-atomic="true">{status}</p>
+        {statusRegion}
 
         {offerFeatures ? (
           <div className="a11y-chat__fallback">

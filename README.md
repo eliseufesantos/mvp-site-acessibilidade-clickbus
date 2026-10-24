@@ -55,6 +55,30 @@ npx --yes pnpm@10.28.0 --dir app preview
 
 O `preview` também usa [http://127.0.0.1:4173/](http://127.0.0.1:4173/) e mantém o terminal ocupado até ser encerrado com `Ctrl+C`.
 
+## Testes
+
+A suíte tem duas camadas, e cada uma pega um tipo de defeito que a outra não enxerga.
+
+**Unidade e componente (Vitest).** Lógica pura roda em ambiente `node`; componentes, hooks e regiões vivas rodam num DOM simulado (jsdom). Leva alguns segundos.
+
+```bash
+npx --yes pnpm@10.28.0 --dir app test
+npx --yes pnpm@10.28.0 --dir app test:coverage
+```
+
+**Navegador real (Playwright).** O jsdom não calcula geometria, então layout só se testa num navegador de verdade. Os testes rodam em desktop e em celular a 320 CSS px — o limite do critério de Reflow da WCAG — e incluem auditoria automática de WCAG 2.1 AA com o axe em cada etapa da jornada e em cada vista do painel. Na primeira vez, baixe o navegador:
+
+```bash
+npx --yes pnpm@10.28.0 --dir app exec playwright install chromium
+npx --yes pnpm@10.28.0 --dir app test:e2e
+```
+
+`test:all` roda as duas camadas. `test:accessibility` continua existindo e roda a camada do Vitest.
+
+O GitHub Actions (`.github/workflows/testes.yml`) roda typecheck, build e as duas camadas em todo pull request e em todo push para o `main`.
+
+Nenhum teste fala com a Gemini nem com o CDN da Rybená: a rede e o fornecedor são sempre simulados. Passar no axe não é conformidade comprovada — ele cobre só parte dos critérios da WCAG.
+
 ## Deploy na Vercel
 
 O arquivo `vercel.json` da raiz executa o build da aplicação em `app/` e publica `app/dist`. Ao importar o repositório, mantenha o campo **Root Directory** vazio.

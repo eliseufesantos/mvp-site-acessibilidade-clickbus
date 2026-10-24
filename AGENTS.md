@@ -114,8 +114,21 @@ Antes de entregar código, execute no mínimo:
 ```bash
 npx --yes pnpm@10.28.0 --dir app typecheck
 npx --yes pnpm@10.28.0 --dir app build
-npx --yes pnpm@10.28.0 --dir app test:accessibility
+npx --yes pnpm@10.28.0 --dir app test
 ```
+
+O GitHub Actions roda typecheck, build e as duas camadas em todo pull request (`.github/workflows/testes.yml`); rodar local continua valendo, para não descobrir a falha só no PR.
+
+Se a mudança toca layout, CSS, o painel ou qualquer etapa da jornada, rode também `test:e2e`, que precisa do navegador baixado uma vez com `pnpm exec playwright install chromium`.
+
+A suíte tem duas camadas, e elas não se substituem:
+
+- **Vitest** cobre lógica pura (ambiente `node`) e componentes, hooks e regiões vivas num DOM simulado (jsdom, declarado por `// @vitest-environment jsdom` no topo do arquivo).
+- **Playwright** cobre o que o jsdom não enxerga, que é geometria — o jsdom devolve zero em `getBoundingClientRect`. Roda em desktop e em celular a 320 CSS px, audita WCAG 2.1 AA com o axe e mede reflow nas cinco etapas da jornada. A fronteira 820/821 px entre celular e desktop tem teste próprio.
+
+Os defeitos que mais custaram nesta base caíram exatamente fora da lógica pura: corrida no reconhecedor de voz, região viva ausente, cabeçalho esticado pelo grid, folha fora do lugar no celular. Todos passavam por uma suíte verde que não renderizava componente algum.
+
+**Um teste que passa na primeira execução ainda não provou nada.** Os testes desta suíte foram verificados por mutação: o comportamento protegido é quebrado de propósito na fonte e o teste correspondente precisa falhar. Ao escrever um teste novo, faça o mesmo — foi assim que se descobriu, por exemplo, que o antigo teste de retry do provedor deixava passar um teto de `retry-after` mudado de 2 s para 2,4 s. Ao mutar, preserve os bytes do arquivo original (leia e grave em modo binário ou com `newline=''`): regravar em modo texto no Windows troca LF por CRLF sem aviso.
 
 ## 6. Invariantes da aplicação
 
@@ -220,7 +233,7 @@ A cobertura automática comprova handler, construção/validação da URL e cont
 
 Para mudanças no núcleo ou no painel:
 
-- amplie `app/src/features/accessibility-agent/tests/run.ts` quando houver novo comportamento determinístico;
+- amplie a suíte em `app/src/features/accessibility-agent/tests/` quando houver novo comportamento. Lógica pura roda no ambiente `node`; o que depende de DOM declara `// @vitest-environment jsdom` no topo do arquivo;
 - valide ações desconhecidas, estado obsoleto, idempotência, indisponibilidade e exclusões de conteúdo;
 - teste teclado, foco, Escape e retorno ao acionador quando alterar diálogos/painéis;
 - ao alterar ferramentas de conteúdo, teste o glossário determinístico antes da rede, a recusa de alvos fora da lista pública e a declaração de origem da resposta na interface;

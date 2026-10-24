@@ -1,3 +1,4 @@
+import { expect, test } from 'vitest';
 import type { AccessibilityPreferences } from '../../../types';
 import {
   buildRybenaScriptUrl,
@@ -65,22 +66,18 @@ import {
   type LlmProvider,
 } from '../../../../server/accessibility/provider';
 
-let passed = 0;
-const test = async (name: string, run: () => void | Promise<void>) => {
-  try {
-    await run();
-    passed += 1;
-    console.log(`✓ ${name}`);
-  } catch (error) {
-    console.error(`✗ ${name}`);
-    throw error;
-  }
+// O runner antigo relançava o erro no primeiro teste que falhava e abortava a
+// execução inteira: nunca se sabia quantos estavam quebrados. O Vitest isola
+// cada teste e relata todos.
+//
+// `assert` e `equal` ficam como atalhos sobre `expect` para não reescrever
+// duzentas chamadas; a troca que importa é de semântica. `equal` comparava via
+// `JSON.stringify`, que depende da ordem das chaves e descarta `undefined` em
+// silêncio — `toEqual` compara estrutura e mostra o diff quando falha.
+const assert: (condition: unknown, message?: string) => asserts condition = (condition, message) => {
+  expect(condition, message).toBeTruthy();
 };
-const assert: (condition: unknown, message?: string) => asserts condition = (condition, message = 'assertion failed') => {
-  if (!condition) throw new Error(message);
-};
-const equal = (actual: unknown, expected: unknown) =>
-  assert(JSON.stringify(actual) === JSON.stringify(expected), `expected ${JSON.stringify(expected)}, received ${JSON.stringify(actual)}`);
+const equal = (actual: unknown, expected: unknown) => expect(actual).toEqual(expected);
 
 const unlimitedQuota: AccessibilityRequestQuota = { consume: () => ({ allowed: true }) };
 
@@ -135,7 +132,7 @@ class MemoryStorage implements StorageLike {
   setItem(key: string, value: string) { this.values.set(key, value); }
 }
 
-await test('migrates flat v2 preferences without coupling letter and line controls afterward', () => {
+test('migrates flat v2 preferences without coupling letter and line controls afterward', () => {
   const storage = new MemoryStorage();
   storage.setItem('clickbus-a11y-v2', JSON.stringify({ highContrast: true, textScale: 1.25, comfortableSpacing: true, largeControls: true, readingGuide: true, reducedMotion: false, librasSpeed: 0.75 }));
   const loaded = loadPreferences(storage);
@@ -147,7 +144,7 @@ await test('migrates flat v2 preferences without coupling letter and line contro
   assert(next?.lineHeight === 'comfortable');
 });
 
-await test('migrates legacy v1 elderly mode', () => {
+test('migrates legacy v1 elderly mode', () => {
   const storage = new MemoryStorage();
   storage.setItem('clickbus-a11y-v1', JSON.stringify({ elderlyMode: true, highContrast: true }));
   const loaded = loadPreferences(storage);
@@ -155,7 +152,7 @@ await test('migrates legacy v1 elderly mode', () => {
   assert(loaded.preferences.textScale === 1.125 && loaded.preferences.controlSize === 'large');
 });
 
-await test('falls back safely on invalid storage and serializes v4', () => {
+test('falls back safely on invalid storage and serializes v4', () => {
   const storage = new MemoryStorage();
   storage.setItem('clickbus-a11y-v4', '{bad json');
   equal(loadPreferences(storage).preferences, getDefaultPreferences());
@@ -163,7 +160,7 @@ await test('falls back safely on invalid storage and serializes v4', () => {
   assert(encoded.includes('"version":4') && encoded.includes('"cursor":"large"'));
 });
 
-await test('migrates v3 preferences to v4 without losing what was saved', () => {
+test('migrates v3 preferences to v4 without losing what was saved', () => {
   // v4 so acrescentou saturacao, correcao de cores e fonte para dislexia. Quem
   // ja tinha preferencias salvas nao pode perde-las na atualizacao.
   const storage = new MemoryStorage();
@@ -197,7 +194,7 @@ await test('migrates v3 preferences to v4 without losing what was saved', () => 
   assert(atual.migratedFrom === null && atual.preferences.saturation === 'grayscale');
 });
 
-await test('colour correction increases separation instead of simulating the deficiency', () => {
+test('colour correction increases separation instead of simulating the deficiency', () => {
   // Esta suite existe por causa de um defeito real: a primeira versao usava as
   // matrizes de SIMULACAO de dicromacia, que tornam as cores menos
   // distinguiveis justamente para quem escolhe o controle "correcao".
@@ -246,7 +243,7 @@ await test('colour correction increases separation instead of simulating the def
   }
 });
 
-await test('accepts the new colour and dyslexia preferences and rejects invalid values', () => {
+test('accepts the new colour and dyslexia preferences and rejects invalid values', () => {
   equal(parsePreferencePatch({ saturation: 'grayscale' }), { saturation: 'grayscale' });
   equal(parsePreferencePatch({ colorFilter: 'deuteranopia' }), { colorFilter: 'deuteranopia' });
   equal(parsePreferencePatch({ dyslexiaFont: true }), { dyslexiaFont: true });
@@ -266,23 +263,23 @@ await test('accepts the new colour and dyslexia preferences and rejects invalid 
   assert(labels.includes('Saturação baixa') && labels.includes('Correção protanopia') && labels.includes('Fonte para dislexia'));
 });
 
-await test('rejects unknown and invalid preference values', () => {
+test('rejects unknown and invalid preference values', () => {
   assert(parsePreferencePatch({ madeUp: true }) === null);
   assert(parsePreferencePatch({ textScale: 3 }) === null);
 });
 
-await test('comfortable preset preserves independent preferences', () => {
+test('comfortable preset preserves independent preferences', () => {
   const current = { ...getDefaultPreferences(), contrast: 'high' as const, readingGuide: true };
   const next = applyPreferencePatch(current, COMFORTABLE_READING_PATCH);
   assert(next?.contrast === 'high' && next.readingGuide && next.textAlign === 'left');
 });
 
-await test('planner schema rejects unknown actions and fields', () => {
+test('planner schema rejects unknown actions and fields', () => {
   const invalid = plannerResponseSchema.safeParse({ contractVersion: CONTRACT_VERSION, requestId: 'r', planId: 'p', baseStateRevision: 0, pageEpoch: 1, panelSession: 1, mode: 'apply', message: 'x', actions: [{ type: 'buy_ticket' }] });
   assert(!invalid.success);
 });
 
-await test('Gemini endpoint builder accepts only the native Google host and matching model', () => {
+test('Gemini endpoint builder accepts only the native Google host and matching model', () => {
   const expected = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent';
   assert(buildGeminiGenerateContentUrl('https://generativelanguage.googleapis.com/v1beta', 'gemini-flash-latest') === expected);
   assert(buildGeminiGenerateContentUrl(expected, 'models/gemini-flash-latest') === expected);
@@ -297,7 +294,7 @@ await test('Gemini endpoint builder accepts only the native Google host and matc
   assert(rejected === 3);
 });
 
-await test('Gemini provider sends a native structured request and parses split JSON parts', async () => {
+test('Gemini provider sends a native structured request and parses split JSON parts', async () => {
   const sentinelKey = 'test-only-key';
   const controller = new AbortController();
   let calls = 0;
@@ -338,7 +335,7 @@ await test('Gemini provider sends a native structured request and parses split J
   assert(calls === 1);
 });
 
-await test('Gemini thinkingLevel uses the documented enum and only for the Gemini 3 family', async () => {
+test('Gemini thinkingLevel uses the documented enum and only for the Gemini 3 family', async () => {
   const signal = new AbortController().signal;
   const thinkingConfigFor = async (model: string) => {
     let captured: Record<string, any> | undefined;
@@ -370,7 +367,7 @@ await test('Gemini thinkingLevel uses the documented enum and only for the Gemin
   }
 });
 
-await test('Gemini provider fails closed on blocked, incomplete and malformed responses without retry', async () => {
+test('Gemini provider fails closed on blocked, incomplete and malformed responses without retry', async () => {
   const configuration = {
     endpoint: 'https://generativelanguage.googleapis.com/v1beta',
     model: 'gemini-flash-latest',
@@ -401,75 +398,7 @@ await test('Gemini provider fails closed on blocked, incomplete and malformed re
   assert(httpCalls === 1);
 });
 
-await test('Gemini provider retries once on 429 and 503 and never on deterministic failures', async () => {
-  const configuration = {
-    endpoint: 'https://generativelanguage.googleapis.com/v1beta',
-    model: 'gemini-2.5-flash',
-    apiKey: 'test-only-key',
-  };
-  const signal = new AbortController().signal;
-  const okBody = () => new Response(JSON.stringify({
-    candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '{"ok":true}' }] } }],
-  }), { status: 200, headers: { 'content-type': 'application/json' } });
-
-  // Recusa transitória seguida de sucesso: a segunda tentativa entrega.
-  for (const status of [429, 503]) {
-    let calls = 0;
-    const provider = new GeminiProvider(configuration, async () => {
-      calls += 1;
-      return calls === 1 ? new Response('{}', { status }) : okBody();
-    });
-    equal(await provider.complete('system', 'user', signal, TEXT_RESPONSE_JSON_SCHEMA), { ok: true });
-    assert(calls === 2, `esperava uma repeticao para ${status}, houve ${calls} chamada(s)`);
-  }
-
-  // Recusa persistente: exatamente duas chamadas, nunca um laço.
-  for (const status of [429, 503]) {
-    let calls = 0;
-    const provider = new GeminiProvider(configuration, async () => {
-      calls += 1;
-      return new Response('{}', { status });
-    });
-    await expectError(provider.complete('system', 'user', signal, TEXT_RESPONSE_JSON_SCHEMA), `provider_http_${status}`);
-    assert(calls === 2, `esperava no maximo uma repeticao para ${status}, houve ${calls}`);
-  }
-
-  // Falhas determinísticas não repetem.
-  for (const status of [400, 403, 404, 500]) {
-    let calls = 0;
-    const provider = new GeminiProvider(configuration, async () => {
-      calls += 1;
-      return new Response('{}', { status });
-    });
-    await expectError(provider.complete('system', 'user', signal, TEXT_RESPONSE_JSON_SCHEMA), `provider_http_${status}`);
-    assert(calls === 1, `${status} nao pode repetir, houve ${calls} chamada(s)`);
-  }
-
-  // `retry-after` longo é limitado para caber no timeout de 10 s do handler.
-  let cappedCalls = 0;
-  const capped = new GeminiProvider(configuration, async () => {
-    cappedCalls += 1;
-    return cappedCalls === 1
-      ? new Response('{}', { status: 503, headers: { 'retry-after': '600' } })
-      : okBody();
-  });
-  const startedAt = Date.now();
-  equal(await capped.complete('system', 'user', signal, TEXT_RESPONSE_JSON_SCHEMA), { ok: true });
-  assert(Date.now() - startedAt < 4_000, 'a espera do retry-after precisa respeitar o teto');
-
-  // Cancelar durante a espera interrompe em vez de seguir para a segunda tentativa.
-  const aborting = new AbortController();
-  let abortedCalls = 0;
-  const abortable = new GeminiProvider(configuration, async () => {
-    abortedCalls += 1;
-    setTimeout(() => aborting.abort(), 10);
-    return new Response('{}', { status: 503 });
-  });
-  await expectError(abortable.complete('system', 'user', aborting.signal, TEXT_RESPONSE_JSON_SCHEMA), 'provider_aborted');
-  assert(abortedCalls === 1);
-});
-
-await test('server sends the matching output schema and surfaces a stable failure code', async () => {
+test('server sends the matching output schema and surfaces a stable failure code', async () => {
   const schemaFor = async (endpoint: 'plan' | 'explain' | 'simplify', body: unknown) => {
     let received: unknown;
     const provider: LlmProvider = {
@@ -517,7 +446,7 @@ await test('server sends the matching output schema and surfaces a stable failur
   assert(typeof mismatchBody.detail === 'string');
 });
 
-await test('provider factory keeps missing configuration disabled and selects Gemini by host', () => {
+test('provider factory keeps missing configuration disabled and selects Gemini by host', () => {
   assert(getConfiguredProvider({}) === null);
   assert(getConfiguredProvider({
     ACCESSIBILITY_LLM_ENDPOINT: 'https://generativelanguage.googleapis.com/v1beta',
@@ -536,7 +465,7 @@ await test('provider factory keeps missing configuration disabled and selects Ge
   }) !== null);
 });
 
-await test('executor validates revision and applies each plan only once', async () => {
+test('executor validates revision and applies each plan only once', async () => {
   let preferences: AccessibilityPreferences = getDefaultPreferences();
   let revision = 0;
   let applications = 0;
@@ -574,13 +503,13 @@ await test('executor validates revision and applies each plan only once', async 
   assert(rejected, 'stale plan should be rejected');
 });
 
-await test('Rybená adapter stays unavailable without network behavior', async () => {
+test('Rybená adapter stays unavailable without network behavior', async () => {
   const adapter: RybenaAdapter = new RybenaUnavailableAdapter();
   const receipt = await adapter.translate({ id: 'search-help', text: 'Ajuda' });
   assert(receipt.status === 'unavailable' && receipt.message === RYBENA_UNAVAILABLE_MESSAGE);
 });
 
-await test('Rybená accepts only the expected tokenized API script URL', () => {
+test('Rybená accepts only the expected tokenized API script URL', () => {
   const testToken = 'a'.repeat(64);
   const expected = `https://cdn.rybena.com.br/dom/master/latest/rybena.js?token=${testToken}&mode=full&disableAccessibilityButton=true&doNotTrack=true`;
   assert(parseRybenaScriptUrl(expected) === expected);
@@ -600,7 +529,7 @@ await test('Rybená accepts only the expected tokenized API script URL', () => {
   }
 });
 
-await test('Rybená runtime configuration is server-sourced and fails closed', async () => {
+test('Rybená runtime configuration is server-sourced and fails closed', async () => {
   const testToken = 'b'.repeat(64);
   const scriptUrl = buildRybenaScriptUrl(testToken);
   assert(scriptUrl !== null && parseRybenaScriptUrl(scriptUrl) === scriptUrl);
@@ -638,14 +567,14 @@ await test('Rybená runtime configuration is server-sourced and fails closed', a
   assert(parseRybenaScriptUrl(payload.scriptUrl) === scriptUrl);
 });
 
-await test('content adapter excludes checkout and confirmation', () => {
+test('content adapter excludes checkout and confirmation', () => {
   assert(getPublicContentTargets('checkout').length === 0);
   assert(getPublicContentTargets('confirmation').length === 0);
   assert(resolvePublicContent('search', 'search-help')?.allowSimplify === true);
   assert(resolvePublicContent('search', 'unknown') === null);
 });
 
-await test('Rybená browser adapter maps the documented player controls', async () => {
+test('Rybená browser adapter maps the documented player controls', async () => {
   const calls: string[] = [];
   let onTranslated: () => void = () => undefined;
   const runtime: RybenaRuntime = {
@@ -683,7 +612,7 @@ await test('Rybená browser adapter maps the documented player controls', async 
   ]);
 });
 
-await test('Rybena setMode resends the switch and commits only what the player confirmed', async () => {
+test('Rybena setMode resends the switch and commits only what the player confirmed', async () => {
   const calls: string[] = [];
   let recusaTroca = false;
   const runtime: RybenaRuntime = {
@@ -730,7 +659,7 @@ await test('Rybena setMode resends the switch and commits only what the player c
   ]);
 });
 
-await test('development Libras adapter walks the real state machine without network', async () => {
+test('development Libras adapter walks the real state machine without network', async () => {
   let pendingTranslation: (() => void) | null = null;
   const adapter = new RybenaDevelopmentAdapter({
     delay: async () => undefined,
@@ -772,7 +701,7 @@ await test('development Libras adapter walks the real state machine without netw
   assert(adapter.getSnapshot().state === 'ready');
 });
 
-await test('development Libras adapter is idempotent and rejects impossible transitions', async () => {
+test('development Libras adapter is idempotent and rejects impossible transitions', async () => {
   const adapter = new RybenaDevelopmentAdapter({ delay: async () => undefined, schedule: () => () => undefined });
 
   const first = await adapter.initialize();
@@ -797,7 +726,7 @@ await test('development Libras adapter is idempotent and rejects impossible tran
   assert(speed.status === 'accepted' && sameSpeed.message.includes('já estava'));
 });
 
-await test('the simulated Libras adapter is unreachable outside development', () => {
+test('the simulated Libras adapter is unreachable outside development', () => {
   assert(LIBRAS_SIMULATION_ENV_VAR === 'VITE_A11Y_LIBRAS_SIMULATION');
   assert(LIBRAS_SIMULATION_ENABLED_VALUE === 'on');
 
@@ -813,13 +742,13 @@ await test('the simulated Libras adapter is unreachable outside development', ()
   assert(shouldSimulateLibras({ dev: true, simulation: LIBRAS_SIMULATION_ENABLED_VALUE }) === true);
 });
 
-await test('only the development adapter declares itself simulated', () => {
+test('only the development adapter declares itself simulated', () => {
   assert(new RybenaDevelopmentAdapter().getSnapshot().simulated === true);
   assert(new RybenaUnavailableAdapter().getSnapshot().simulated === false);
   assert(new RybenaBrowserAdapter(async () => { throw new Error('sem runtime'); }).getSnapshot().simulated === false);
 });
 
-await test('the planner prompt announces the version the validator enforces', () => {
+test('the planner prompt announces the version the validator enforces', () => {
   // A versao do prompt ja ficou para tras de CONTRACT_VERSION uma vez. Instruir
   // o modelo a devolver uma versao que o servidor rejeita quebra pedidos
   // validos, e o enum do esquema estruturado nao garante sozinho a correcao.
@@ -834,7 +763,7 @@ await test('the planner prompt announces the version the validator enforces', ()
   }
 });
 
-await test('contract 2.2 carries the voice and content actions and rejects the previous version', () => {
+test('contract 2.2 carries the voice and content actions and rejects the previous version', () => {
   assert(CONTRACT_VERSION === '2.2');
   for (const type of ['open_voice', 'close_voice', 'speak_content', 'pause_voice', 'resume_voice', 'stop_voice']) {
     assert(ALL_ACTION_TYPES.includes(type as never), `${type} deveria estar no contrato`);
@@ -866,7 +795,7 @@ await test('contract 2.2 carries the voice and content actions and rejects the p
   equal(PLANNER_RESPONSE_JSON_SCHEMA.properties.contractVersion.enum, ['2.2']);
 });
 
-await test('executor routes voice and Libras to the same player in the right mode', async () => {
+test('executor routes voice and Libras to the same player in the right mode', async () => {
   const calls: string[] = [];
   const player = new RybenaDevelopmentAdapter({ delay: async () => undefined, schedule: () => () => undefined });
   const traced: RybenaAdapter = {
@@ -929,7 +858,7 @@ await test('executor routes voice and Libras to the same player in the right mod
   assert(!calls.includes('mode:voz;mode:voz'));
 });
 
-await test('content actions answer with text and prefer the deterministic path', async () => {
+test('content actions answer with text and prefer the deterministic path', async () => {
   const chamadas: string[] = [];
   const base = {
     requestId: 'request-conteudo',
@@ -994,7 +923,7 @@ await test('content actions answer with text and prefer the deterministic path',
   assert(recusado, 'simplify_content sem capacidade deve ser recusado');
 });
 
-await test('executor refuses player actions that are not in the capability list', async () => {
+test('executor refuses player actions that are not in the capability list', async () => {
   const player = new RybenaDevelopmentAdapter({ delay: async () => undefined, schedule: () => () => undefined });
   const dependencies = {
     requestId: 'request-cap',
@@ -1026,7 +955,7 @@ await test('executor refuses player actions that are not in the capability list'
   assert(player.getSnapshot().state === 'idle', 'nada pode ter acontecido com o player');
 });
 
-await test('the Rybena port never exposes the vendor visual controls to the executor', async () => {
+test('the Rybena port never exposes the vendor visual controls to the executor', async () => {
   // Secao 7.4: os ajustes visuais sao do executor local. Se a Rybena tambem
   // aplicar, os efeitos somam e quebram. Este runtime registra qualquer toque.
   const visualTouched: string[] = [];
@@ -1093,7 +1022,7 @@ await test('the Rybena port never exposes the vendor visual controls to the exec
   }
 });
 
-await test('content adapter simplifies only reviewed public targets locally', () => {
+test('content adapter simplifies only reviewed public targets locally', () => {
   const simplified = simplifyPublicContent('search', 'search-help');
   assert(simplified?.includes('selecione Buscar passagens'));
   assert(simplified !== resolvePublicContent('search', 'search-help')?.text);
@@ -1102,7 +1031,7 @@ await test('content adapter simplifies only reviewed public targets locally', ()
   assert(simplifyPublicContent('confirmation', 'search-help') === null);
 });
 
-await test('glossary explains travel terms deterministically', () => {
+test('glossary explains travel terms deterministically', () => {
   assert(explainFromGlossary('viação')?.explanation.includes('empresa'));
   assert(explainFromGlossary('termo inexistente') === null);
   // "desembarque" contem "embarque": sem precedencia da correspondencia exata,
@@ -1111,7 +1040,7 @@ await test('glossary explains travel terms deterministically', () => {
   assert(explainFromGlossary('embarque')?.term === 'Embarque');
 });
 
-await test('a dictionary question answered offline never depends on the planner', () => {
+test('a dictionary question answered offline never depends on the planner', () => {
   // O roteamento da intencao passava obrigatoriamente por `/plan`, entao uma
   // resposta que ja existia offline caia junto com a cota do provedor.
   assert(matchGlossaryQuestion('O que é viação?')?.term === 'Viação');
@@ -1128,7 +1057,7 @@ await test('a dictionary question answered offline never depends on the planner'
   assert(matchGlossaryQuestion('o que é aquela parte da viagem em que preciso trocar de onibus no meio') === null);
 });
 
-await test('dictation survives the silence timeout the browser imposes', () => {
+test('dictation survives the silence timeout the browser imposes', () => {
   // O navegador encerra o reconhecimento sozinho depois de um trecho de
   // silencio, mesmo com `continuous = true`. Sem religar, quem formula uma
   // frase mais longa perdia a sessao no meio, sem explicacao na tela.
@@ -1145,7 +1074,7 @@ await test('dictation survives the silence timeout the browser imposes', () => {
   assert(shouldKeepListening({ requestedStop: false, fatalError: false, elapsedMs: MAX_LISTENING_MS - 1 }));
 });
 
-await test('dictation keeps what was already said across restarts', () => {
+test('dictation keeps what was already said across restarts', () => {
   // `event.results` recomeca do zero a cada religamento: sem acumular, cada
   // religamento apagaria o que a pessoa ja tinha ditado.
   equal(joinTranscript('quero aumentar', 'o texto da pagina'), 'quero aumentar o texto da pagina');
@@ -1154,7 +1083,7 @@ await test('dictation keeps what was already said across restarts', () => {
   equal(joinTranscript('  espacos  ', '  sobrando '), 'espacos sobrando');
 });
 
-await test('dictation only surfaces errors that repeating would not solve', () => {
+test('dictation only surfaces errors that repeating would not solve', () => {
   // Permissao negada e ausencia de microfone sao definitivos: viram texto na
   // tela e encerram a escuta.
   assert(describeVoiceError('not-allowed').fatal);
@@ -1170,7 +1099,7 @@ await test('dictation only surfaces errors that repeating would not solve', () =
   assert(describeVoiceError('no-speech').text === '');
 });
 
-await test('server accepts a valid provider response and rejects output outside the safe contract', async () => {
+test('server accepts a valid provider response and rejects output outside the safe contract', async () => {
   const validProvider: LlmProvider = {
     complete: async () => plannerResponseBody('request-200'),
   };
@@ -1193,7 +1122,7 @@ await test('server accepts a valid provider response and rejects output outside 
   assert(invalid.status === 502);
 });
 
-await test('server keeps explanation and simplification on their text-only contracts', async () => {
+test('server keeps explanation and simplification on their text-only contracts', async () => {
   const provider: LlmProvider = {
     complete: async (_system, user) => {
       const request = JSON.parse(user) as { requestId: string };
@@ -1216,7 +1145,7 @@ await test('server keeps explanation and simplification on their text-only contr
   assert(explanation.status === 200 && simplification.status === 200);
 });
 
-await test('server rejects cross-origin, non-JSON and oversized requests before calling the provider', async () => {
+test('server rejects cross-origin, non-JSON and oversized requests before calling the provider', async () => {
   let calls = 0;
   const provider: LlmProvider = {
     complete: async () => {
@@ -1248,7 +1177,7 @@ await test('server rejects cross-origin, non-JSON and oversized requests before 
   assert(oversized.status === 413 && calls === 0);
 });
 
-await test('server rate limit returns 429 without a second paid provider call', async () => {
+test('server rate limit returns 429 without a second paid provider call', async () => {
   let calls = 0;
   const provider: LlmProvider = {
     complete: async (_system, user) => {
@@ -1264,9 +1193,7 @@ await test('server rate limit returns 429 without a second paid provider call', 
   assert(calls === 1);
 });
 
-await test('server returns an honest 503 when no provider is configured', async () => {
+test('server returns an honest 503 when no provider is configured', async () => {
   const response = await handleAccessibilityRequest(jsonRequest(plannerRequestBody('request-503')), 'plan', null, unlimitedQuota);
   assert(response.status === 503);
 });
-
-console.log(`\n${passed} testes de acessibilidade passaram.`);

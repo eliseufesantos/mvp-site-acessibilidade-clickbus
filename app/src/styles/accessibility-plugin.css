@@ -579,7 +579,8 @@
 
 /* A regiao viva existe sempre, para que o anuncio funcione; vazia, nao ocupa
    espaco nem desenha caixa. */
-.accessibility-plugin .a11y-chat .assistant-message:empty {
+/* Vale fora do chat também: na vista de recursos a faixa fica sob a grade. */
+.accessibility-plugin .assistant-message:empty {
   margin: 0;
   padding: 0;
   border: 0;
