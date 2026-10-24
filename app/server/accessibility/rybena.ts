@@ -24,7 +24,8 @@ export const buildRybenaScriptUrl = (token: string): string | null => {
   // `full` carrega a interface do fornecedor, com Libras e Voz e a seleção de
   // texto dele. `disableAccessibilityButton` remove os ajustes visuais da barra
   // — sem isso, os controles dele somam com o executor local e o resultado
-  // quebra: zoom dobrado e filtros de contraste em conflito (seção 7.4).
+  // quebra: zoom dobrado e filtros de contraste em conflito (decisões em
+  // `docs/PRODUTO.md`).
   url.searchParams.set('mode', 'full');
   url.searchParams.set('disableAccessibilityButton', 'true');
   url.searchParams.set('doNotTrack', 'true');

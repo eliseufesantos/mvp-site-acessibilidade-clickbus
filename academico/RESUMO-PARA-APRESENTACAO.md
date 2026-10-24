@@ -145,9 +145,7 @@ Evite afirmar que o projeto:
 
 ## Fontes para aprofundamento
 
-- [PRD do agente de acessibilidade](../docs/accessibility-agent/PRD.md)
-- [Arquitetura técnica do agente](../docs/accessibility-agent/SDD.md)
-- [Estado da implementação](../docs/accessibility-agent/IMPLEMENTATION.md)
-- [Matriz de validação](../docs/accessibility-agent/VALIDATION.md)
-- [Arquitetura geral](../docs/guides/01-ARQUITETURA.md)
+- [Produto e decisões](../docs/PRODUTO.md)
+- [Arquitetura](../docs/ARQUITETURA.md)
+- [Validação e pendências](../docs/VALIDACAO.md)
 - [Dados fictícios da jornada](../app/src/data/trips.ts)

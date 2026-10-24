@@ -53,7 +53,7 @@ Snapshot operacional atualizado em **19/09/2026**:
 - `@types/node` é dependência explícita do app e a resolução de tipos está restrita ao `app/node_modules`;
 - adaptador de desenvolvimento de Libras e voz implementado e exercitado no navegador em 19/09; ele percorre a máquina de estados sem rede, exibe aviso permanente de simulação e está ausente do bundle de produção;
 - painel de acessibilidade reconstruído no padrão **lançador + superfície** em 19/09: acionador circular no header, grade 2×2 de cartões e chat. O `tablist` de três abas não existe mais. Em 20/09 a raiz passou a ter duas vistas com uma chave entre elas, abrindo no assistente;
-- preferências promovidas a **v4** com saturação, correção de cores e fonte para dislexia, portadas para o executor local em vez de delegadas à Rybená — ver a decisão na seção 7.4 do plano;
+- preferências promovidas a **v4** com saturação, correção de cores e fonte para dislexia, portadas para o executor local em vez de delegadas à Rybená — ver as decisões em `docs/PRODUTO.md`;
 - contrato do agente na versão **2.2**, com as seis ações de voz e as duas de conteúdo. O servidor responde `400` a um pedido `2.0` e o executor rejeita um plano `2.0` antes de qualquer efeito;
 - regressão integral de 19/09 com axe-core 4.10.2: **0 violações** em 5 telas e com o painel aberto em 1440, 821, 820, 390 e 320 px; 0 px de overflow, inclusive em 320 px com texto a 150% e alto contraste; jornada completa sem erro de console. A contagem de `passes` caiu de 304 para 295 porque `aria-required-children` e `aria-required-parent` ficaram **inaplicáveis** com a saída do `tablist` — nenhuma regra passou de aprovada a violada;
 - `.tmp-chrome-qa/` está ignorado e não deve voltar a ser versionado.
@@ -72,7 +72,7 @@ Este snapshot não prova que um deployment remoto posterior continua saudável. 
 ├── api/accessibility/                # funções Vercel de plan/explain/simplify na raiz canônica
 ├── app/                              # não recrie `app/api/`: os wrappers ficam só em `api/` na raiz
 │   ├── server/accessibility/         # handler, prompts e provedor LLM
-│   ├── scripts/                      # testes e captura de evidências
+│   ├── e2e/                          # testes Playwright: axe, reflow e geometria
 │   └── src/
 │       ├── app/App.tsx               # estado e navegação da jornada
 │       ├── components/               # marca, layout e UI genérica, sem regra de acessibilidade
@@ -245,18 +245,9 @@ Para mudanças no núcleo ou no painel:
 - inspecione console/rede ao tocar em IA, voz ou Rybená;
 - registre `PASS`, `FAIL`, `NOT RUN` e `BLOCKED` separadamente; doubles não provam integrações reais.
 
-Captura reproduzível em 320×844, com o preview em execução na porta esperada:
+Registre o resultado de verificações manuais e de integrações reais em `docs/VALIDACAO.md`, que é o único lugar do `docs/` com estado.
 
-```bash
-# terminal 1, na raiz
-npx --yes pnpm@10.28.0 --dir app preview --port 4175
-
-# terminal 2
-cd app
-node scripts/capture-accessibility-evidence.mjs
-```
-
-Não versione perfis de navegador, caches ou credenciais junto às evidências. O script pode recriar `docs/accessibility-agent/evidence/`, mas uma captura só deve ser versionada depois de revisada e confirmada como representação da interface atual. As evidências históricas de mapeamento foram removidas e não devem ser restauradas sem uma nova auditoria.
+A geometria em 320 px é coberta pelo `test:e2e`. O antigo script de captura por CDP foi removido em 24/10/2026, porque procurava seletores do painel anterior e falhava em silêncio. Não versione perfis de navegador, caches ou credenciais junto a evidências, e só versione uma captura depois de revisada e confirmada como representação da interface atual.
 
 ## 9. Vercel
 
@@ -300,27 +291,19 @@ Informe ao usuário arquivos alterados, validações executadas e limitações r
 Leia conforme a tarefa:
 
 1. `AGENTS.md` — regras operacionais para agentes;
-2. `docs/accessibility-agent/PRD.md` — escopo e requisitos do produto;
-3. `docs/accessibility-agent/SDD.md` — arquitetura normativa do agente;
-4. `docs/accessibility-agent/VALIDATION.md` — matriz e evidências;
-5. `docs/accessibility-agent/IMPLEMENTATION.md` — decisões e estado da entrega;
-6. `docs/guides/00-CONTINUAR-PROJETO.md` — retomada rápida;
-7. `docs/guides/01-ARQUITETURA.md` — organização geral;
-8. `docs/guides/05-DESENVOLVIMENTO.md` — convenções e rotina;
-9. `docs/guides/08-DEPLOY-VERCEL.md` — configuração de hospedagem.
+2. `docs/PRODUTO.md` — escopo, comportamento e decisões de produto;
+3. `docs/ARQUITETURA.md` — estrutura, contratos, Gemini, Rybená e segurança;
+4. `docs/VALIDACAO.md` — estado das verificações, matriz e pendências;
+5. `docs/DESENVOLVIMENTO.md` — comandos, testes e convenções;
+6. `docs/DEPLOY-VERCEL.md` — configuração de hospedagem;
+7. `docs/DESIGN-SYSTEM.md` — tokens e regras visuais.
+
+Não recrie planos de execução, diários de validação ou documentos por fase dentro de `docs/`: foi esse acúmulo que fez a documentação divergir do código. Decisões novas entram na tabela de `docs/PRODUTO.md`; estado novo entra em `docs/VALIDACAO.md`.
 
 Se duas fontes divergirem, preserve a opção mais segura, confirme o comportamento no código/testes e atualize os documentos afetados. A solicitação explícita do usuário continua sendo a autoridade para o objetivo da tarefa.
 
 ## 12. Pendências conhecidas
 
-- configurar o segredo somente no runtime escolhido, executar smoke real do Gemini e avaliar a matriz semântica; o adaptador testado com transporte falso não prova conectividade;
-- fixar um modelo estável para a apresentação ou registrar que `gemini-flash-latest` é um alias mutável;
-- configurar quota/budget do Gemini e rate limit persistente/WAF antes de habilitar chamadas pagas em hospedagem pública;
-- configurar `RYBENA_ACCESS_TOKEN` somente no projeto/ambiente Vercel do domínio autorizado, executar deploy e smoke sem registrar a URL tokenizada, remover/rotacionar a credencial ao expirar e homologar a Rybená com pessoas surdas sinalizantes;
-- exercitar Libras e voz **reais** no domínio autorizado: hoje só o adaptador de desenvolvimento foi percorrido, e ele não prova nada sobre a Rybená;
-- validar com NVDA/VoiceOver e pessoas usuárias;
-- testar Safari/iOS real e zoom de 200%;
-- repetir a regressão integral da jornada após mudanças futuras;
-- decidir qual dos dois projetos Vercel é o canônico.
+A lista viva está em `docs/VALIDACAO.md`, seção "Pendências". Repita a regressão integral da jornada depois de mudanças futuras.
 
 Não transforme uma pendência externa em falso `PASS` e não bloqueie melhorias locais que funcionem independentemente dela.
