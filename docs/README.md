@@ -1,36 +1,21 @@
-# Documentação do projeto
+# Documentação
 
-## Comece por aqui
+| Documento | Para quê |
+| --- | --- |
+| [PRODUTO.md](PRODUTO.md) | o que o protótipo faz, o que fica de fora e as decisões de produto |
+| [ARQUITETURA.md](ARQUITETURA.md) | estrutura do código, contratos, Gemini, Rybená e segurança |
+| [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md) | tokens, tipografia e regras visuais da réplica e do painel |
+| [DESENVOLVIMENTO.md](DESENVOLVIMENTO.md) | instalar, rodar, testar e convenções |
+| [DEPLOY-VERCEL.md](DEPLOY-VERCEL.md) | configuração da Vercel, variáveis e problemas conhecidos |
+| [VALIDACAO.md](VALIDACAO.md) | o que foi verificado, o que está pendente e como registrar |
+| `brand/` | brandbook e design system recebidos como referência |
 
-- [`../academico/RESUMO-PARA-APRESENTACAO.md`](../academico/RESUMO-PARA-APRESENTACAO.md): visão executiva e roteiro-base de dez slides.
-- [`accessibility-agent/README.md`](accessibility-agent/README.md): índice da documentação de produto, arquitetura, implementação e validação do plugin.
-- [`guides/00-CONTINUAR-PROJETO.md`](guides/00-CONTINUAR-PROJETO.md): retomada rápida do desenvolvimento.
-- [`guides/09-PLANO-EVOLUCAO-ACESSIBILIDADE.md`](guides/09-PLANO-EVOLUCAO-ACESSIBILIDADE.md): plano de execução da rodada atual — desbloqueio de Gemini e Rybená, correções da auditoria de 18/09/2026 e reconstrução do plugin no padrão de lançador com chat. É o documento que orienta agentes nesta etapa.
+- **Estado:** `PASS`, `NOT RUN` e afins ficam só em `VALIDACAO.md`. Os outros documentos descrevem comportamento e apontam para lá, para não divergirem.
+- **Regras para agentes:** estão no [`AGENTS.md`](../AGENTS.md).
+- **Material acadêmico:** entregáveis, pesquisa e resumo para apresentação estão em [`../academico/`](../academico/README.md).
 
-## Guias ativos
+Planos de execução, auditorias, diários de validação e o mapeamento da versão anterior da réplica foram removidos em 24/10/2026. As decisões que ainda valem foram para `PRODUTO.md`. O material antigo pode ser consultado no Git:
 
-- `guides/01-ARQUITETURA.md`: estrutura e responsabilidades do código.
-- `guides/02-DESIGN-SYSTEM.md`: tokens, identidade e componentes.
-- `guides/03-ACESSIBILIDADE.md`: visão concisa do comportamento acessível.
-- `guides/05-DESENVOLVIMENTO.md`: instalação, comandos e convenções.
-- `guides/08-DEPLOY-VERCEL.md`: configuração e diagnóstico do deploy.
-- `guides/09-PLANO-EVOLUCAO-ACESSIBILIDADE.md`: plano de tarefas da rodada atual, com critérios de aceite e riscos.
-
-A matriz atual de QA é [`accessibility-agent/VALIDATION.md`](accessibility-agent/VALIDATION.md). Os antigos guias separados de fluxo, QA e resumo de implementação foram removidos por redundância ou desatualização.
-
-## Material histórico
-
-- `clickbus-mapping/`: análise realizada em 08/09/2026 sobre uma versão anterior da réplica. As capturas e snapshots brutos foram removidos; os documentos restantes preservam apenas o contexto histórico.
-- `../academico/pesquisa-rybena/Pesquisa_Rybena_FIAP.docx`: pesquisa anterior à especificação atual. Suas propostas não substituem o PRD e o SDD.
-
-## Referências de marca
-
-- `brand/brand-book-a4.pdf`: manual de marca fornecido para o projeto.
-- `brand/brand-book-a4.html`: mesma peça em HTML, fonte do PDF acima.
-- `brand/design-system.html`: tokens e componentes visuais extraídos da ClickBus.
-
-## Material acadêmico
-
-Entregáveis, pesquisa e resumo para apresentação ficam em [`../academico/`](../academico/README.md), fora da documentação técnica.
-
-Os conceitos visuais antigos e as capturas desatualizadas foram removidos. O histórico do Git preserva esses arquivos caso seja necessário consultar a evolução do projeto.
+```bash
+git show b59dc9b:docs/guides/09-PLANO-EVOLUCAO-ACESSIBILIDADE.md
+```

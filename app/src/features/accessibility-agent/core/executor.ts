@@ -53,7 +53,8 @@ export interface ExecutorDependencies {
  *
  * O executor nunca chama os métodos visuais da Rybená: `RybenaAdapter` não os
  * declara, e os ajustes visuais são responsabilidade exclusiva do executor
- * local. Se os dois aplicarem, os efeitos somam e quebram — seção 7.4 do plano.
+ * local. Se os dois aplicarem, os efeitos somam e quebram — ver as decisões em
+ * `docs/PRODUTO.md`.
  */
 const VOICE_ACTIONS: readonly ActionType[] = [
   'open_voice', 'close_voice', 'speak_content', 'pause_voice', 'resume_voice', 'stop_voice',
