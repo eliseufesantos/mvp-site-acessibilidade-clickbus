@@ -15,7 +15,6 @@
 app/src/
 ├── app/App.tsx                         # estado e navegação da jornada
 ├── components/
-│   ├── accessibility/                  # fachadas do painel, status e ajudas de leitura
 │   ├── brand/                          # logo oficial vetorizado
 │   ├── layout/                         # cabeçalho global
 │   └── ui/                             # botão, switch e progresso
@@ -29,9 +28,8 @@ app/src/
 │   └── accessibility-agent/
 │       ├── core/                       # contratos, store, planner client e executor
 │       ├── adapters/                   # conteúdo ClickBus e porta Libras/Rybená
-│       ├── ui/                         # conversa, ajustes, conteúdo e voz
+│       ├── ui/                         # host do plugin, painel, ajudas de leitura, hooks e CSS do plugin
 │       └── tests/                      # suíte executável do núcleo
-├── hooks/useAccessibilityPreferences.ts
 ├── styles/
 │   ├── tokens.css                      # cores, espaços e modos
 │   ├── global.css                      # reset e base semântica

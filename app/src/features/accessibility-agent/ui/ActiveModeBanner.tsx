@@ -1,6 +1,6 @@
 import { SlidersHorizontal } from 'lucide-react';
-import { getActivePreferenceLabels } from '../../features/accessibility-agent/core/preferences';
-import type { AccessibilityPreferences } from '../../types';
+import { getActivePreferenceLabels } from '../core/preferences';
+import type { AccessibilityPreferences } from '../../../types';
 
 interface ActiveModeBannerProps {
   preferences: AccessibilityPreferences;

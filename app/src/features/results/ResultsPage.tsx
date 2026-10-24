@@ -12,7 +12,7 @@ import {
   Wifi,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { ActiveModeBanner } from '../../components/accessibility/ActiveModeBanner';
+import { ActiveModeBanner } from '../accessibility-agent/ui/ActiveModeBanner';
 import { Button } from '../../components/ui/Button';
 import { Dialog } from '../../components/ui/Dialog';
 import { StepProgress } from '../../components/ui/StepProgress';

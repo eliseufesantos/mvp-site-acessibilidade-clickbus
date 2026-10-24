@@ -20,5 +20,5 @@ app/.env.*
 app/test-results/
 app/playwright-report/
 app/coverage/
-entregas/Documentacao_ClickBus_Inclusive_Journey.pdf
-scripts/build_documentacao.py
+academico/entregas/Documentacao_ClickBus_Inclusive_Journey.pdf
+academico/scripts/build_documentacao.py

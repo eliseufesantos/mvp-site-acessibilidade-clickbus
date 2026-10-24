@@ -42,6 +42,6 @@ Use este texto como pedido inicial, ajustando a etapa desejada:
 - [Acessibilidade implementada e limites atuais](../guides/03-ACESSIBILIDADE.md).
 - [Design system atual](../guides/02-DESIGN-SYSTEM.md).
 - [Validação atual](VALIDATION.md): matriz, resultados observados e limitações.
-- Pesquisa anterior: `docs/Pesquisa_Rybena_FIAP.docx`. Propostas de produto nesse relatório são históricas; esta especificação define a direção atual.
+- Pesquisa anterior: `academico/pesquisa-rybena/Pesquisa_Rybena_FIAP.docx`. Propostas de produto nesse relatório são históricas; esta especificação define a direção atual.
 
 Os módulos descritos no SDD existem nesta entrega. O registro em `IMPLEMENTATION.md` distingue estrutura concluída de integrações externas ainda não validadas.

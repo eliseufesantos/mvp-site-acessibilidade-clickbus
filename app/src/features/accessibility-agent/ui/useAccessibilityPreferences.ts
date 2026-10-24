@@ -7,8 +7,8 @@ import {
   serializePreferences,
   STORAGE_KEY,
   type PreferencePatch,
-} from '../features/accessibility-agent/core/preferences';
-import type { AccessibilityPreferences } from '../types';
+} from '../core/preferences';
+import type { AccessibilityPreferences } from '../../../types';
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);

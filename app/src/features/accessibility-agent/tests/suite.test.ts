@@ -14,7 +14,7 @@ import {
 } from '../adapters/libras/rybenaBrowser';
 import { RybenaUnavailableAdapter, RYBENA_UNAVAILABLE_MESSAGE } from '../adapters/libras/rybenaUnavailable';
 import { RybenaDevelopmentAdapter } from '../adapters/libras/rybenaDevelopment';
-import { COLOR_CORRECTION_MATRICES } from '../../../components/accessibility/ColorFilters';
+import { COLOR_CORRECTION_MATRICES } from '../ui/ColorFilters';
 import {
   LIBRAS_SIMULATION_ENABLED_VALUE,
   LIBRAS_SIMULATION_ENV_VAR,

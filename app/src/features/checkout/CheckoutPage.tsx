@@ -13,7 +13,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { ActiveModeBanner } from '../../components/accessibility/ActiveModeBanner';
+import { ActiveModeBanner } from '../accessibility-agent/ui/ActiveModeBanner';
 import { Button } from '../../components/ui/Button';
 import { StepProgress } from '../../components/ui/StepProgress';
 import { formatCurrency } from '../../data/trips';
