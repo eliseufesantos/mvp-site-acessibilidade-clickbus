@@ -25,4 +25,4 @@ Antes do primeiro `test:e2e`, baixe o navegador com `pnpm exec playwright instal
 4. preencher os dados fictícios do passageiro;
 5. concluir a simulação, sem pagamento.
 
-Arquitetura, contratos e convenções estão em [`../docs/`](../docs/README.md).
+Tecnologias, estrutura, deploy e estado do projeto estão no [`README.md`](../README.md) da raiz.

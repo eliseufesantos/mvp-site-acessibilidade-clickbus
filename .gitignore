@@ -16,5 +16,7 @@ app/.env.*
 app/test-results/
 app/playwright-report/
 app/coverage/
-academico/entregas/Documentacao_ClickBus_Inclusive_Journey.pdf
-academico/scripts/build_documentacao.py
+# Documentação interna e material da disciplina ficam só na máquina local.
+# O guia versionado do projeto é o README.md da raiz.
+docs/
+academico/

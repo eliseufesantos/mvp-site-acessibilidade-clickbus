@@ -64,6 +64,7 @@ Este snapshot não prova que um deployment remoto posterior continua saudável. 
 
 ```text
 .
+├── README.md                         # guia versionado: tecnologias, estrutura, comandos e deploy
 ├── AGENTS.md                         # orientação universal para agentes
 ├── .claude/launch.json               # atalho de execução; não contém política do projeto
 ├── package.json                      # fronteira ESM das funções Vercel na raiz
@@ -87,9 +88,11 @@ Este snapshot não prova que um deployment remoto posterior continua saudável. 
 │       │   │                          # hook de preferências e accessibility-plugin.css
 │       │   └── tests/                # regressão executável do núcleo
 │       └── styles/                   # tokens, base global e componentes da jornada
-├── docs/                             # produto, engenharia, QA e continuidade
-└── academico/                        # material da disciplina: entregas, pesquisa, resumo e geradores
+├── docs/                             # local, fora do Git: produto, engenharia, QA e continuidade
+└── academico/                        # local, fora do Git: entregas, pesquisa, resumo e geradores
 ```
+
+Desde 03/11/2026, `docs/` e `academico/` estão no `.gitignore` por decisão do responsável: existem só na máquina local e não aparecem num clone. O `README.md` da raiz é o guia versionado. Não volte a versionar essas pastas sem pedido explícito, e quando um fato precisar estar disponível para quem clona o repositório, ponha-o no `README.md` ou neste arquivo.
 
 Tudo o que é do plugin de acessibilidade mora em `features/accessibility-agent/`. Não recrie `components/accessibility/`, `hooks/` ou `styles/accessibility-plugin.css` na raiz de `src/`, nem arquivos que só reexportam de outro lugar. O CSS do plugin continua importado em `main.tsx`, **depois** de `components.css`: importá-lo de dentro do componente mudaria a ordem da cascata.
 
@@ -288,15 +291,16 @@ Informe ao usuário arquivos alterados, validações executadas e limitações r
 
 ## 11. Fontes de verdade
 
-Leia conforme a tarefa:
+Leia conforme a tarefa. Os itens de `docs/` existem só na cópia local; num clone, `README.md` e este arquivo são as únicas fontes versionadas.
 
 1. `AGENTS.md` — regras operacionais para agentes;
-2. `docs/PRODUTO.md` — escopo, comportamento e decisões de produto;
-3. `docs/ARQUITETURA.md` — estrutura, contratos, Gemini, Rybená e segurança;
-4. `docs/VALIDACAO.md` — estado das verificações, matriz e pendências;
-5. `docs/DESENVOLVIMENTO.md` — comandos, testes e convenções;
-6. `docs/DEPLOY-VERCEL.md` — configuração de hospedagem;
-7. `docs/DESIGN-SYSTEM.md` — tokens e regras visuais.
+2. `README.md` — guia do projeto: tecnologias, estrutura, comandos, deploy e estado resumido;
+3. `docs/PRODUTO.md` — escopo, comportamento e decisões de produto;
+4. `docs/ARQUITETURA.md` — estrutura, contratos, Gemini, Rybená e segurança;
+5. `docs/VALIDACAO.md` — estado das verificações, matriz e pendências;
+6. `docs/DESENVOLVIMENTO.md` — comandos, testes e convenções;
+7. `docs/DEPLOY-VERCEL.md` — configuração de hospedagem;
+8. `docs/DESIGN-SYSTEM.md` — tokens e regras visuais.
 
 Não recrie planos de execução, diários de validação ou documentos por fase dentro de `docs/`: foi esse acúmulo que fez a documentação divergir do código. Decisões novas entram na tabela de `docs/PRODUTO.md`; estado novo entra em `docs/VALIDACAO.md`.
 
