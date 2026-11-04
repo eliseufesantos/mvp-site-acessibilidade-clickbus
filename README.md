@@ -27,7 +27,7 @@ No desktop o painel é uma região lateral que não bloqueia a página; no celul
 
 A integração com a Rybená (Libras e voz) usou um token temporário, cedido pelo fornecedor como exceção acadêmica e válido só no domínio de demonstração. Ela funcionou por apenas uma semana e depois foi desativada, então os cartões de Libras e Voz não funcionam mais no site publicado.
 
-Para ver a integração funcionando, assista ao vídeo de demonstração do projeto. O restante do plugin (ajustes visuais, dicionário, simplificação e assistente) não depende da Rybená.
+Para ver a integração funcionando, assista ao [vídeo de demonstração do projeto](https://www.youtube.com/watch?v=R36pnegx9xs). O restante do plugin (ajustes visuais, dicionário, simplificação e assistente) não depende da Rybená.
 
 ## Tecnologias
 
