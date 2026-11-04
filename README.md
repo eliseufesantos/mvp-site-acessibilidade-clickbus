@@ -19,9 +19,15 @@ O acionador fica no fim do cabeçalho, com o pictograma universal de acessibilid
 | --- | --- |
 | Ajustes visuais | contraste, tamanho do texto, controles e cursor grandes, destaques, espaçamento, entrelinha, alinhamento, guia e máscara de leitura, movimento reduzido, fonte para dislexia, saturação e correção de cores. Funcionam sem rede e ficam salvos no navegador |
 | Dicionário e simplificação | glossário e textos simplificados revisados respondem localmente, antes de qualquer chamada à IA. O texto original nunca é substituído |
-| Libras e voz | dois modos do mesmo player da Rybená, carregado só depois de um clique |
+| Libras e voz | dois modos do mesmo player da Rybená, carregado só depois de um clique. **Desativado**: veja abaixo |
 
 No desktop o painel é uma região lateral que não bloqueia a página; no celular (até 820 px) é um diálogo em tela cheia.
+
+### Rybená desativada
+
+A integração com a Rybená (Libras e voz) usou um token temporário, cedido pelo fornecedor como exceção acadêmica e válido só no domínio de demonstração. Ela funcionou por apenas uma semana e depois foi desativada, então os cartões de Libras e Voz não funcionam mais no site publicado.
+
+Para ver a integração funcionando, assista ao vídeo de demonstração do projeto. O restante do plugin (ajustes visuais, dicionário, simplificação e assistente) não depende da Rybená.
 
 ## Tecnologias
 
@@ -100,24 +106,6 @@ Nenhuma variável de ambiente é necessária para a jornada, os ajustes visuais,
 
 Para exercitar Libras e voz sem a Rybená real, rode o servidor com `VITE_A11Y_LIBRAS_SIMULATION=on`. A simulação exibe um aviso permanente e nunca entra no bundle de produção.
 
-## Testes
-
-| Comando | O que faz |
-| --- | --- |
-| `npx --yes pnpm@10.28.0 --dir app typecheck` | checagem de tipos do app e dos testes |
-| `npx --yes pnpm@10.28.0 --dir app build` | build de produção em `app/dist` |
-| `npx --yes pnpm@10.28.0 --dir app test` | Vitest: lógica e componentes |
-| `npx --yes pnpm@10.28.0 --dir app test:e2e` | Playwright: axe, reflow em 320 px e fronteira 820/821 px |
-| `npx --yes pnpm@10.28.0 --dir app test:all` | as duas camadas |
-
-Antes do primeiro `test:e2e`, baixe o navegador:
-
-```bash
-npx --yes pnpm@10.28.0 --dir app exec playwright install chromium
-```
-
-Nenhum teste fala com o Gemini ou com a Rybená: a rede é sempre simulada.
-
 ## Deploy e variáveis de ambiente
 
 O deploy na Vercel parte da raiz, com **Root Directory vazio**; o `vercel.json` já define instalação, build e saída. As credenciais ficam só no servidor, em **Settings > Environment Variables**:
@@ -126,17 +114,9 @@ O deploy na Vercel parte da raiz, com **Root Directory vazio**; o `vercel.json` 
 ACCESSIBILITY_LLM_ENDPOINT=https://generativelanguage.googleapis.com/v1beta
 ACCESSIBILITY_LLM_MODEL=<modelo>
 ACCESSIBILITY_LLM_API_KEY=<segredo>
-RYBENA_ACCESS_TOKEN=<credencial, só no domínio autorizado>
+RYBENA_ACCESS_TOKEN=<credencial, só no domínio autorizado; integração desativada>
 ```
 
 Opcionais: `ACCESSIBILITY_ALLOWED_ORIGINS`, `ACCESSIBILITY_LLM_REQUESTS_PER_MINUTE` (padrão 12) e `ACCESSIBILITY_LLM_REQUESTS_PER_DAY` (padrão 200).
 
 Nunca use o prefixo `VITE_` para segredos: ele os coloca no bundle público. Ao editar o `.vercelignore`, preserve `!package.json` e `!tsconfig.json`; sem eles as funções quebram em produção.
-
-## Estado e limitações
-
-- **Verificado:** typecheck, build, Vitest e Playwright passando; axe sem violações nas cinco etapas e com o painel aberto; sem rolagem horizontal em 320 px; Gemini e endpoint da Rybená respondendo no domínio autorizado.
-- **Qualidade das respostas da IA:** parcial. Explicações vindas da IA podem errar, e a interface pede que a pessoa confira.
-- **Não executado:** tradução real da Rybená com evidência registrada, homologação com pessoas surdas sinalizantes, leitores de tela (NVDA e VoiceOver), Safari/iOS real e testes com pessoas usuárias.
-
-Passar no axe não equivale a conformidade com a WCAG: ele cobre só parte dos critérios.
