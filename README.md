@@ -44,13 +44,11 @@ No desktop o painel é uma região lateral que não bloqueia a página; no celul
 ```text
 .
 ├── README.md                 # este guia
-├── AGENTS.md                 # regras e invariantes para agentes de código (o Claude Code também lê este arquivo)
 ├── package.json              # só declara "type": "module" para as funções da Vercel
 ├── tsconfig.json             # checagem de tipos das funções em api/
 ├── vercel.json               # instalação, build, saída e rewrite da SPA
 ├── .vercelignore             # envia à Vercel só app/, api/ e os arquivos de configuração
 ├── .github/workflows/        # CI: typecheck, build, Vitest e Playwright
-├── .claude/launch.json       # atalho do app Claude para abrir o servidor de desenvolvimento
 │
 ├── api/accessibility/        # funções Vercel: plan, explain, simplify e rybena
 │                             # (cada uma só repassa a chamada para app/server/)
@@ -82,7 +80,7 @@ No desktop o painel é uma região lateral que não bloqueia a página; no celul
 
 Por que `api/` e `app/server/` são separados: a Vercel só publica funções que estão em `api/` na raiz. Os handlers ficam em `app/server/` para que o mesmo código atenda o servidor local do Vite e a produção.
 
-`docs/` e `academico/` existem só na máquina local e estão no `.gitignore`: são a documentação interna detalhada e o material da disciplina.
+`docs/`, `academico/`, `AGENTS.md` e `.claude/` existem só na máquina local e estão no `.gitignore`: são a documentação interna detalhada, o material da disciplina, as regras para agentes de código e a configuração do app Claude.
 
 ## Como rodar
 

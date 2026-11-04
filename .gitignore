@@ -16,7 +16,10 @@ app/.env.*
 app/test-results/
 app/playwright-report/
 app/coverage/
-# Documentação interna e material da disciplina ficam só na máquina local.
+# Documentação interna, material da disciplina, orientação para agentes e
+# configuração do app Claude ficam só na máquina local.
 # O guia versionado do projeto é o README.md da raiz.
 docs/
 academico/
+AGENTS.md
+.claude/
